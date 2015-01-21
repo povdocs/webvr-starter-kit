@@ -1,0 +1,29 @@
+{
+  "name": "webvr-starter-kit",
+  "version": "0.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Brian Chirls <brian@chirls.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "gulp": "^3.8.10",
+    "gulp-bower": "0.0.10",
+    "gulp-concat": "^2.4.3",
+    "gulp-install": "^0.2.0",
+    "gulp-webpack": "^1.1.2",
+    "imports-loader": "^0.6.3",
+    "main-bower-files": "^2.5.0",
+    "webpack": "^1.5.1"
+  },
+  "dependencies": {
+    "css-loader": "^0.9.1",
+    "event-emitter": "^0.3.2",
+    "file-loader": "^0.8.1",
+    "style-loader": "^0.8.3",
+    "three": "^0.69.0",
+    "url-loader": "^0.5.5"
+  }
+}

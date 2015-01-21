@@ -1,0 +1,95 @@
+(function () {
+	'use strict';
+
+	//global-ish declarations
+	var VR,
+
+	//ui elements
+		vrButton;
+
+	function initRequirements() {
+		//load styles
+		require('!style!css!./css/style.css');
+
+		VR = require('./vr');
+	}
+
+	function initUI() {
+		var container,
+			fsButton;
+
+		container = document.createElement('div');
+		container.id = 'controls';
+		document.body.appendChild(container);
+
+		//todo: use icons instead of text
+		fsButton = document.createElement('button');
+		fsButton.id = 'fs';
+		fsButton.innerHTML = 'FS';
+		fsButton.addEventListener('click', function () {
+			var fullScreenElement = VR.canvas,
+				requestFullscreen = fullScreenElement.webkitRequestFullscreen ||
+					fullScreenElement.mozRequestFullScreen ||
+					fullScreenElement.msRequestFullscreen;
+
+			if (requestFullscreen) {
+				requestFullscreen.call(fullScreenElement);
+			}
+		}, false);
+		container.appendChild(fsButton);
+
+		//report on HMD
+		VR.on('devicechange', function (hmd) {
+			if (hmd) {
+				vrButton.style.display = 'inline-block';
+			}
+
+			//todo: enable this
+			//info.innerHTML = hmd && hmd.deviceName ? 'HMD: ' + hmd.deviceName : '';
+			//info.className = hmd && hmd.deviceId !== 'debug-0' ? 'has-hmd' : '';
+		});
+
+		vrButton = document.createElement('button');
+		vrButton.id = 'vr';
+		vrButton.innerHTML = 'VR';
+		vrButton.addEventListener('click', VR.requestFullScreen, false);
+		container.appendChild(vrButton);
+
+		//keyboard shortcuts for making life a little easier
+		window.addEventListener('keydown', function (evt) {
+			if (evt.keyCode === 'Z'.charCodeAt(0)) {
+				VR.zeroSensor();
+			} else if (evt.keyCode === 'P'.charCodeAt(0)) {
+				VR.preview();
+			} else if (evt.keyCode === 13) {
+				VR.requestFullScreen();
+			}
+		}, false);
+	}
+
+	function initialize() {
+		initRequirements();
+
+		//todo: set up button/info elements
+
+		VR.init();
+
+		initUI();
+
+		VR.resize();
+		window.addEventListener('resize', function () {
+			VR.resize();
+		}, false);
+
+		/*
+		todo: export global things
+		*/
+		window.VR = VR;
+
+		var THREE = require('three');
+		//VR.camera.lookAt(new THREE.Vector3(50, 4, 50));
+	}
+
+	initialize();
+	VR.start();
+}());

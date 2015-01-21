@@ -1,0 +1,38 @@
+body {
+	font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+	color: #eee;
+	overflow: hidden;
+	background: rgb(40, 40, 40);
+
+	height: 100%;
+	width: 100%;
+	margin: 0px;
+	padding: 0px;
+}
+
+canvas {
+	width: 100% !important;
+	height: 100% !important;
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+#controls {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	padding: 20px;
+}
+
+#controls > * {
+	margin-left: 10px;
+}
+
+#controls > *:first-child {
+	margin-left: 0;
+}
+
+#vr {
+	display: none;
+}

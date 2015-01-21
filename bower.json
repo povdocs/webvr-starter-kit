@@ -1,0 +1,28 @@
+{
+  "name": "webvr-starter-kit",
+  "version": "0.0.0",
+  "authors": [
+    "Brian Chirls <brian@chirls.com>"
+  ],
+  "main": "main.js",
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [
+    "webvr",
+    "3d",
+    "webgl"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "DeviceOrientationControls": "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/js/controls/DeviceOrientationControls.js"
+  }
+}
