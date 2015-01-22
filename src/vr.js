@@ -131,6 +131,8 @@
 		require('imports?THREE=three!DeviceOrientationControls');
 		require('imports?THREE=three!OrbitControls');
 
+		THREE.ImageUtils.crossOrigin = '';
+
 		eventEmitter = require('event-emitter');
 
 		//my VR stuff. todo: move these to a separate repo or two for easy packaging
@@ -165,10 +167,29 @@
 			}
 		},
 
+		panorama: function (src) {
+			var geometry = new THREE.SphereGeometry( 10, 60, 60 );
+			geometry.applyMatrix( new THREE.Matrix4().makeScale( -1, 1, 1 ) );
+
+			var material = new THREE.MeshBasicMaterial({
+				side: THREE.DoubleSide,
+				transparent: true,
+				map: THREE.ImageUtils.loadTexture( // placeholder rexture
+					src,
+					THREE.UVMapping
+				)
+			});
+
+			var pano = new THREE.Mesh( geometry, material );
+			//pano.renderDepth = 2;
+			pano.rotation.set( 0, -90 * Math.PI / 180, 0 );
+
+			scene.add(pano);
+		},
+
 		floor: function () {
 			//todo: take options
 			if (!floor) {
-				THREE.ImageUtils.crossOrigin = '';
 				floor = new THREE.Mesh(
 					new THREE.PlaneBufferGeometry(10, 10, 32),
 					new THREE.MeshPhongMaterial({

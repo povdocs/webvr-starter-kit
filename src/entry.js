@@ -94,7 +94,6 @@
 		window.VR = VR;
 
 		var THREE = require('three');
-		//VR.camera.lookAt(new THREE.Vector3(50, 4, 50));
 	}
 
 	initialize();
