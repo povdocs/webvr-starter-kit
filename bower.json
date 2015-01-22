@@ -23,6 +23,7 @@
     "tests"
   ],
   "dependencies": {
-    "DeviceOrientationControls": "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/js/controls/DeviceOrientationControls.js"
+    "DeviceOrientationControls": "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/js/controls/DeviceOrientationControls.js",
+    "OrbitControls": "http://threejs.org/examples/js/controls/OrbitControls.js"
   }
 }

@@ -16,6 +16,7 @@
 		renderer,
 		vrControls,
 		vrEffect,
+		mouseControls,
 
 		floor,
 
@@ -90,7 +91,11 @@
 		vrEffect.near = NEAR;
 		vrEffect.far = FAR;
 		vrEffect.addEventListener('fullscreenchange', function () {
-			vrControls.freeze = !(vrEffect.isFullscreen() || vrEffect.vrPreview());
+			var fs = document.fullscreenElement ||
+				document.mozFullScreenElement ||
+				document.webkitFullscreenElement;
+
+			vrControls.freeze = !(vrEffect.isFullscreen() || vrEffect.vrPreview() || fs && vrControls.mode);
 			if (vrControls.freeze) {
 				vrControls.reset();
 			}
@@ -100,6 +105,9 @@
 		vrControls.addEventListener('devicechange', function () {
 			VR.emit('devicechange', vrControls.mode, vrEffect.hmd());
 		});
+
+		//mouse control in case got no orientation device
+		mouseControls = new THREE.OrbitControls(camera);
 
 		//todo: remove any default lights once other lights are added
 		var directionalLight = new THREE.DirectionalLight( 0xffffff, 1.475 );
@@ -119,6 +127,7 @@
 		//load external requirements
 		THREE = require('three');
 		require('imports?THREE=three!DeviceOrientationControls');
+		require('imports?THREE=three!OrbitControls');
 
 		eventEmitter = require('event-emitter');
 
