@@ -74,11 +74,13 @@
 
 		//need a camera with which to look at stuff
 		camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, NEAR, FAR);
-		//camera.position.y = 2;
+
+		// set camera position so that OrbitControls works properly.
+		camera.position.z = 0.0001;
 
 		body = new THREE.Object3D();
 		body.name = 'body';
-		body.position.y = 200;
+		body.position.y = 2;
 		scene.add(body);
 		body.add(camera);
 
@@ -166,8 +168,9 @@
 		floor: function () {
 			//todo: take options
 			if (!floor) {
+				THREE.ImageUtils.crossOrigin = '';
 				floor = new THREE.Mesh(
-					new THREE.CircleGeometry(FAR, 32),
+					new THREE.PlaneBufferGeometry(10, 10, 32),
 					new THREE.MeshPhongMaterial({
 						color: 0x999999,
 						specular: 0x111111,
@@ -177,47 +180,48 @@
 						shading: THREE.SmoothShading
 					})
 				);
+				floor.position.y = 0;
 				floor.name = 'floor';
 
-				floor.material.map.wrapS = THREE.RepeatWrapping;
-				floor.material.map.wrapT = THREE.RepeatWrapping;
-				floor.material.map.repeat.set(10, 10);
+				// floor.material.map.wrapS = THREE.RepeatWrapping;
+				// floor.material.map.wrapT = THREE.RepeatWrapping;
+				// floor.material.map.repeat.set(10, 10);
 				floor.receiveShadow = true;
 				floor.rotateX(-Math.PI / 2);
-				scene.add(floor);
-				return;
+				// scene.add(floor);
+				// return;
 
-				var bottom = new THREE.GridHelper(1000, 100);
+				var bottom = new THREE.GridHelper(10, 1);
 				bottom.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
 				bottom.position.set(0, 0, 0);
 				scene.add(bottom);
 
-				var top = new THREE.GridHelper(1000, 100);
+				var top = new THREE.GridHelper(10, 1);
 				top.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
-				top.position.set(0, 2000, 0);
+				top.position.set(0, 20, 0);
 				scene.add(top);
 
-				var front = new THREE.GridHelper(1000, 100);
+				var front = new THREE.GridHelper(10, 1);
 				front.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
-				front.position.set(1000, 1000, 0);
+				front.position.set(10, 10, 0);
 				front.rotation.z = Math.PI / 2;
 				scene.add(front);
 
-				var back = new THREE.GridHelper(1000, 100);
+				var back = new THREE.GridHelper(10, 1);
 				back.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
-				back.position.set(-1000, 1000, 0);
+				back.position.set(-10, 10, 0);
 				back.rotation.z = Math.PI / 2;
 				scene.add(back);
 
-				var left = new THREE.GridHelper(1000, 100);
+				var left = new THREE.GridHelper(10, 1);
 				left.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
-				left.position.set(0, 1000, -1000);
+				left.position.set(0, 10, -10);
 				left.rotation.x = Math.PI / 2;
 				scene.add(left);
 
-				var right = new THREE.GridHelper(1000, 100);
+				var right = new THREE.GridHelper(10, 1);
 				right.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
-				right.position.set(0, 1000, 1000);
+				right.position.set(0, 10, 10);
 				right.rotation.x = Math.PI / 2;
 				scene.add(right);			}
 		},
