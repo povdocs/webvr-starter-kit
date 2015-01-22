@@ -269,8 +269,8 @@ THREE.VRStereoEffect = function ( renderer, fullScreenElement, options ) {
 
 		w = width || renderer.domElement.width;
 		h = height || renderer.domElement.height;
-		w /= window.devicePixelRatio || 1;
-		h /= window.devicePixelRatio || 1;
+		// w /= window.devicePixelRatio || 1;
+		// h /= window.devicePixelRatio || 1;
 
 		/*
 		todo: make this work when CSS VR Rendering is fixed
