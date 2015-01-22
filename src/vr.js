@@ -97,9 +97,8 @@
 		});
 
 		//report on HMD
-		vrEffect.addEventListener('devicechange', function () {
-			var hmd = vrEffect.hmd();
-			VR.emit('devicechange', hmd);
+		vrControls.addEventListener('devicechange', function () {
+			VR.emit('devicechange', vrControls.mode, vrEffect.hmd());
 		});
 
 		//todo: remove any default lights once other lights are added

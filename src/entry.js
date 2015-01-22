@@ -16,7 +16,14 @@
 
 	function initUI() {
 		var container,
-			fsButton;
+			fsButton,
+			element;
+
+		//set up meta viewport tag for mobile devices
+		element = document.createElement('meta');
+		element.setAttribute('name', 'viewport');
+		element.setAttribute('content', 'width=device-width, initial-scale=1, user-scalable=no');
+		document.head.appendChild(element);
 
 		container = document.createElement('div');
 		container.id = 'controls';
@@ -39,8 +46,8 @@
 		container.appendChild(fsButton);
 
 		//report on HMD
-		VR.on('devicechange', function (hmd) {
-			if (hmd) {
+		VR.on('devicechange', function (mode) {
+			if (mode) {
 				vrButton.style.display = 'inline-block';
 			}
 
