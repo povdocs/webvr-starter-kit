@@ -168,7 +168,7 @@
 		},
 
 		panorama: function (src) {
-			var geometry = new THREE.SphereGeometry( 10, 60, 60 );
+			var geometry = new THREE.SphereGeometry( 1000, 60, 60 );
 			geometry.applyMatrix( new THREE.Matrix4().makeScale( -1, 1, 1 ) );
 
 			var material = new THREE.MeshBasicMaterial({
