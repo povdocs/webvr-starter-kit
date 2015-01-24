@@ -19,10 +19,22 @@ gulp.task('default', ['webpack:build-dev']);
 
 // Production build
 gulp.task('build', function(callback) {
+	// build two production versions - one minified, one not
+
 	var gulpWebpack = require('gulp-webpack');
 	var uglify = require('gulp-uglify');
 	var rename = require('gulp-rename');
-	// build two production versions - one minified, one not
+	var header = require('gulp-header');
+	var pkg = require('./package.json');
+
+	var banner = [
+		'/**',
+		' * <%= pkg.name %> - <%= pkg.description %>',
+		' * @version v<%= pkg.version %>',
+		' * @link <%= pkg.homepage %>',
+		' * @license <%= pkg.license %>',
+		' */',
+	''].join('\n');
 
 	// modify some webpack config options
 	var productionConfig = Object.create(webpackConfig);
@@ -37,8 +49,10 @@ gulp.task('build', function(callback) {
 
 	return gulp.src('src/entry.js')
 		.pipe(gulpWebpack(productionConfig))
+		.pipe(header(banner, { pkg : pkg } ))
 		.pipe(gulp.dest('build/'))
 		.pipe(uglify())
+		.pipe(header(banner, { pkg : pkg } ))
 		.pipe(rename({
 			suffix: '.min'
 		}))

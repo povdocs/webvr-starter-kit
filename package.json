@@ -1,8 +1,9 @@
 {
-  "name": "webvr-starter-kit",
+  "name": "WebVR Starter Kit",
   "version": "0.0.0",
   "description": "",
-  "main": "main.js",
+  "link": "",
+  "main": "build/bundle.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,6 +11,7 @@
   "license": "MIT",
   "devDependencies": {
     "gulp": "^3.8.10",
+    "gulp-header": "^1.2.2",
     "gulp-rename": "^1.2.0",
     "gulp-uglify": "^1.1.0",
     "gulp-util": "^3.0.2",
