@@ -253,7 +253,7 @@ THREE.VRStereoEffect = function ( renderer, fullScreenElement, options ) {
 		if ( rightScene && rightScene instanceof THREE.Scene ) {
 			//rightScene.updateMatrixWorld();
 		} else {
-			if ( (!camera || camera instanceof THREE.WebGLRenderTarget) && rightScene && rightScene.aspect ) {
+			if ( (!camera || camera instanceof THREE.WebGLRenderTarget) && rightScene instanceof THREE.Camera ) {
 				forceClear = renderTarget;
 				renderTarget = camera;
 				camera = rightScene;
