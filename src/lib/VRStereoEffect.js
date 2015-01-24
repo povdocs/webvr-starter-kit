@@ -28,7 +28,7 @@ THREE.VRStereoEffect = function ( renderer, fullScreenElement, options ) {
 	var fullScreenParam = {
 		vrDisplay: null
 	};
-	var fsElementKey;
+	var fovScale;
 
 	var RADIANS = Math.PI / 180;
 
