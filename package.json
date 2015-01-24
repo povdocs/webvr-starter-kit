@@ -15,6 +15,8 @@
     "gulp-util": "^3.0.2",
     "gulp-webpack": "^1.1.2",
     "imports-loader": "^0.6.3",
+    "jshint": "^2.6.0",
+    "jshint-loader": "^0.8.1",
     "main-bower-files": "^2.5.0",
     "webpack": "^1.5.1",
     "webpack-dev-server": "^1.7.0"
