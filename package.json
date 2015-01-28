@@ -1,7 +1,7 @@
 {
-  "name": "WebVR Starter Kit",
+  "name": "webvr-starter-kit",
   "version": "0.0.0",
-  "description": "",
+  "description": "WebVR Starter Kit",
   "link": "",
   "main": "build/bundle.js",
   "scripts": {
