@@ -131,6 +131,10 @@
 		require('imports?THREE=three!DeviceOrientationControls');
 		require('imports?THREE=three!OrbitControls');
 
+		//if (typeof __DEV__ !== 'undefined' && __DEV__) {
+			require('imports?THREE=three!AugmentedConsole');
+		//}
+
 		THREE.ImageUtils.crossOrigin = '';
 
 		eventEmitter = require('event-emitter');

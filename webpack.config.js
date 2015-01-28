@@ -30,11 +30,19 @@ module.exports = {
     plugins: [
         new webpack.ResolverPlugin(
             new webpack.ResolverPlugin.DirectoryDescriptionFilePlugin("bower.json", ["main"])
-        )
+        ),
+        new webpack.DefinePlugin({
+            __DEV__: JSON.stringify(JSON.parse(process.env.BUILD_DEV || 'false'))
+        })
     ],
 
     //pretty strict
     jshint: {
+        globals: {
+            __DEV__: true,
+            console: true
+        },
+
         bitwise: true,
         browser: true,
         camelcase: true,
@@ -61,6 +69,6 @@ module.exports = {
         //unused: true, todo: add this back in when more stuff is working
 
         failOnHint: true,
-        emitErrors: true,
+        emitErrors: true
     }
 };

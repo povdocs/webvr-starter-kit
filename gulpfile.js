@@ -67,6 +67,7 @@ var myDevConfig = Object.create(webpackConfig);
 myDevConfig.devtool = 'sourcemap';
 myDevConfig.debug = true;
 myDevConfig.output.pathInfo = true;
+myDevConfig.plugins[1].definitions.__DEV__ = 'true';
 
 // create a single instance of the compiler to allow caching
 var devCompiler = webpack(myDevConfig);
