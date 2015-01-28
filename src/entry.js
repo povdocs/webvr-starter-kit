@@ -89,11 +89,10 @@
 		}, false);
 
 		/*
-		todo: export global things
+		export global things
 		*/
 		window.VR = VR;
-
-		var THREE = require('three');
+		window.THREE = VR.THREE;
 	}
 
 	initialize();

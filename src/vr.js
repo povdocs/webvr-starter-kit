@@ -8,6 +8,7 @@
 	//global-ish declarations
 		THREE,
 		eventEmitter,
+		materials = require('./materials'),
 
 	//scene assets
 		camera,
@@ -159,6 +160,10 @@
 		stop: stop,
 		resize: resize,
 
+		THREE: THREE,
+
+		materials: materials,
+
 		requestFullScreen: function () {},
 		zeroSensor: function () {},
 		preview: function () {
@@ -178,7 +183,7 @@
 			var material = new THREE.MeshBasicMaterial({
 				side: THREE.DoubleSide,
 				transparent: true,
-				map: THREE.ImageUtils.loadTexture( // placeholder rexture
+				map: materials.imageTexture( // placeholder rexture
 					src,
 					THREE.UVMapping
 				)
@@ -199,7 +204,8 @@
 					new THREE.MeshPhongMaterial({
 						color: 0x999999,
 						specular: 0x111111,
-						map: THREE.ImageUtils.loadTexture(require('url-loader!./images/checkerboard.png')),
+						//map: THREE.ImageUtils.loadTexture(require('url-loader!./images/checkerboard.png')),
+						map: materials.imageTexture(require('./images/checkerboard.png')),
 
 						shininess: 100,
 						shading: THREE.SmoothShading
@@ -213,8 +219,9 @@
 				// floor.material.map.repeat.set(10, 10);
 				floor.receiveShadow = true;
 				floor.rotateX(-Math.PI / 2);
-				// scene.add(floor);
-				// return;
+				scene.add(floor);
+				/*
+				return;
 
 				var bottom = new THREE.GridHelper(10, 1);
 				bottom.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
@@ -248,7 +255,9 @@
 				right.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
 				right.position.set(0, 10, 10);
 				right.rotation.x = Math.PI / 2;
-				scene.add(right);			}
+				scene.add(right);
+				//*/
+			}
 		},
 
 		//todo: wrap these?
