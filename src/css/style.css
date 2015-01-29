@@ -13,7 +13,7 @@ body {
 canvas {
 	width: 100% !important;
 	height: 100% !important;
-	position: absolute;
+	/*position: absolute;*/
 	top: 0;
 	left: 0;
 }
