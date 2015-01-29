@@ -1,9 +1,9 @@
-var webpack = require("webpack");
+var webpack = require('webpack');
 module.exports = {
-    entry: "./src/entry.js",
+    entry: './src/entry.js',
     output: {
         path: __dirname + '/build/',
-        filename: "bundle.js"
+        filename: 'bundle.js'
     },
     module: {
         preLoaders: [
@@ -25,11 +25,11 @@ module.exports = {
         ]
     },
     resolve: {
-        modulesDirectories: ["web_modules", "node_modules", "bower_components"]
+        modulesDirectories: ['web_modules', 'node_modules', 'bower_components']
     },
     plugins: [
         new webpack.ResolverPlugin(
-            new webpack.ResolverPlugin.DirectoryDescriptionFilePlugin("bower.json", ["main"])
+            new webpack.ResolverPlugin.DirectoryDescriptionFilePlugin('bower.json', ['main'])
         ),
         new webpack.DefinePlugin({
             __DEV__: JSON.stringify(JSON.parse(process.env.BUILD_DEV || 'false'))
