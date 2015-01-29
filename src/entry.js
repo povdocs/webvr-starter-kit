@@ -26,7 +26,7 @@
 		document.head.appendChild(element);
 
 		container = document.createElement('div');
-		container.id = 'controls';
+		container.id = 'buttons';
 		document.body.appendChild(container);
 
 		//todo: use icons instead of text

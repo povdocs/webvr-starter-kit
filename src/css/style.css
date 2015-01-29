@@ -18,18 +18,18 @@ canvas {
 	left: 0;
 }
 
-#controls {
+#buttons {
 	position: absolute;
 	bottom: 0;
 	left: 0;
 	padding: 20px;
 }
 
-#controls > * {
+#buttons > * {
 	margin-left: 10px;
 }
 
-#controls > *:first-child {
+#buttons > *:first-child {
 	margin-left: 0;
 }
 
