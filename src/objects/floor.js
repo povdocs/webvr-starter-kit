@@ -5,10 +5,14 @@ module.exports = (function () {
 		THREE = require('three');
 
 	function floor(parent, options) {
-		var obj;
+		var obj,
+			geometry;
+
+		geometry = new THREE.PlaneBufferGeometry(10, 10, 32);
+		geometry.applyMatrix( new THREE.Matrix4().makeRotationX(-Math.PI / 2));
 
 		obj = new THREE.Mesh(
-			new THREE.PlaneBufferGeometry(10, 10, 32),
+			geometry,
 			new THREE.MeshPhongMaterial({
 				color: 0x999999,
 				specular: 0x111111,
@@ -25,7 +29,6 @@ module.exports = (function () {
 		obj.material.map.wrapT = THREE.RepeatWrapping;
 		obj.material.map.repeat.set(10, 10);
 		obj.receiveShadow = true;
-		obj.rotateX(-Math.PI / 2);
 
 		parent.add(obj);
 
