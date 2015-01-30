@@ -100,7 +100,8 @@ module.exports = (function () {
 	}
 
 	return {
-		imageTexture: imageTexture
+		imageTexture: imageTexture,
+		standard: new THREE.MeshLambertMaterial()
 	};
 
 	//var parse = urlRegex.exec('https://lh5.googleusercontent.com:80/-SNO8rWDqbUM/U085rfOBRuI/AAAAAAAAEdM/nWEWCtNceZ0/w955-h382-no/PANO_20130225_131211.jpg');

@@ -25,7 +25,12 @@
 		going = false,
 
 	//exported object
-		VR;
+		VR,
+		objectMethods = [
+			'box',
+			'cylinder',
+			'floor'
+		];
 
 	function render() {
 		vrControls.update();
@@ -59,7 +64,6 @@
 		camera.updateProjectionMatrix();
 		renderer.setSize(width, height);
 	}
-
 
 	function initScene() {
 		if (renderer) {
@@ -204,70 +208,6 @@
 			scene.add(pano);
 		},
 
-		floor: function () {
-			//todo: take options
-			if (!floor) {
-				floor = new THREE.Mesh(
-					new THREE.PlaneBufferGeometry(10, 10, 32),
-					new THREE.MeshPhongMaterial({
-						color: 0x999999,
-						specular: 0x111111,
-						//map: THREE.ImageUtils.loadTexture(require('url-loader!./images/checkerboard.png')),
-						map: materials.imageTexture(require('./images/checkerboard.png')),
-
-						shininess: 100,
-						shading: THREE.SmoothShading
-					})
-				);
-				floor.position.y = 0;
-				floor.name = 'floor';
-
-				floor.material.map.wrapS = THREE.RepeatWrapping;
-				floor.material.map.wrapT = THREE.RepeatWrapping;
-				floor.material.map.repeat.set(10, 10);
-				floor.receiveShadow = true;
-				floor.rotateX(-Math.PI / 2);
-				scene.add(floor);
-				/*
-				return;
-
-				var bottom = new THREE.GridHelper(10, 1);
-				bottom.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
-				bottom.position.set(0, 0, 0);
-				scene.add(bottom);
-
-				var top = new THREE.GridHelper(10, 1);
-				top.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
-				top.position.set(0, 20, 0);
-				scene.add(top);
-
-				var front = new THREE.GridHelper(10, 1);
-				front.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
-				front.position.set(10, 10, 0);
-				front.rotation.z = Math.PI / 2;
-				scene.add(front);
-
-				var back = new THREE.GridHelper(10, 1);
-				back.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
-				back.position.set(-10, 10, 0);
-				back.rotation.z = Math.PI / 2;
-				scene.add(back);
-
-				var left = new THREE.GridHelper(10, 1);
-				left.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
-				left.position.set(0, 10, -10);
-				left.rotation.x = Math.PI / 2;
-				scene.add(left);
-
-				var right = new THREE.GridHelper(10, 1);
-				right.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
-				right.position.set(0, 10, 10);
-				right.rotation.x = Math.PI / 2;
-				scene.add(right);
-				//*/
-			}
-		},
-
 		//todo: wrap these?
 		camera: camera,
 		scene: scene,
@@ -275,6 +215,21 @@
 	};
 
 	initRequirements();
+
+	objectMethods.forEach(function (method) {
+		var VRObject = require('./vr-object'),
+			creator = require('./objects/' + method);
+
+		VR[method] = function (options) {
+			var obj = new VRObject(scene, creator, options);
+			return obj;
+		};
+
+		VRObject.prototype[method] = function (options) {
+			var obj = new VRObject(this.object, creator, options);
+			return obj;
+		};
+	});
 
 	eventEmitter(VR);
 }());

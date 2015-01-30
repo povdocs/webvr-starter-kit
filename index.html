@@ -7,7 +7,18 @@
         <script type="text/javascript" src="build/bundle.js" charset="utf-8"></script>
         <script type="text/javascript">
             VR.floor();
-            // VR.panorama('https://lh3.googleusercontent.com/-SNO8rWDqbUM/U085rfOBRuI/AAAAAAAADZQ/pXYmrsLJ5C0/w1380-h552-no/PANO_20130225_131211.jpg');
+            VR.panorama('http://i.imgur.com/6QW3fZI.jpg');
+            VR.box({
+                color: 0x1111DD,
+                x: -1,
+                y: 1,
+                z: -2.5
+            })
+                .box()
+                .moveTo(1, 0, 0)
+                .scale(0.5);
+            VR.cylinder()
+                .moveTo(1, 1, -2);
         </script>
     </body>
 </html>

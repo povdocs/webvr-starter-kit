@@ -424,7 +424,12 @@
 			going = false,
 	
 		//exported object
-			VR;
+			VR,
+			objectMethods = [
+				'box',
+				'cylinder',
+				'floor'
+			];
 	
 		function render() {
 			vrControls.update();
@@ -458,7 +463,6 @@
 			camera.updateProjectionMatrix();
 			renderer.setSize(width, height);
 		}
-	
 	
 		function initScene() {
 			if (renderer) {
@@ -603,70 +607,6 @@
 				scene.add(pano);
 			},
 	
-			floor: function () {
-				//todo: take options
-				if (!floor) {
-					floor = new THREE.Mesh(
-						new THREE.PlaneBufferGeometry(10, 10, 32),
-						new THREE.MeshPhongMaterial({
-							color: 0x999999,
-							specular: 0x111111,
-							//map: THREE.ImageUtils.loadTexture(require('url-loader!./images/checkerboard.png')),
-							map: materials.imageTexture(__webpack_require__(28)),
-	
-							shininess: 100,
-							shading: THREE.SmoothShading
-						})
-					);
-					floor.position.y = 0;
-					floor.name = 'floor';
-	
-					floor.material.map.wrapS = THREE.RepeatWrapping;
-					floor.material.map.wrapT = THREE.RepeatWrapping;
-					floor.material.map.repeat.set(10, 10);
-					floor.receiveShadow = true;
-					floor.rotateX(-Math.PI / 2);
-					scene.add(floor);
-					/*
-					return;
-	
-					var bottom = new THREE.GridHelper(10, 1);
-					bottom.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
-					bottom.position.set(0, 0, 0);
-					scene.add(bottom);
-	
-					var top = new THREE.GridHelper(10, 1);
-					top.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
-					top.position.set(0, 20, 0);
-					scene.add(top);
-	
-					var front = new THREE.GridHelper(10, 1);
-					front.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
-					front.position.set(10, 10, 0);
-					front.rotation.z = Math.PI / 2;
-					scene.add(front);
-	
-					var back = new THREE.GridHelper(10, 1);
-					back.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
-					back.position.set(-10, 10, 0);
-					back.rotation.z = Math.PI / 2;
-					scene.add(back);
-	
-					var left = new THREE.GridHelper(10, 1);
-					left.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
-					left.position.set(0, 10, -10);
-					left.rotation.x = Math.PI / 2;
-					scene.add(left);
-	
-					var right = new THREE.GridHelper(10, 1);
-					right.setColors( new THREE.Color(0x666600), new THREE.Color(0x666600) );
-					right.position.set(0, 10, 10);
-					right.rotation.x = Math.PI / 2;
-					scene.add(right);
-					//*/
-				}
-			},
-	
 			//todo: wrap these?
 			camera: camera,
 			scene: scene,
@@ -674,6 +614,21 @@
 		};
 	
 		initRequirements();
+	
+		objectMethods.forEach(function (method) {
+			var VRObject = __webpack_require__(28),
+				creator = __webpack_require__(29)("./" + method);
+	
+			VR[method] = function (options) {
+				var obj = new VRObject(scene, creator, options);
+				return obj;
+			};
+	
+			VRObject.prototype[method] = function (options) {
+				var obj = new VRObject(this.object, creator, options);
+				return obj;
+			};
+		});
 	
 		eventEmitter(VR);
 	}());
@@ -785,7 +740,8 @@
 		}
 	
 		return {
-			imageTexture: imageTexture
+			imageTexture: imageTexture,
+			standard: new THREE.MeshLambertMaterial()
 		};
 	
 		//var parse = urlRegex.exec('https://lh5.googleusercontent.com:80/-SNO8rWDqbUM/U085rfOBRuI/AAAAAAAAEdM/nWEWCtNceZ0/w955-h382-no/PANO_20130225_131211.jpg');
@@ -37399,6 +37355,220 @@
 
 /***/ },
 /* 28 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(6),
+			THREE = __webpack_require__(7);
+	
+		function VRObject(parent, creator, options) {
+			var material;
+	
+			options = options || {};
+	
+			//todo: get material from options
+			this.object = creator(parent, options);
+			this.parent = this.object.parent || parent;
+	
+			this.object.position.set(
+				parseFloat(options.x) || 0,
+				parseFloat(options.y) || 0,
+				parseFloat(options.z) || 0
+			);
+	
+			if (options.color) {
+				material = this.object.material;
+				if (material === materials.standard) {
+					material = this.object.material = material.clone();
+				}
+				material.color = new THREE.Color(options.color);
+			}
+		}
+	
+		VRObject.prototype.moveTo = function (x, y, z) {
+			var position = this.object.position;
+	
+			x = !isNaN(x) ? x : position.x;
+			y = !isNaN(y) ? y : position.y;
+			z = !isNaN(z) ? z : position.z;
+	
+			position.set(x, y, z);
+	
+			return this;
+		};
+	
+		VRObject.prototype.scale = function (x, y, z) {
+			var scale = this.object.scale;
+	
+			if (x !== undefined && !isNaN(x)) {
+				if (y === undefined && z === undefined) {
+					y = z = x;
+				} else {
+					x = scale.x;
+				}
+			}
+	
+			x = !isNaN(x) ? x : scale.x;
+			y = !isNaN(y) ? y : scale.y;
+			z = !isNaN(z) ? z : scale.z;
+	
+			scale.multiply(new THREE.Vector3(x, y, z));
+	
+			return this;
+		};
+	
+		VRObject.prototype.setScale = function (x, y, z) {
+			var scale = this.object.scale;
+	
+			if (x !== undefined && !isNaN(x)) {
+				if (y === undefined && z === undefined) {
+					y = z = x;
+				} else {
+					x = scale.x;
+				}
+			}
+	
+			x = !isNaN(x) ? x : scale.x;
+			y = !isNaN(y) ? y : scale.y;
+			z = !isNaN(z) ? z : scale.z;
+	
+			scale.set(x, y, z);
+	
+			return this;
+		};
+	
+		return VRObject;
+	
+	}());
+
+/***/ },
+/* 29 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var map = {
+		"./box": 30,
+		"./box.js": 30,
+		"./cylinder": 31,
+		"./cylinder.js": 31,
+		"./floor": 32,
+		"./floor.js": 32
+	};
+	function webpackContext(req) {
+		return __webpack_require__(webpackContextResolve(req));
+	};
+	function webpackContextResolve(req) {
+		return map[req] || (function() { throw new Error("Cannot find module '" + req + "'.") }());
+	};
+	webpackContext.keys = function webpackContextKeys() {
+		return Object.keys(map);
+	};
+	webpackContext.resolve = webpackContextResolve;
+	module.exports = webpackContext;
+	webpackContext.id = 29;
+
+
+/***/ },
+/* 30 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(6),
+			THREE = __webpack_require__(7);
+	
+		function box(parent, options) {
+			var geometry,
+				cube;
+	
+			geometry = new THREE.BoxGeometry( 1, 1, 1 );
+			cube = new THREE.Mesh(geometry, materials.standard);
+	
+			parent.add(cube);
+	
+			return cube;
+		}
+	
+		return box;
+	}());
+
+/***/ },
+/* 31 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(6),
+			THREE = __webpack_require__(7);
+	
+		function cylinder(parent, options) {
+			var geometry,
+				mesh;
+	
+			geometry = new THREE.CylinderGeometry(
+				options.radiusTop === undefined ? 0.5 : options.radiusTop,
+				options.radiusBottom === undefined ? 0.5 : options.radiusBottom,
+				options.height === undefined ? 0.5 : options.height,
+				options.radiusSegments === undefined ? 16 : options.radiusSegments,
+				options.heightSegments,
+				options.openEnded
+			);
+			mesh = new THREE.Mesh(geometry, materials.standard);
+	
+			parent.add(mesh);
+	
+			return mesh;
+		}
+	
+		return cylinder;
+	}());
+
+/***/ },
+/* 32 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(6),
+			THREE = __webpack_require__(7);
+	
+		function floor(parent, options) {
+			var obj;
+	
+			obj = new THREE.Mesh(
+				new THREE.PlaneBufferGeometry(10, 10, 32),
+				new THREE.MeshPhongMaterial({
+					color: 0x999999,
+					specular: 0x111111,
+					//map: THREE.ImageUtils.loadTexture(require('url-loader!./images/checkerboard.png')),
+					map: materials.imageTexture(__webpack_require__(33)),
+	
+					shininess: 100,
+					shading: THREE.SmoothShading
+				})
+			);
+			obj.name = 'floor';
+	
+			obj.material.map.wrapS = THREE.RepeatWrapping;
+			obj.material.map.wrapT = THREE.RepeatWrapping;
+			obj.material.map.repeat.set(10, 10);
+			obj.receiveShadow = true;
+			obj.rotateX(-Math.PI / 2);
+	
+			parent.add(obj);
+	
+			return obj;
+		}
+	
+		return floor;
+	}());
+
+/***/ },
+/* 33 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAABlBMVEUsLCzp6enLhVdXAAAAAWJLR0QAiAUdSAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB94KFBIOCP7R3TQAAAA4SURBVGje7dAhEgAACMOw/f/T4Gc5XKqjmlRTBQAAAAAAAAAAAAAA4AiMAQAAAAAAAAAAAADgGSyKafDiEFszywAAAABJRU5ErkJggg=="
