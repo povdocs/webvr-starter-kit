@@ -5,7 +5,8 @@ module.exports = (function () {
 		THREE = require('three');
 
 	function VRObject(parent, creator, options) {
-		var material;
+		var material,
+			self = this;
 
 		options = options || {};
 
@@ -25,8 +26,21 @@ module.exports = (function () {
 				material = this.object.material = material.clone();
 			}
 			material.color = new THREE.Color(options.color);
+			material.ambient = material.color;
 		}
+
+		['position', 'scale', 'rotation', 'quaternion'].forEach(function (prop) {
+			self[prop] = self.object[prop];
+		});
 	}
+
+	VRObject.prototype.hide = function () {
+		this.object.visible = false;
+	};
+
+	VRObject.prototype.show = function () {
+		this.object.visible = true;
+	};
 
 	VRObject.prototype.moveTo = function (x, y, z) {
 		var position = this.object.position;
@@ -36,26 +50,6 @@ module.exports = (function () {
 		z = !isNaN(z) ? z : position.z;
 
 		position.set(x, y, z);
-
-		return this;
-	};
-
-	VRObject.prototype.scale = function (x, y, z) {
-		var scale = this.object.scale;
-
-		if (x !== undefined && !isNaN(x)) {
-			if (y === undefined && z === undefined) {
-				y = z = x;
-			} else {
-				x = scale.x;
-			}
-		}
-
-		x = !isNaN(x) ? x : scale.x;
-		y = !isNaN(y) ? y : scale.y;
-		z = !isNaN(z) ? z : scale.z;
-
-		scale.multiply(new THREE.Vector3(x, y, z));
 
 		return this;
 	};
