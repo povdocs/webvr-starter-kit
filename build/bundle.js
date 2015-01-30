@@ -428,6 +428,7 @@
 			objectMethods = [
 				'box',
 				'cylinder',
+				'empty',
 				'floor',
 				'panorama'
 			];
@@ -519,7 +520,7 @@
 	
 			//todo: remove any default lights once other lights are added
 			var directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-			directionalLight.position.set(10, 100, 100);
+			directionalLight.position.set(50, 100, 100);
 			scene.add(directionalLight);
 	
 			scene.add(new THREE.AmbientLight(0x444444));
@@ -37429,10 +37430,12 @@
 		"./box.js": 30,
 		"./cylinder": 31,
 		"./cylinder.js": 31,
-		"./floor": 32,
-		"./floor.js": 32,
-		"./panorama": 34,
-		"./panorama.js": 34
+		"./empty": 32,
+		"./empty.js": 32,
+		"./floor": 33,
+		"./floor.js": 33,
+		"./panorama": 35,
+		"./panorama.js": 35
 	};
 	function webpackContext(req) {
 		return __webpack_require__(webpackContextResolve(req));
@@ -37458,7 +37461,7 @@
 		var materials = __webpack_require__(6),
 			THREE = __webpack_require__(7);
 	
-		function box(parent, options) {
+		return function box(parent, options) {
 			var geometry,
 				cube;
 	
@@ -37468,9 +37471,7 @@
 			parent.add(cube);
 	
 			return cube;
-		}
-	
-		return box;
+		};
 	}());
 
 /***/ },
@@ -37515,6 +37516,25 @@
 		var materials = __webpack_require__(6),
 			THREE = __webpack_require__(7);
 	
+		return function empty(parent, options) {
+			var obj = new THREE.Object3D();
+	
+			parent.add(obj);
+	
+			return obj;
+		};
+	}());
+
+/***/ },
+/* 33 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(6),
+			THREE = __webpack_require__(7);
+	
 		function floor(parent, options) {
 			var obj;
 	
@@ -37524,7 +37544,7 @@
 					color: 0x999999,
 					specular: 0x111111,
 					//map: THREE.ImageUtils.loadTexture(require('url-loader!./images/checkerboard.png')),
-					map: materials.imageTexture(__webpack_require__(33)),
+					map: materials.imageTexture(__webpack_require__(34)),
 	
 					shininess: 100,
 					shading: THREE.SmoothShading
@@ -37547,13 +37567,13 @@
 	}());
 
 /***/ },
-/* 33 */
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAABlBMVEUsLCzp6enLhVdXAAAAAWJLR0QAiAUdSAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB94KFBIOCP7R3TQAAAA4SURBVGje7dAhEgAACMOw/f/T4Gc5XKqjmlRTBQAAAAAAAAAAAAAA4AiMAQAAAAAAAAAAAADgGSyKafDiEFszywAAAABJRU5ErkJggg=="
 
 /***/ },
-/* 34 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = (function () {

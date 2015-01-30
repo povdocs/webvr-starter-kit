@@ -29,6 +29,7 @@
 		objectMethods = [
 			'box',
 			'cylinder',
+			'empty',
 			'floor',
 			'panorama'
 		];
@@ -120,7 +121,7 @@
 
 		//todo: remove any default lights once other lights are added
 		var directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-		directionalLight.position.set(10, 100, 100);
+		directionalLight.position.set(50, 100, 100);
 		scene.add(directionalLight);
 
 		scene.add(new THREE.AmbientLight(0x444444));

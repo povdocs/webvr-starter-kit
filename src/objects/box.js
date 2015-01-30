@@ -4,7 +4,7 @@ module.exports = (function () {
 	var materials = require('../materials'),
 		THREE = require('three');
 
-	function box(parent, options) {
+	return function box(parent, options) {
 		var geometry,
 			cube;
 
@@ -14,7 +14,5 @@ module.exports = (function () {
 		parent.add(cube);
 
 		return cube;
-	}
-
-	return box;
+	};
 }());
