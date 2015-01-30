@@ -32,12 +32,24 @@
 			'empty',
 			'floor',
 			'panorama'
-		];
+		],
+
+		lastTick = 0,
+		animationCallbacks = [];
 
 	function render() {
+		var now = Date.now() / 1000,
+			delta = Math.max(1, now - lastTick);
+
 		vrControls.update();
 
+		animationCallbacks.forEach(function (cb) {
+			cb(delta, now);
+		});
+
 		vrEffect.render(scene, camera);
+
+		lastTick = now;
 	}
 
 	function renderLoop() {
@@ -172,6 +184,32 @@
 		THREE: THREE,
 
 		materials: materials,
+
+		animate: function (callback) {
+			var i;
+			if (typeof callback === 'function') {
+				i = animationCallbacks.indexOf(callback);
+				if (i < 0) {
+					animationCallbacks.push(callback);
+				}
+			}
+		},
+
+		end: function (callback) {
+			var i;
+
+			if (!callback) {
+				animationCallbacks.length = 0;
+				return;
+			}
+
+			if (typeof callback === 'function') {
+				i = animationCallbacks.indexOf(callback);
+				if (i >= 0) {
+					animationCallbacks.splice(i, 1);
+				}
+			}
+		},
 
 		requestFullScreen: function () {},
 		zeroSensor: function () {},

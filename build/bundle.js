@@ -431,12 +431,24 @@
 				'empty',
 				'floor',
 				'panorama'
-			];
+			],
+	
+			lastTick = 0,
+			animationCallbacks = [];
 	
 		function render() {
+			var now = Date.now() / 1000,
+				delta = Math.max(1, now - lastTick);
+	
 			vrControls.update();
 	
+			animationCallbacks.forEach(function (cb) {
+				cb(delta, now);
+			});
+	
 			vrEffect.render(scene, camera);
+	
+			lastTick = now;
 		}
 	
 		function renderLoop() {
@@ -571,6 +583,32 @@
 			THREE: THREE,
 	
 			materials: materials,
+	
+			animate: function (callback) {
+				var i;
+				if (typeof callback === 'function') {
+					i = animationCallbacks.indexOf(callback);
+					if (i < 0) {
+						animationCallbacks.push(callback);
+					}
+				}
+			},
+	
+			end: function (callback) {
+				var i;
+	
+				if (!callback) {
+					animationCallbacks.length = 0;
+					return;
+				}
+	
+				if (typeof callback === 'function') {
+					i = animationCallbacks.indexOf(callback);
+					if (i >= 0) {
+						animationCallbacks.splice(i, 1);
+					}
+				}
+			},
 	
 			requestFullScreen: function () {},
 			zeroSensor: function () {},
@@ -37435,7 +37473,9 @@
 		"./floor": 33,
 		"./floor.js": 33,
 		"./panorama": 35,
-		"./panorama.js": 35
+		"./panorama.js": 35,
+		"./torus": 36,
+		"./torus.js": 36
 	};
 	function webpackContext(req) {
 		return __webpack_require__(webpackContextResolve(req));
@@ -37536,10 +37576,14 @@
 			THREE = __webpack_require__(7);
 	
 		function floor(parent, options) {
-			var obj;
+			var obj,
+				geometry;
+	
+			geometry = new THREE.PlaneBufferGeometry(10, 10, 32);
+			geometry.applyMatrix( new THREE.Matrix4().makeRotationX(-Math.PI / 2));
 	
 			obj = new THREE.Mesh(
-				new THREE.PlaneBufferGeometry(10, 10, 32),
+				geometry,
 				new THREE.MeshPhongMaterial({
 					color: 0x999999,
 					specular: 0x111111,
@@ -37556,7 +37600,6 @@
 			obj.material.map.wrapT = THREE.RepeatWrapping;
 			obj.material.map.repeat.set(10, 10);
 			obj.receiveShadow = true;
-			obj.rotateX(-Math.PI / 2);
 	
 			parent.add(obj);
 	
@@ -37610,6 +37653,35 @@
 	
 			mesh = new THREE.Mesh( geometry, material );
 			mesh.rotation.set( 0, -90 * Math.PI / 180, 0 );
+	
+			parent.add(mesh);
+	
+			return mesh;
+		};
+	}());
+
+/***/ },
+/* 36 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(6),
+			THREE = __webpack_require__(7);
+	
+		return function torus(parent, options) {
+			var geometry,
+				mesh;
+	
+			geometry = new THREE.TorusGeometry(
+				options.radius === undefined ? 1 : options.radius,
+				options.tube === undefined ? 0.25 : options.tube,
+				options.radialSegments === undefined ? 12 : options.radialSegments,
+				options.tubularSegments === undefined ? 16 : options.tubularSegments,
+				options.arc
+			);
+			mesh = new THREE.Mesh(geometry, materials.standard);
 	
 			parent.add(mesh);
 	
