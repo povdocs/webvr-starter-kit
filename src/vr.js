@@ -29,6 +29,7 @@
 		objectMethods = [
 			'box',
 			'cylinder',
+			'torus',
 			'empty',
 			'floor',
 			'panorama'
