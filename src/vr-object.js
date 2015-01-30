@@ -6,22 +6,32 @@ module.exports = (function () {
 
 	function VRObject(parent, creator, options) {
 		var material,
+			object,
 			self = this;
 
 		options = options || {};
 
 		//todo: get material from options
-		this.object = creator(parent, options);
+		this.object = object = creator(parent, options);
 		this.parent = this.object.parent || parent;
 
-		this.object.position.set(
+		if (object instanceof THREE.Mesh) {
+			if (options.castShadow !== false) {
+				object.castShadow = true;
+			}
+			if (options.receiveShadow !== false) {
+				object.receiveShadow = true;
+			}
+		}
+
+		object.position.set(
 			parseFloat(options.x) || 0,
 			parseFloat(options.y) || 0,
 			parseFloat(options.z) || 0
 		);
 
 		if (options.color) {
-			material = this.object.material;
+			material = object.material;
 			if (material === materials.standard) {
 				material = this.object.material = material.clone();
 			}
@@ -30,7 +40,7 @@ module.exports = (function () {
 		}
 
 		['position', 'scale', 'rotation', 'quaternion'].forEach(function (prop) {
-			self[prop] = self.object[prop];
+			self[prop] = object[prop];
 		});
 	}
 

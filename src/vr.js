@@ -87,6 +87,7 @@
 
 		//create renderer and place in document
 		renderer = new THREE.WebGLRenderer();
+		renderer.shadowMapEnabled = true;
 		document.body.insertBefore(renderer.domElement, document.body.firstChild || null);
 
 		//need a scene to put all our objects in
@@ -133,9 +134,26 @@
 		mouseControls = new THREE.OrbitControls(camera);
 
 		//todo: remove any default lights once other lights are added
-		var directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-		directionalLight.position.set(50, 100, 100);
-		scene.add(directionalLight);
+		var dLight = new THREE.DirectionalLight(0xffffff, 0.8);
+		dLight.position.set(50, 100, 100);
+
+		dLight.castShadow = true;
+		dLight.shadowMapWidth = 1024;
+		dLight.shadowMapHeight = 1024;
+		dLight.shadowCameraVisible = true;
+
+		var d = 300;
+
+		dLight.shadowCameraLeft = -d;
+		dLight.shadowCameraRight = d;
+		dLight.shadowCameraTop = d;
+		dLight.shadowCameraBottom = -d;
+
+		dLight.shadowCameraFar = 200;
+		dLight.shadowCameraNear = 10;
+		dLight.shadowDarkness = 1;
+
+		scene.add(dLight);
 
 		scene.add(new THREE.AmbientLight(0x444444));
 
