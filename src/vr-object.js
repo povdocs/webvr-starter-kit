@@ -84,6 +84,26 @@ module.exports = (function () {
 		return this;
 	};
 
+	VRObject.repeat = function (count, options) {
+		var i,
+			change = false,
+			lastObject = this,
+			currentPosition = new THREE.Vector3(),
+			deltaPosition = new THREE.Vector3(),
+			currentQuaternion = new THREE.Quaternion(),
+			deltaQuaternion = new THREE.Quaternion();
+
+		if (!options) {
+			return;
+		}
+
+		if (options.offset) {}
+
+		for (i = 0; i < count; i++) {
+
+		}
+	};
+
 	return VRObject;
 
 }());

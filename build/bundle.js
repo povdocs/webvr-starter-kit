@@ -428,6 +428,7 @@
 			objectMethods = [
 				'box',
 				'cylinder',
+				'torus',
 				'empty',
 				'floor',
 				'panorama'
@@ -485,6 +486,7 @@
 	
 			//create renderer and place in document
 			renderer = new THREE.WebGLRenderer();
+			renderer.shadowMapEnabled = true;
 			document.body.insertBefore(renderer.domElement, document.body.firstChild || null);
 	
 			//need a scene to put all our objects in
@@ -531,9 +533,26 @@
 			mouseControls = new THREE.OrbitControls(camera);
 	
 			//todo: remove any default lights once other lights are added
-			var directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-			directionalLight.position.set(50, 100, 100);
-			scene.add(directionalLight);
+			var dLight = new THREE.DirectionalLight(0xffffff, 0.8);
+			dLight.position.set(50, 100, 100);
+	
+			dLight.castShadow = true;
+			dLight.shadowMapWidth = 1024;
+			dLight.shadowMapHeight = 1024;
+			dLight.shadowCameraVisible = true;
+	
+			var d = 300;
+	
+			dLight.shadowCameraLeft = -d;
+			dLight.shadowCameraRight = d;
+			dLight.shadowCameraTop = d;
+			dLight.shadowCameraBottom = -d;
+	
+			dLight.shadowCameraFar = 200;
+			dLight.shadowCameraNear = 10;
+			dLight.shadowDarkness = 1;
+	
+			scene.add(dLight);
 	
 			scene.add(new THREE.AmbientLight(0x444444));
 	
@@ -37387,22 +37406,32 @@
 	
 		function VRObject(parent, creator, options) {
 			var material,
+				object,
 				self = this;
 	
 			options = options || {};
 	
 			//todo: get material from options
-			this.object = creator(parent, options);
+			this.object = object = creator(parent, options);
 			this.parent = this.object.parent || parent;
 	
-			this.object.position.set(
+			if (object instanceof THREE.Mesh) {
+				if (options.castShadow !== false) {
+					object.castShadow = true;
+				}
+				if (options.receiveShadow !== false) {
+					object.receiveShadow = true;
+				}
+			}
+	
+			object.position.set(
 				parseFloat(options.x) || 0,
 				parseFloat(options.y) || 0,
 				parseFloat(options.z) || 0
 			);
 	
 			if (options.color) {
-				material = this.object.material;
+				material = object.material;
 				if (material === materials.standard) {
 					material = this.object.material = material.clone();
 				}
@@ -37411,7 +37440,7 @@
 			}
 	
 			['position', 'scale', 'rotation', 'quaternion'].forEach(function (prop) {
-				self[prop] = self.object[prop];
+				self[prop] = object[prop];
 			});
 		}
 	
@@ -37453,6 +37482,26 @@
 			scale.set(x, y, z);
 	
 			return this;
+		};
+	
+		VRObject.repeat = function (count, options) {
+			var i,
+				change = false,
+				lastObject = this,
+				currentPosition = new THREE.Vector3(),
+				deltaPosition = new THREE.Vector3(),
+				currentQuaternion = new THREE.Quaternion(),
+				deltaQuaternion = new THREE.Quaternion();
+	
+			if (!options) {
+				return;
+			}
+	
+			if (options.offset) {}
+	
+			for (i = 0; i < count; i++) {
+	
+			}
 		};
 	
 		return VRObject;

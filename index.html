@@ -6,7 +6,7 @@
     <body>
         <script type="text/javascript" src="build/bundle.js" charset="utf-8"></script>
         <script type="text/javascript">
-            floor = VR.floor();
+            VR.floor();
             VR.panorama('http://i.imgur.com/6QW3fZI.jpg');
             var box = VR.box({
                 color: 0x1111DD,
@@ -14,16 +14,18 @@
                 y: 1,
                 z: -2.5
             });
+
             box.box()
                 .moveTo(1, 0, 0)
                 .setScale(0.5);
             VR.cylinder()
                 .moveTo(1, 1, -2);
-
+            VR.torus().moveTo(0, 1, 2);
 
             VR.animate(function (delta) {
                 box.object.rotation.y += delta / 100;
             });
+
         </script>
     </body>
 </html>
