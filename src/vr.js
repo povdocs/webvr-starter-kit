@@ -98,9 +98,10 @@
 				document.mozFullScreenElement ||
 				document.webkitFullscreenElement;
 
-			vrControls.freeze = !(vrEffect.isFullscreen() || vrEffect.vrPreview() || fs && vrControls.mode);
+			vrControls.freeze = !(vrEffect.isFullscreen() || vrEffect.vrPreview() || fs && vrControls.mode() === 'deviceorientation');
 			if (vrControls.freeze) {
 				vrControls.reset();
+				camera.position.z = 0.0001;
 			}
 		});
 
@@ -167,11 +168,18 @@
 		requestFullScreen: function () {},
 		zeroSensor: function () {},
 		preview: function () {
+			var fs;
 			if (vrEffect && !vrEffect.isFullscreen()) {
 				vrEffect.vrPreview(!vrEffect.vrPreview());
-				vrControls.freeze = !vrEffect.vrPreview();
+
+				fs = document.fullscreenElement ||
+					document.mozFullScreenElement ||
+					document.webkitFullscreenElement;
+
+				vrControls.freeze = !(vrEffect.isFullscreen() || vrEffect.vrPreview() || vrControls.mode() === 'deviceorientation');
 				if (vrControls.freeze) {
 					vrControls.reset();
+					camera.position.z = 0.0001;
 				}
 			}
 		},
@@ -214,9 +222,9 @@
 				floor.position.y = 0;
 				floor.name = 'floor';
 
-				// floor.material.map.wrapS = THREE.RepeatWrapping;
-				// floor.material.map.wrapT = THREE.RepeatWrapping;
-				// floor.material.map.repeat.set(10, 10);
+				floor.material.map.wrapS = THREE.RepeatWrapping;
+				floor.material.map.wrapT = THREE.RepeatWrapping;
+				floor.material.map.repeat.set(10, 10);
 				floor.receiveShadow = true;
 				floor.rotateX(-Math.PI / 2);
 				scene.add(floor);
