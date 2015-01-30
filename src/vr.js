@@ -29,7 +29,8 @@
 		objectMethods = [
 			'box',
 			'cylinder',
-			'floor'
+			'floor',
+			'panorama'
 		];
 
 	function render() {
@@ -188,26 +189,6 @@
 					camera.position.z = 0.0001;
 				}
 			}
-		},
-
-		panorama: function (src) {
-			var geometry = new THREE.SphereGeometry( 1000, 60, 60 );
-			geometry.applyMatrix( new THREE.Matrix4().makeScale( -1, 1, 1 ) );
-
-			var material = new THREE.MeshBasicMaterial({
-				side: THREE.DoubleSide,
-				transparent: true,
-				map: materials.imageTexture( // placeholder rexture
-					src,
-					THREE.UVMapping
-				)
-			});
-
-			var pano = new THREE.Mesh( geometry, material );
-			//pano.renderDepth = 2;
-			pano.rotation.set( 0, -90 * Math.PI / 180, 0 );
-
-			scene.add(pano);
 		},
 
 		//todo: wrap these?
