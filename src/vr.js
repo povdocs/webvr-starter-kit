@@ -118,9 +118,11 @@
 		mouseControls = new THREE.OrbitControls(camera);
 
 		//todo: remove any default lights once other lights are added
-		var directionalLight = new THREE.DirectionalLight( 0xffffff, 1.475 );
-		directionalLight.position.set( 100, 100, -100 );
-		scene.add( directionalLight );
+		var directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+		directionalLight.position.set(10, 100, 100);
+		scene.add(directionalLight);
+
+		scene.add(new THREE.AmbientLight(0x444444));
 
 		if (VR) {
 			VR.camera = camera;
