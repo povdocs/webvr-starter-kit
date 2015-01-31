@@ -77,7 +77,7 @@
 
 		camera.aspect = width / height;
 		camera.updateProjectionMatrix();
-		renderer.setSize(width, height);
+		//renderer.setSize(width, height);
 	}
 
 	function initScene() {
@@ -88,6 +88,7 @@
 		//create renderer and place in document
 		renderer = new THREE.WebGLRenderer();
 		renderer.shadowMapEnabled = true;
+		renderer.shadowMapSoft = true;
 		document.body.insertBefore(renderer.domElement, document.body.firstChild || null);
 
 		//need a scene to put all our objects in
@@ -135,22 +136,21 @@
 
 		//todo: remove any default lights once other lights are added
 		var dLight = new THREE.DirectionalLight(0xffffff, 0.8);
-		dLight.position.set(50, 100, 100);
+		dLight.position.set(2, 10, 10);
 
 		dLight.castShadow = true;
-		dLight.shadowMapWidth = 1024;
-		dLight.shadowMapHeight = 1024;
 		dLight.shadowCameraVisible = true;
 
-		var d = 300;
+		dLight.shadowMapWidth = 2048;
+		dLight.shadowMapHeight = 2048;
 
-		dLight.shadowCameraLeft = -d;
-		dLight.shadowCameraRight = d;
-		dLight.shadowCameraTop = d;
-		dLight.shadowCameraBottom = -d;
+		dLight.shadowCameraLeft = -10;
+		dLight.shadowCameraRight = 10;
+		dLight.shadowCameraTop = 10;
+		dLight.shadowCameraBottom = -10;
 
-		dLight.shadowCameraFar = 200;
-		dLight.shadowCameraNear = 10;
+		dLight.shadowCameraFar = 50;
+		dLight.shadowCameraNear = 3;
 		dLight.shadowDarkness = 1;
 
 		scene.add(dLight);

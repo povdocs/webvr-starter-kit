@@ -9,8 +9,8 @@ module.exports = (function () {
 			mesh;
 
 		geometry = new THREE.TorusGeometry(
-			options.radius === undefined ? 1 : options.radius,
-			options.tube === undefined ? 0.25 : options.tube,
+			options.radius === undefined ? 0.5 : options.radius,
+			options.tube === undefined ? 0.125 : options.tube,
 			options.radialSegments === undefined ? 12 : options.radialSegments,
 			options.tubularSegments === undefined ? 16 : options.tubularSegments,
 			options.arc

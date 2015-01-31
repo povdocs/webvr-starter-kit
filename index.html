@@ -15,15 +15,13 @@
                 z: -2.5
             });
 
-            box.box()
-                .moveTo(1, 0, 0)
-                .setScale(0.5);
-            VR.cylinder()
-                .moveTo(1, 1, -2);
-            VR.torus().moveTo(0, 1, 2);
+            box.box().moveTo(1, 0, 0).setScale(0.5);
+            VR.cylinder().moveTo(1, 1, -2);
+            var torus = VR.torus().moveTo(3, 2, 0);
 
             VR.animate(function (delta) {
                 box.object.rotation.y += delta / 100;
+                torus.object.rotation.y += delta / 100;
             });
 
         </script>

@@ -160,8 +160,8 @@
 	// Hot Module Replacement
 	if(false) {
 		// When the styles change, update the <style> tags
-		module.hot.accept("!!/Volumes/WebDept/techfellow/webvr-starter-kit/node_modules/css-loader/index.js!/Volumes/WebDept/techfellow/webvr-starter-kit/src/css/style.css", function() {
-			var newContent = require("!!/Volumes/WebDept/techfellow/webvr-starter-kit/node_modules/css-loader/index.js!/Volumes/WebDept/techfellow/webvr-starter-kit/src/css/style.css");
+		module.hot.accept("!!/Users/brianchirls/www/VR/webvr-starter-kit/node_modules/css-loader/index.js!/Users/brianchirls/www/VR/webvr-starter-kit/src/css/style.css", function() {
+			var newContent = require("!!/Users/brianchirls/www/VR/webvr-starter-kit/node_modules/css-loader/index.js!/Users/brianchirls/www/VR/webvr-starter-kit/src/css/style.css");
 			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 			update(newContent);
 		});
@@ -476,7 +476,7 @@
 	
 			camera.aspect = width / height;
 			camera.updateProjectionMatrix();
-			renderer.setSize(width, height);
+			//renderer.setSize(width, height);
 		}
 	
 		function initScene() {
@@ -487,6 +487,7 @@
 			//create renderer and place in document
 			renderer = new THREE.WebGLRenderer();
 			renderer.shadowMapEnabled = true;
+			renderer.shadowMapSoft = true;
 			document.body.insertBefore(renderer.domElement, document.body.firstChild || null);
 	
 			//need a scene to put all our objects in
@@ -534,22 +535,21 @@
 	
 			//todo: remove any default lights once other lights are added
 			var dLight = new THREE.DirectionalLight(0xffffff, 0.8);
-			dLight.position.set(50, 100, 100);
+			dLight.position.set(2, 10, 10);
 	
 			dLight.castShadow = true;
-			dLight.shadowMapWidth = 1024;
-			dLight.shadowMapHeight = 1024;
 			dLight.shadowCameraVisible = true;
 	
-			var d = 300;
+			dLight.shadowMapWidth = 2048;
+			dLight.shadowMapHeight = 2048;
 	
-			dLight.shadowCameraLeft = -d;
-			dLight.shadowCameraRight = d;
-			dLight.shadowCameraTop = d;
-			dLight.shadowCameraBottom = -d;
+			dLight.shadowCameraLeft = -10;
+			dLight.shadowCameraRight = 10;
+			dLight.shadowCameraTop = 10;
+			dLight.shadowCameraBottom = -10;
 	
-			dLight.shadowCameraFar = 200;
-			dLight.shadowCameraNear = 10;
+			dLight.shadowCameraFar = 50;
+			dLight.shadowCameraNear = 3;
 			dLight.shadowDarkness = 1;
 	
 			scene.add(dLight);
@@ -36000,10 +36000,6 @@
 	
 		function onMouseDown( event ) {
 	
-			if (event.button !== THREE.MOUSE.LEFT) {
-				return;
-			}
-	
 			if ( scope.enabled === false ) return;
 			event.preventDefault();
 	
@@ -36031,8 +36027,8 @@
 			}
 	
 			if ( state !== STATE.NONE ) {
-				window.addEventListener( 'mousemove', onMouseMove, false );
-				window.addEventListener( 'mouseup', onMouseUp, false );
+				document.addEventListener( 'mousemove', onMouseMove, false );
+				document.addEventListener( 'mouseup', onMouseUp, false );
 				scope.dispatchEvent( startEvent );
 			}
 	
@@ -36101,8 +36097,8 @@
 	
 			if ( scope.enabled === false ) return;
 	
-			//window.removeEventListener( 'mousemove', onMouseMove, false );
-			window.removeEventListener( 'mouseup', onMouseUp, false );
+			document.removeEventListener( 'mousemove', onMouseMove, false );
+			document.removeEventListener( 'mouseup', onMouseUp, false );
 			scope.dispatchEvent( endEvent );
 			state = STATE.NONE;
 	
@@ -36307,7 +36303,7 @@
 	
 		}
 	
-		//this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
+		this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
 		this.domElement.addEventListener( 'mousedown', onMouseDown, false );
 		this.domElement.addEventListener( 'mousewheel', onMouseWheel, false );
 		this.domElement.addEventListener( 'DOMMouseScroll', onMouseWheel, false ); // firefox
@@ -36318,7 +36314,6 @@
 	
 		window.addEventListener( 'keydown', onKeyDown, false );
 	
-	//window.addEventListener( 'mousemove', onMouseMove, true );
 		// force an update at start
 		this.update();
 	
@@ -36936,8 +36931,8 @@
 			var w, h;
 	
 			if (hmdDevice && vrMode) {
-				w = hmdWidth / Math.pow(window.devicePixelRatio || 1, 2);
-				h = hmdHeight / Math.pow(window.devicePixelRatio || 1, 2);
+				w = hmdWidth;// / Math.pow(window.devicePixelRatio || 1, 2);
+				h = hmdHeight;// / Math.pow(window.devicePixelRatio || 1, 2);
 			} else {
 				w = width || renderer.domElement.offsetWidth || window.innerWidth;
 				h = height || renderer.domElement.offsetHeight || window.innerHeight;
@@ -37084,7 +37079,6 @@
 	
 		this.requestFullScreen = function () {
 			vrMode = true;
-			resize();
 			requestFullscreen();
 		};
 	

@@ -73,8 +73,8 @@ THREE.VRStereoEffect = function ( renderer, fullScreenElement, options ) {
 		var w, h;
 
 		if (hmdDevice && vrMode) {
-			w = hmdWidth / Math.pow(window.devicePixelRatio || 1, 2);
-			h = hmdHeight / Math.pow(window.devicePixelRatio || 1, 2);
+			w = hmdWidth;// / Math.pow(window.devicePixelRatio || 1, 2);
+			h = hmdHeight;// / Math.pow(window.devicePixelRatio || 1, 2);
 		} else {
 			w = width || renderer.domElement.offsetWidth || window.innerWidth;
 			h = height || renderer.domElement.offsetHeight || window.innerHeight;
@@ -221,7 +221,6 @@ THREE.VRStereoEffect = function ( renderer, fullScreenElement, options ) {
 
 	this.requestFullScreen = function () {
 		vrMode = true;
-		resize();
 		requestFullscreen();
 	};
 
