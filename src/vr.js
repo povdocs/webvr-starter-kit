@@ -87,8 +87,8 @@
 
 		//create renderer and place in document
 		renderer = new THREE.WebGLRenderer();
-		renderer.shadowMapEnabled = true;
-		renderer.shadowMapSoft = true;
+		// renderer.shadowMapEnabled = true;
+		// renderer.shadowMapSoft = true;
 		document.body.insertBefore(renderer.domElement, document.body.firstChild || null);
 
 		//need a scene to put all our objects in
