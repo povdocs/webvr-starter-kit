@@ -431,7 +431,8 @@
 				'torus',
 				'empty',
 				'floor',
-				'panorama'
+				'panorama',
+				'image'
 			],
 	
 			lastTick = 0,
@@ -486,8 +487,8 @@
 	
 			//create renderer and place in document
 			renderer = new THREE.WebGLRenderer();
-			renderer.shadowMapEnabled = true;
-			renderer.shadowMapSoft = true;
+			// renderer.shadowMapEnabled = true;
+			// renderer.shadowMapSoft = true;
 			document.body.insertBefore(renderer.domElement, document.body.firstChild || null);
 	
 			//need a scene to put all our objects in
@@ -737,7 +738,7 @@
 	
 			images = {};
 	
-		function imageTexture(src, mapping) {
+		function imageTexture(src, mapping, callback) {
 			var image,
 				parse,
 				texture,
@@ -770,10 +771,16 @@
 			if (image.naturalWidth || isDataUri) {
 				texture.image = image;
 				texture.needsUpdate = true;
+				if (typeof callback === 'function') {
+					setTimeout(callback.bind(null, texture, image), 1);
+				}
 			} else {
 				image.addEventListener('load', function () {
 					texture.image = image;
 					texture.needsUpdate = true;
+					if (typeof callback === 'function') {
+						callback(texture, image);
+					}
 				});
 			}
 	
@@ -37515,10 +37522,12 @@
 		"./empty.js": 32,
 		"./floor": 33,
 		"./floor.js": 33,
-		"./panorama": 35,
-		"./panorama.js": 35,
-		"./torus": 36,
-		"./torus.js": 36
+		"./image": 35,
+		"./image.js": 35,
+		"./panorama": 36,
+		"./panorama.js": 36,
+		"./torus": 37,
+		"./torus.js": 37
 	};
 	function webpackContext(req) {
 		return __webpack_require__(webpackContextResolve(req));
@@ -37622,7 +37631,7 @@
 			var obj,
 				geometry;
 	
-			geometry = new THREE.PlaneBufferGeometry(10, 10, 32);
+			geometry = new THREE.PlaneBufferGeometry(10, 10, 8);
 			geometry.applyMatrix( new THREE.Matrix4().makeRotationX(-Math.PI / 2));
 	
 			obj = new THREE.Mesh(
@@ -37668,6 +37677,59 @@
 		var materials = __webpack_require__(6),
 			THREE = __webpack_require__(7);
 	
+		return function image(parent, options) {
+			var geometry,
+				material,
+				mesh,
+				src,
+				tex;
+	
+			if (typeof options === 'string') {
+				src = options;
+			} else if (options) {
+				src = options.src;
+			}
+	
+			if (src) {
+				tex = materials.imageTexture(src, THREE.UVMapping, function (t, image) {
+					geometry.applyMatrix(new THREE.Matrix4().makeScale(1, image.naturalHeight / image.naturalWidth, 1));
+					material.map = tex;
+					material.visible = true;
+					mesh.visible = true;
+					parent.add(mesh);
+				});
+			}
+	
+			geometry = new THREE.PlaneBufferGeometry(1, 1, 8);
+			geometry.applyMatrix( new THREE.Matrix4().makeRotationY(Math.PI / 2));
+	
+			material = new THREE.MeshBasicMaterial({
+				side: THREE.DoubleSide,
+				transparent: true,
+				map: tex
+			});
+	
+			mesh = new THREE.Mesh( geometry, material );
+			mesh.rotation.set( 0, -90 * Math.PI / 180, 0 );
+	
+			//mesh.visible = false;
+	
+			parent.add(mesh);
+	
+			return mesh;
+		};
+	}());
+
+/***/ },
+/* 36 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(6),
+			THREE = __webpack_require__(7);
+	
 		return function panorama(parent, options) {
 			var geometry,
 				material,
@@ -37704,7 +37766,7 @@
 	}());
 
 /***/ },
-/* 36 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = (function () {
@@ -37718,8 +37780,8 @@
 				mesh;
 	
 			geometry = new THREE.TorusGeometry(
-				options.radius === undefined ? 1 : options.radius,
-				options.tube === undefined ? 0.25 : options.tube,
+				options.radius === undefined ? 0.5 : options.radius,
+				options.tube === undefined ? 0.125 : options.tube,
 				options.radialSegments === undefined ? 12 : options.radialSegments,
 				options.tubularSegments === undefined ? 16 : options.tubularSegments,
 				options.arc

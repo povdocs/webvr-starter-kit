@@ -56,7 +56,7 @@ module.exports = (function () {
 
 		images = {};
 
-	function imageTexture(src, mapping) {
+	function imageTexture(src, mapping, callback) {
 		var image,
 			parse,
 			texture,
@@ -89,10 +89,16 @@ module.exports = (function () {
 		if (image.naturalWidth || isDataUri) {
 			texture.image = image;
 			texture.needsUpdate = true;
+			if (typeof callback === 'function') {
+				setTimeout(callback.bind(null, texture, image), 1);
+			}
 		} else {
 			image.addEventListener('load', function () {
 				texture.image = image;
 				texture.needsUpdate = true;
+				if (typeof callback === 'function') {
+					callback(texture, image);
+				}
 			});
 		}
 

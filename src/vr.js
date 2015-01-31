@@ -32,7 +32,8 @@
 			'torus',
 			'empty',
 			'floor',
-			'panorama'
+			'panorama',
+			'image'
 		],
 
 		lastTick = 0,
