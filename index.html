@@ -21,17 +21,26 @@
             VR.cylinder().moveTo(1, 1, -2);
             var torus = VR.torus().moveTo(3, 2, 0);
 
+            var oldColor = new THREE.Color();
             VR.on('lookat', function () {
-                console.log('lookat', VR.target);
+                oldColor.copy(VR.target.material.color);
+                VR.target.material.color.setRGB(1, 0.8, 0.8);
             });
 
             VR.on('lookoff', function (target) {
-                console.log('lookat', target);
+                //console.log('lookat', target);
+                VR.target.material.color.copy(oldColor);
             });
 
             VR.animate(function (delta) {
                 box.object.rotation.y += delta / 100;
                 torus.object.rotation.y += delta / 100;
+            });
+
+            VR.on('shake', function () {
+                var hueShift = Math.random();
+                box.object.material.color.offsetHSL(hueShift, 0, 0);
+                box.object.material.ambient.copy(box.object.material.color);
             });
 
         </script>

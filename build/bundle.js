@@ -458,6 +458,7 @@
 				}
 			}
 	
+			//todo: emit VRObject?
 			if (target !== object) {
 				if (target) {
 					VR.emit('lookoff', target);
@@ -513,6 +514,53 @@
 			//renderer.setSize(width, height);
 		}
 	
+		function initShake() {
+			var lastTime = 0,
+				lastX,
+				lastY,
+				lastZ,
+				threshold = 15;
+	
+			window.addEventListener('devicemotion', function (evt) {
+				var current = evt.accelerationIncludingGravity,
+					time,
+					diff,
+					deltaX = 0,
+					deltaY = 0,
+					deltaZ = 0,
+					dist;
+	
+				if (lastX !== undefined) {
+					deltaX = Math.abs(lastX - current.x);
+					deltaY = Math.abs(lastY - current.y);
+					deltaZ = Math.abs(lastZ - current.z);
+	
+					// if (deltaX > threshold &&
+					// 		(deltaY > threshold || deltaZ > threshold)
+					// 	) {
+					dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
+					if (dist > threshold) {
+	
+						time = Date.now();
+						diff = time - lastTime;
+						if (diff > 1000) {
+							if (navigator.vibrate) {
+								navigator.vibrate(100);
+							}
+	
+							lastTime = Date.now();
+	
+							VR.emit('shake');
+						}
+					}
+				}
+	
+				lastX = current.x;
+				lastY = current.y;
+				lastZ = current.z;
+			}, false);
+		}
+	
 		function initScene() {
 			if (renderer) {
 				return;
@@ -531,6 +579,7 @@
 			camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, NEAR, FAR);
 	
 			// set camera position so that OrbitControls works properly.
+			camera.position.y = 0.0001;
 			camera.position.z = 0.0001;
 	
 			body = new THREE.Object3D();
@@ -625,8 +674,12 @@
 	
 			initScene();
 	
+			initShake();
+	
 			resize();
 		}
+	
+		initRequirements();
 	
 		module.exports = VR = {
 			init: initialize,
@@ -689,8 +742,6 @@
 			scene: scene,
 			canvas: renderer && renderer.domElement || null
 		};
-	
-		initRequirements();
 	
 		objectMethods.forEach(function (method) {
 			var VRObject = __webpack_require__(28),
@@ -37683,7 +37734,7 @@
 			var obj,
 				geometry;
 	
-			geometry = new THREE.PlaneBufferGeometry(10, 10, 8);
+			geometry = new THREE.PlaneBufferGeometry(10, 10, options.widthSegments, options.heightSegments);
 			geometry.applyMatrix( new THREE.Matrix4().makeRotationX(-Math.PI / 2));
 	
 			obj = new THREE.Mesh(
