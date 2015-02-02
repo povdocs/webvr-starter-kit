@@ -33,6 +33,8 @@ module.exports = (function () {
 		mesh = new THREE.Mesh( geometry, material );
 		mesh.rotation.set( 0, -90 * Math.PI / 180, 0 );
 
+		mesh.name = 'panorama';
+
 		parent.add(mesh);
 
 		return mesh;
