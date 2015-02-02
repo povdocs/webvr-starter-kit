@@ -17,6 +17,7 @@ module.exports = (function () {
 			options.openEnded
 		);
 		mesh = new THREE.Mesh(geometry, materials.standard);
+		mesh.name = 'cylinder';
 
 		parent.add(mesh);
 

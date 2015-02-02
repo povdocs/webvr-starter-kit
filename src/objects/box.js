@@ -6,13 +6,14 @@ module.exports = (function () {
 
 	return function box(parent, options) {
 		var geometry,
-			cube;
+			mesh;
 
 		geometry = new THREE.BoxGeometry( 1, 1, 1 );
-		cube = new THREE.Mesh(geometry, materials.standard);
+		mesh = new THREE.Mesh(geometry, materials.standard);
+		mesh.name = 'box';
 
-		parent.add(cube);
+		parent.add(mesh);
 
-		return cube;
+		return mesh;
 	};
 }());

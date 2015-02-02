@@ -24,6 +24,10 @@ module.exports = (function () {
 			}
 		}
 
+		if (options.name !== undefined) {
+			object.name = options.name;
+		}
+
 		object.position.set(
 			parseFloat(options.x) || 0,
 			parseFloat(options.y) || 0,

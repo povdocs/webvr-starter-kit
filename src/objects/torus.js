@@ -16,6 +16,7 @@ module.exports = (function () {
 			options.arc
 		);
 		mesh = new THREE.Mesh(geometry, materials.standard);
+		mesh.name = 'torus';
 
 		parent.add(mesh);
 
