@@ -18,6 +18,8 @@
 		vrControls,
 		vrEffect,
 		mouseControls,
+		raycaster,
+		target,
 
 		floor,
 
@@ -39,6 +41,35 @@
 		lastTick = 0,
 		animationCallbacks = [];
 
+	function raycast() {
+		var i,
+			intersect,
+			object,
+			intersects;
+
+		raycaster.ray.origin.copy( camera.position );
+		raycaster.ray.direction.set(0, 0, 0.5).unproject(camera).sub(camera.position).normalize();
+
+		intersects = raycaster.intersectObjects( scene.children );
+		for (i = 0; i < intersects.length; i++) {
+			intersect = intersects[i];
+			if (intersect.object instanceof THREE.Mesh) {
+				object = intersect.object;
+				break;
+			}
+		}
+
+		if (target !== object) {
+			if (target) {
+				VR.emit('lookoff', target);
+			}
+			target = object;
+			if (target) {
+				VR.emit('lookat', target);
+			}
+		}
+	}
+
 	function render() {
 		var now = Date.now() / 1000,
 			delta = Math.max(1, now - lastTick);
@@ -48,6 +79,8 @@
 		animationCallbacks.forEach(function (cb) {
 			cb(delta, now);
 		});
+
+		raycast();
 
 		vrEffect.render(scene, camera);
 
@@ -165,6 +198,8 @@
 			VR.requestFullScreen = vrEffect.requestFullScreen;
 			VR.zeroSensor = vrControls.zeroSensor;
 		}
+
+		raycaster = new THREE.Raycaster();
 	}
 
 	function initRequirements() {
@@ -274,4 +309,10 @@
 	});
 
 	eventEmitter(VR);
+
+	Object.defineProperty(VR, 'target', {
+		get: function () {
+			return target;
+		}
+	});
 }());

@@ -160,8 +160,8 @@
 	// Hot Module Replacement
 	if(false) {
 		// When the styles change, update the <style> tags
-		module.hot.accept("!!/Users/brianchirls/www/VR/webvr-starter-kit/node_modules/css-loader/index.js!/Users/brianchirls/www/VR/webvr-starter-kit/src/css/style.css", function() {
-			var newContent = require("!!/Users/brianchirls/www/VR/webvr-starter-kit/node_modules/css-loader/index.js!/Users/brianchirls/www/VR/webvr-starter-kit/src/css/style.css");
+		module.hot.accept("!!/Volumes/WebDept/techfellow/webvr-starter-kit/node_modules/css-loader/index.js!/Volumes/WebDept/techfellow/webvr-starter-kit/src/css/style.css", function() {
+			var newContent = require("!!/Volumes/WebDept/techfellow/webvr-starter-kit/node_modules/css-loader/index.js!/Volumes/WebDept/techfellow/webvr-starter-kit/src/css/style.css");
 			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 			update(newContent);
 		});
@@ -417,6 +417,8 @@
 			vrControls,
 			vrEffect,
 			mouseControls,
+			raycaster,
+			target,
 	
 			floor,
 	
@@ -438,6 +440,35 @@
 			lastTick = 0,
 			animationCallbacks = [];
 	
+		function raycast() {
+			var i,
+				intersect,
+				object,
+				intersects;
+	
+			raycaster.ray.origin.copy( camera.position );
+			raycaster.ray.direction.set(0, 0, 0.5).unproject(camera).sub(camera.position).normalize();
+	
+			intersects = raycaster.intersectObjects( scene.children );
+			for (i = 0; i < intersects.length; i++) {
+				intersect = intersects[i];
+				if (intersect.object instanceof THREE.Mesh) {
+					object = intersect.object;
+					break;
+				}
+			}
+	
+			if (target !== object) {
+				if (target) {
+					VR.emit('lookoff', target);
+				}
+				target = object;
+				if (target) {
+					VR.emit('lookat', target);
+				}
+			}
+		}
+	
 		function render() {
 			var now = Date.now() / 1000,
 				delta = Math.max(1, now - lastTick);
@@ -447,6 +478,8 @@
 			animationCallbacks.forEach(function (cb) {
 				cb(delta, now);
 			});
+	
+			raycast();
 	
 			vrEffect.render(scene, camera);
 	
@@ -564,6 +597,8 @@
 				VR.requestFullScreen = vrEffect.requestFullScreen;
 				VR.zeroSensor = vrControls.zeroSensor;
 			}
+	
+			raycaster = new THREE.Raycaster();
 		}
 	
 		function initRequirements() {
@@ -673,6 +708,12 @@
 		});
 	
 		eventEmitter(VR);
+	
+		Object.defineProperty(VR, 'target', {
+			get: function () {
+				return target;
+			}
+		});
 	}());
 
 
@@ -36007,6 +36048,10 @@
 	
 		function onMouseDown( event ) {
 	
+			if (event.button !== THREE.MOUSE.LEFT) {
+				return;
+			}
+	
 			if ( scope.enabled === false ) return;
 			event.preventDefault();
 	
@@ -36034,8 +36079,8 @@
 			}
 	
 			if ( state !== STATE.NONE ) {
-				document.addEventListener( 'mousemove', onMouseMove, false );
-				document.addEventListener( 'mouseup', onMouseUp, false );
+				window.addEventListener( 'mousemove', onMouseMove, false );
+				window.addEventListener( 'mouseup', onMouseUp, false );
 				scope.dispatchEvent( startEvent );
 			}
 	
@@ -36104,8 +36149,8 @@
 	
 			if ( scope.enabled === false ) return;
 	
-			document.removeEventListener( 'mousemove', onMouseMove, false );
-			document.removeEventListener( 'mouseup', onMouseUp, false );
+			//window.removeEventListener( 'mousemove', onMouseMove, false );
+			window.removeEventListener( 'mouseup', onMouseUp, false );
 			scope.dispatchEvent( endEvent );
 			state = STATE.NONE;
 	
@@ -36310,7 +36355,7 @@
 	
 		}
 	
-		this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
+		//this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
 		this.domElement.addEventListener( 'mousedown', onMouseDown, false );
 		this.domElement.addEventListener( 'mousewheel', onMouseWheel, false );
 		this.domElement.addEventListener( 'DOMMouseScroll', onMouseWheel, false ); // firefox
@@ -36321,6 +36366,7 @@
 	
 		window.addEventListener( 'keydown', onKeyDown, false );
 	
+	//window.addEventListener( 'mousemove', onMouseMove, true );
 		// force an update at start
 		this.update();
 	
@@ -37425,6 +37471,10 @@
 				}
 			}
 	
+			if (options.name !== undefined) {
+				object.name = options.name;
+			}
+	
 			object.position.set(
 				parseFloat(options.x) || 0,
 				parseFloat(options.y) || 0,
@@ -37555,14 +37605,15 @@
 	
 		return function box(parent, options) {
 			var geometry,
-				cube;
+				mesh;
 	
 			geometry = new THREE.BoxGeometry( 1, 1, 1 );
-			cube = new THREE.Mesh(geometry, materials.standard);
+			mesh = new THREE.Mesh(geometry, materials.standard);
+			mesh.name = 'box';
 	
-			parent.add(cube);
+			parent.add(mesh);
 	
-			return cube;
+			return mesh;
 		};
 	}());
 
@@ -37589,6 +37640,7 @@
 				options.openEnded
 			);
 			mesh = new THREE.Mesh(geometry, materials.standard);
+			mesh.name = 'cylinder';
 	
 			parent.add(mesh);
 	
@@ -37759,6 +37811,8 @@
 			mesh = new THREE.Mesh( geometry, material );
 			mesh.rotation.set( 0, -90 * Math.PI / 180, 0 );
 	
+			mesh.name = 'panorama';
+	
 			parent.add(mesh);
 	
 			return mesh;
@@ -37787,6 +37841,7 @@
 				options.arc
 			);
 			mesh = new THREE.Mesh(geometry, materials.standard);
+			mesh.name = 'torus';
 	
 			parent.add(mesh);
 	

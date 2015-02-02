@@ -21,6 +21,14 @@
             VR.cylinder().moveTo(1, 1, -2);
             var torus = VR.torus().moveTo(3, 2, 0);
 
+            VR.on('lookat', function () {
+                console.log('lookat', VR.target);
+            });
+
+            VR.on('lookoff', function (target) {
+                console.log('lookat', target);
+            });
+
             VR.animate(function (delta) {
                 box.object.rotation.y += delta / 100;
                 torus.object.rotation.y += delta / 100;
