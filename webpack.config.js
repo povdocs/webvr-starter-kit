@@ -21,6 +21,15 @@ module.exports = {
                     mimetype: 'image/png'
                 }
             },
+            {
+                test: /\.jpg$/,
+                loader: 'url-loader',
+                query: {
+                    mimetype: 'image/jpg',
+                    limit: 8000,
+                    name: 'image/[hash].[ext]'
+                }
+            },
             { test: /\.css$/, loader: ['style', 'css'] }
         ]
     },
@@ -32,7 +41,8 @@ module.exports = {
             new webpack.ResolverPlugin.DirectoryDescriptionFilePlugin('bower.json', ['main'])
         ),
         new webpack.DefinePlugin({
-            __DEV__: JSON.stringify(JSON.parse(process.env.BUILD_DEV || 'false'))
+            __DEV__: JSON.stringify(JSON.parse(process.env.BUILD_DEV || 'false')),
+            __PATH__: JSON.stringify('https://povdocs.github.io/webvr-starter-kit/build/')
         })
     ],
 
@@ -40,6 +50,7 @@ module.exports = {
     jshint: {
         globals: {
             __DEV__: true,
+            __PATH__: true,
             console: true
         },
 

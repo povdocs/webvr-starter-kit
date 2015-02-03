@@ -23,13 +23,12 @@
 
             var oldColor = new THREE.Color();
             VR.on('lookat', function () {
-                oldColor.copy(VR.target.material.color);
-                VR.target.material.color.setRGB(1, 0.8, 0.8);
+                // oldColor.copy(VR.target.material.color);
+                // VR.target.material.color.setRGB(1, 0.8, 0.8);
             });
 
             VR.on('lookoff', function (target) {
-                //console.log('lookat', target);
-                VR.target.material.color.copy(oldColor);
+                // VR.target.material.color.copy(oldColor);
             });
 
             VR.animate(function (delta) {
