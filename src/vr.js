@@ -32,6 +32,7 @@
 			'box',
 			'cylinder',
 			'torus',
+			'sphere',
 			'empty',
 			'floor',
 			'panorama',
