@@ -96,6 +96,10 @@ module.exports = (function () {
 				repeat: 2
 			},
 			'metal': {
+				type: 'phong',
+				shininess: 100,
+				shading: THREE.SmoothShading,
+
 				repeat: 2
 			},
 			'stone': {
@@ -112,10 +116,7 @@ module.exports = (function () {
 			}
 		},
 		textures = {},
-		materials = {
-			standard: new THREE.MeshLambertMaterial(),
-			textures: textures
-		};
+		materials;
 
 	function imageTexture(src, mapping, callback) {
 		var image,
@@ -179,7 +180,7 @@ module.exports = (function () {
 				fn = textures[fn];
 			}
 			if (typeof fn === 'function') {
-				return fn();
+				return fn(options);
 			}
 
 			return fn;
@@ -201,6 +202,8 @@ module.exports = (function () {
 			}
 		});
 
+		delete opts.type;
+
 		return new Material(opts);
 	}
 
@@ -219,7 +222,12 @@ module.exports = (function () {
 		return !urlRegex.test(url);
 	}());
 
-	materials.imageTexture = imageTexture;
+	materials = {
+		standard: new THREE.MeshLambertMaterial(),
+		textures: textures,
+		imageTexture: imageTexture,
+		material: material
+	};
 
 	forEach(textureFiles, function (props, key) {
 		function tex(file, options) {
@@ -233,11 +241,19 @@ module.exports = (function () {
 
 			options = options || {};
 
-			return function () {
-				var texture = imageTexture(imagePath(require('./images/' + file)));
-				if (options.repeat > 0) {
+			return function (opts) {
+				var texture = imageTexture(imagePath(require('./images/' + file))),
+					config = assign({}, options);
+
+				assign(config, opts);
+
+				if (config.repeat) {
+					if (config.repeat > 0) {
+						texture.repeat.set(config.repeat, config.repeat);
+					} else if (config.repeat instanceof THREE.Vector2) {
+						texture.repeat.copy(config.repeat);
+					}
 					texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-					texture.repeat.set(options.repeat, options.repeat);
 				}
 				return texture;
 			};

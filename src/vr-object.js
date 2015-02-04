@@ -34,6 +34,21 @@ module.exports = (function () {
 			parseFloat(options.z) || 0
 		);
 
+		if (options.material) {
+			if (typeof options.material === 'function') {
+				material = options.material();
+			} else if (typeof options.material === 'string' && materials[options.material]) {
+				material = materials[options.material]();
+			} else if (options.material instanceof THREE.Material) {
+				material = options.material;
+			} else if (options.material) {
+				try {
+					material = materials(options.material);
+				} catch (e) {}
+			}
+			object.material = material || object.material;
+		}
+
 		if (options.color) {
 			material = object.material;
 			if (material === materials.standard) {
