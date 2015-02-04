@@ -27,7 +27,7 @@ module.exports = {
                 query: {
                     mimetype: 'image/jpg',
                     limit: 8000,
-                    name: 'image/[hash].[ext]'
+                    name: 'image/[name].[ext]'
                 }
             },
             { test: /\.css$/, loader: ['style', 'css'] }
