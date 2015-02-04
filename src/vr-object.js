@@ -91,7 +91,7 @@ module.exports = (function () {
 	};
 
 	VRObject.prototype.material = function (material) {
-		if (material) {
+		if (material && this.object instanceof THREE.Mesh) {
 			if (typeof material === 'function') {
 				material = material();
 			} else if (typeof material === 'string' && materials[material]) {

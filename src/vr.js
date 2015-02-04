@@ -21,6 +21,9 @@
 		raycaster,
 		target,
 
+		bodyWrapper,
+		cameraWrapper,
+
 		floor,
 
 	//state
@@ -28,6 +31,7 @@
 
 	//exported object
 		VR,
+		VRObject = require('./vr-object'),
 		objectMethods = [
 			'box',
 			'cylinder',
@@ -177,21 +181,23 @@
 		//need a scene to put all our objects in
 		scene = new THREE.Scene();
 
-		//need a camera with which to look at stuff
-		camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, NEAR, FAR);
+		bodyWrapper = new VRObject(scene, require('./objects/empty'), {
+			name: 'body'
+		}).moveTo(0, 1.5, 0);
+		body = bodyWrapper.object;
 
+		cameraWrapper = new VRObject(body, function (parent) {
+			//need a camera with which to look at stuff
+			camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, NEAR, FAR);
+			parent.add(camera);
+
+			return camera;
+		})
 		// set camera position so that OrbitControls works properly.
-		camera.position.y = 0.0001;
-		camera.position.z = 0.0001;
-
-		body = new THREE.Object3D();
-		body.name = 'body';
-		body.position.y = 2;
-		scene.add(body);
-		body.add(camera);
+			.moveTo(0, 0.0001, 0.0001);
 
 		//VRControls point the camera wherever we're looking
-		vrControls = new THREE.VRControls( camera );
+		vrControls = new THREE.VRControls(camera);
 		vrControls.freeze = true;
 
 		//render left and right eye
@@ -242,8 +248,8 @@
 		scene.add(new THREE.AmbientLight(0x444444));
 
 		if (VR) {
-			VR.camera = camera;
-			VR.camera = camera;
+			VR.camera = cameraWrapper;
+			VR.body = bodyWrapper;
 			VR.canvas = renderer.domElement;
 			VR.requestFullScreen = vrEffect.requestFullScreen;
 			VR.zeroSensor = vrControls.zeroSensor;
@@ -339,15 +345,14 @@
 			}
 		},
 
-		//todo: wrap these?
-		camera: camera,
+		camera: cameraWrapper,
+		body: bodyWrapper,
 		scene: scene,
 		canvas: renderer && renderer.domElement || null
 	};
 
 	objectMethods.forEach(function (method) {
-		var VRObject = require('./vr-object'),
-			creator = require('./objects/' + method);
+		var creator = require('./objects/' + method);
 
 		VR[method] = function (options) {
 			var obj = new VRObject(scene, creator, options);
