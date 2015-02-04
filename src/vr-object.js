@@ -34,20 +34,7 @@ module.exports = (function () {
 			parseFloat(options.z) || 0
 		);
 
-		if (options.material) {
-			if (typeof options.material === 'function') {
-				material = options.material();
-			} else if (typeof options.material === 'string' && materials[options.material]) {
-				material = materials[options.material]();
-			} else if (options.material instanceof THREE.Material) {
-				material = options.material;
-			} else if (options.material) {
-				try {
-					material = materials(options.material);
-				} catch (e) {}
-			}
-			object.material = material || object.material;
-		}
+		this.material(options.material);
 
 		if (options.color) {
 			material = object.material;
@@ -101,6 +88,23 @@ module.exports = (function () {
 		scale.set(x, y, z);
 
 		return this;
+	};
+
+	VRObject.prototype.material = function (material) {
+		if (material) {
+			if (typeof material === 'function') {
+				material = material();
+			} else if (typeof material === 'string' && materials[material]) {
+				material = materials[material]();
+			} else if (material && !material instanceof THREE.Material && typeof material !== 'number') {
+				try {
+					material = materials(material);
+				} catch (e) {}
+			}
+			this.object.material = material || this.object.material;
+		}
+
+		return this.object.material;
 	};
 
 	VRObject.repeat = function (count, options) {

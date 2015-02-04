@@ -226,7 +226,8 @@ module.exports = (function () {
 		standard: new THREE.MeshLambertMaterial(),
 		textures: textures,
 		imageTexture: imageTexture,
-		material: material
+		material: material,
+		library: []
 	};
 
 	forEach(textureFiles, function (props, key) {
@@ -276,6 +277,7 @@ module.exports = (function () {
 			materialDef.specularMap = textures[key + '-specular'] = tex(props.specularMap, props);
 		}
 
+		materials.library.push(key);
 		materials[key] = function (options) {
 			var opts = assign({}, materialDef);
 			assign(opts, options);
