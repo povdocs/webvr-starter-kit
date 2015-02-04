@@ -80,12 +80,6 @@ module.exports = (function () {
 				specularMap: 'bricks-specular.jpg'
 			},
 			'checkerboard': {
-				color: 0x999999,
-				specular: 0x111111,
-
-				shininess: 100,
-				shading: THREE.SmoothShading,
-
 				repeat: 10,
 				map: 'checkerboard.png'
 			},
@@ -93,11 +87,16 @@ module.exports = (function () {
 				repeat: 12
 			},
 			'metal-floor': {
+				type: 'phong',
+				shininess: 100,
+				metal: true,
+
 				repeat: 2
 			},
 			'metal': {
 				type: 'phong',
 				shininess: 100,
+				metal: true,
 				shading: THREE.SmoothShading,
 
 				repeat: 2
@@ -171,7 +170,7 @@ module.exports = (function () {
 		var opts,
 			Material = materialTypes[options.type] || THREE.MeshLambertMaterial;
 
-		function tex(fn) {
+		function threeTexture(fn) {
 			if (typeof fn === 'string') {
 				if (urlRegex.test(fn) || dataUri.test(fn)) {
 					return imageTexture(fn);
@@ -190,12 +189,12 @@ module.exports = (function () {
 		forEach({
 			ambient: options.ambient || options.color,
 			emissive: options.emissive || options.color,
-			map: tex(options.map),
-			specularMap: tex(options.specularMap),
-			normalMap: tex(options.normalMap),
-			alphaMap: tex(options.alphaMap),
-			envMap: tex(options.envMap),
-			lightMap: tex(options.lightMap)
+			map: threeTexture(options.map),
+			specularMap: threeTexture(options.specularMap),
+			normalMap: threeTexture(options.normalMap),
+			alphaMap: threeTexture(options.alphaMap),
+			envMap: threeTexture(options.envMap),
+			lightMap: threeTexture(options.lightMap)
 		}, function (val, key) {
 			if (val !== undefined) {
 				opts[key] = val;
@@ -231,7 +230,7 @@ module.exports = (function () {
 	};
 
 	forEach(textureFiles, function (props, key) {
-		function tex(file, options) {
+		function textureFactory(file, options) {
 			function imagePath(url) {
 				if ((/^[a-z0-9\/\-]+\.(png|jpg)$/i).test(url)) {
 					return (scriptIsRelative ? 'build/' : __PATH__) + url;
@@ -243,16 +242,15 @@ module.exports = (function () {
 			options = options || {};
 
 			return function (opts) {
-				var texture = imageTexture(imagePath(require('./images/' + file))),
-					config = assign({}, options);
+				var texture = imageTexture(imagePath(require('./images/' + file)));
 
-				assign(config, opts);
+				opts = assign({}, options, opts);
 
-				if (config.repeat) {
-					if (config.repeat > 0) {
-						texture.repeat.set(config.repeat, config.repeat);
-					} else if (config.repeat instanceof THREE.Vector2) {
-						texture.repeat.copy(config.repeat);
+				if (opts.repeat) {
+					if (opts.repeat > 0) {
+						texture.repeat.set(opts.repeat, opts.repeat);
+					} else if (opts.repeat instanceof THREE.Vector2) {
+						texture.repeat.copy(opts.repeat);
 					}
 					texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 				}
@@ -260,27 +258,25 @@ module.exports = (function () {
 			};
 		}
 
-		var map = tex(props.map || key + '.jpg', props),
+		var map = textureFactory(props.map || key + '.jpg', props),
 			materialDef;
 
-		materialDef = {
-			map: map,
-			type: props.type
-		};
+		materialDef = assign({}, props, {
+			map: map
+		});
 		textures[key] = map;
 
 		if (props.normalMap) {
-			materialDef.normalMap = textures[key + '-normal'] = tex(props.normalMap, props);
+			materialDef.normalMap = textures[key + '-normal'] = textureFactory(props.normalMap, props);
 		}
 
 		if (props.specularMap) {
-			materialDef.specularMap = textures[key + '-specular'] = tex(props.specularMap, props);
+			materialDef.specularMap = textures[key + '-specular'] = textureFactory(props.specularMap, props);
 		}
 
 		materials.library.push(key);
 		materials[key] = function (options) {
-			var opts = assign({}, materialDef);
-			assign(opts, options);
+			var opts = assign({}, materialDef, options);
 
 			return material(opts);
 		};
