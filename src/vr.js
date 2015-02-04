@@ -15,6 +15,7 @@
 		scene,
 		body,
 		renderer,
+		audioListener,
 		vrControls,
 		vrEffect,
 		mouseControls,
@@ -38,6 +39,7 @@
 			'torus',
 			'sphere',
 			'empty',
+			'sound',
 			'floor',
 			'panorama',
 			'image'
@@ -195,6 +197,10 @@
 		})
 		// set camera position so that OrbitControls works properly.
 			.moveTo(0, 0.0001, 0.0001);
+
+		audioListener = new THREE.AudioListener();
+		audioListener.name = 'audio-listener';
+		camera.add(audioListener);
 
 		//VRControls point the camera wherever we're looking
 		vrControls = new THREE.VRControls(camera);
