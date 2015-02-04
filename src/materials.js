@@ -1,8 +1,6 @@
 module.exports = (function () {
 	'use strict';
 
-	console.log(document.currentScript, __PATH__);
-
 	var THREE = require('three'),
 		forEach = require('lodash.foreach'),
 		assign = require('lodash.assign'),
@@ -64,21 +62,22 @@ module.exports = (function () {
 		materialTypes = {
 			lambert: THREE.MeshLambertMaterial,
 			basic: THREE.MeshBasicMaterial,
-			phone: THREE.MeshPhongMaterial,
+			phong: THREE.MeshPhongMaterial,
 			normal: THREE.MeshNormalMaterial,
 			depth: THREE.MeshDepthMaterial
 		},
 		textureFiles = {
 			'asphalt': {
-				repeat: 8
+				repeat: 12
 			},
 			'brick-tiles': {
 				repeat: 2
 			},
 			'bricks': {
+				type: 'phong',
 				repeat: 4,
-				normalMap: 'bricks-normal',
-				specularMap: 'bricks-specular'
+				normalMap: 'bricks-normal.jpg',
+				specularMap: 'bricks-specular.jpg'
 			},
 			'checkerboard': {
 				color: 0x999999,
@@ -91,7 +90,7 @@ module.exports = (function () {
 				map: 'checkerboard.png'
 			},
 			'grass': {
-				repeat: 4
+				repeat: 12
 			},
 			'metal-floor': {
 				repeat: 2
@@ -100,7 +99,7 @@ module.exports = (function () {
 				repeat: 2
 			},
 			'stone': {
-				repeat: 2
+				repeat: 8
 			},
 			'tiles': {
 				repeat: 4
@@ -248,7 +247,8 @@ module.exports = (function () {
 			materialDef;
 
 		materialDef = {
-			map: map
+			map: map,
+			type: props.type
 		};
 		textures[key] = map;
 
@@ -262,7 +262,9 @@ module.exports = (function () {
 
 		materials[key] = function (options) {
 			var opts = assign({}, materialDef);
-			return material(assign(opts, options));
+			assign(opts, options);
+
+			return material(opts);
 		};
 	});
 
