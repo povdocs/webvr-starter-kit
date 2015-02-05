@@ -4,35 +4,7 @@ module.exports = (function () {
 	var materials = require('../materials'),
 		THREE = require('three');
 
-	THREE.Audio.prototype.load = function ( file ) {
-
-		var scope = this;
-
-		var request = new XMLHttpRequest();
-		request.open( 'GET', file, true );
-		request.responseType = 'arraybuffer';
-		request.onload = function ( e ) {
-			console.log('audio buffer loaded. decoding...', e );
-			scope.context.decodeAudioData( this.response, function ( buffer ) {
-
-				scope.source.buffer = buffer;
-				scope.source.connect( scope.panner );
-				scope.source.start( 0 );
-
-			}, function onFailure(e) {
-				console.log('Decoding the audio buffer failed', e);
-			} );
-
-		};
-		request.onerror = function ( e ) {
-			console.log('error', e);
-		};
-		request.send();
-
-		return this;
-
-	};
-
+	require('imports?THREE=three!../lib/ThreeAudio');
 
 	return function sound(parent, options) {
 		var obj,

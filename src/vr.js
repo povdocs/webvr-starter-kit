@@ -113,6 +113,17 @@
 		}
 	}
 
+	/*
+	Mute any sounds when this browser tab is in the background or minimized.
+	*/
+	function visibilityChange() {
+		if (document.hidden || document.mozHidden || document.msHidden || document.webkitHidden) {
+			audioListener.volume(0);
+		} else {
+			audioListener.volume(1);
+		}
+	}
+
 	function resize(width, height) {
 		width = width || window.innerWidth;
 		height = height || window.innerHeight;
@@ -294,6 +305,11 @@
 		initShake();
 
 		resize();
+
+		document.addEventListener('visibilitychange', visibilityChange);
+		document.addEventListener('mozvisibilitychange', visibilityChange);
+		document.addEventListener('msvisibilitychange', visibilityChange);
+		document.addEventListener('webkitvisibilitychange', visibilityChange);
 	}
 
 	initRequirements();
