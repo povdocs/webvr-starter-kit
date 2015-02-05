@@ -34,7 +34,7 @@ module.exports = (function () {
 			parseFloat(options.z) || 0
 		);
 
-		this.material(options.material);
+		this.setMaterial(options.material);
 
 		if (options.color) {
 			material = object.material;
@@ -45,17 +45,21 @@ module.exports = (function () {
 			material.ambient = material.color;
 		}
 
-		['position', 'scale', 'rotation', 'quaternion'].forEach(function (prop) {
-			self[prop] = object[prop];
+		['position', 'scale', 'rotation', 'quaternion', 'material'].forEach(function (prop) {
+			if (prop in object) {
+				self[prop] = object[prop];
+			}
 		});
 	}
 
 	VRObject.prototype.hide = function () {
 		this.object.visible = false;
+		return this;
 	};
 
 	VRObject.prototype.show = function () {
 		this.object.visible = true;
+		return this;
 	};
 
 	VRObject.prototype.moveTo = function (x, y, z) {
@@ -90,7 +94,7 @@ module.exports = (function () {
 		return this;
 	};
 
-	VRObject.prototype.material = function (material) {
+	VRObject.prototype.setMaterial = function (material) {
 		if (material && this.object instanceof THREE.Mesh) {
 			if (typeof material === 'function') {
 				material = material();
@@ -104,7 +108,7 @@ module.exports = (function () {
 			this.object.material = material || this.object.material;
 		}
 
-		return this.object.material;
+		return this;
 	};
 
 	VRObject.repeat = function (count, options) {
