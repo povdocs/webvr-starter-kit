@@ -47,7 +47,7 @@ module.exports = (function () {
 		}
 
 		while (!(scene instanceof THREE.Scene) && scene.parent) {
-			scene = parent;
+			scene = scene.parent;
 		}
 
 		listener = scene.getObjectByName('audio-listener');
