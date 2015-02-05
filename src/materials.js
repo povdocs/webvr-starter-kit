@@ -233,7 +233,7 @@ module.exports = (function () {
 		function textureFactory(file, options) {
 			function imagePath(url) {
 				if ((/^[a-z0-9\/\-]+\.(png|jpg)$/i).test(url)) {
-					return (scriptIsRelative ? 'build/' : __PATH__) + url;
+					return (scriptIsRelative ? 'build/' : __ASSET_PATH__) + url;
 				}
 
 				return url;
