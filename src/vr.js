@@ -229,6 +229,9 @@
 
 		//mouse control in case got no orientation device
 		mouseControls = new THREE.OrbitControls(camera);
+		mouseControls.target0.set(0, 0.0001, 0.000);
+		mouseControls.target.copy(mouseControls.target0);
+		mouseControls.update();
 
 		//todo: remove any default lights once other lights are added
 		var dLight = new THREE.DirectionalLight(0xffffff, 0.8);

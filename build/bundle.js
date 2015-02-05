@@ -628,6 +628,9 @@
 	
 			//mouse control in case got no orientation device
 			mouseControls = new THREE.OrbitControls(camera);
+			mouseControls.target0.set(0, 0.0001, 0.000);
+			mouseControls.target.copy(mouseControls.target0);
+			mouseControls.update();
 	
 			//todo: remove any default lights once other lights are added
 			var dLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -40014,7 +40017,6 @@
 			}
 	
 			geometry = new THREE.PlaneBufferGeometry(1, 1, 8);
-			geometry.applyMatrix( new THREE.Matrix4().makeRotationY(Math.PI / 2));
 	
 			material = new THREE.MeshBasicMaterial({
 				side: THREE.DoubleSide,
@@ -40023,9 +40025,8 @@
 			});
 	
 			mesh = new THREE.Mesh( geometry, material );
-			mesh.rotation.set( 0, -90 * Math.PI / 180, 0 );
 	
-			//mesh.visible = false;
+			mesh.visible = false;
 	
 			parent.add(mesh);
 	

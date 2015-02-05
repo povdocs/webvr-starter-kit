@@ -28,7 +28,6 @@ module.exports = (function () {
 		}
 
 		geometry = new THREE.PlaneBufferGeometry(1, 1, 8);
-		geometry.applyMatrix( new THREE.Matrix4().makeRotationY(Math.PI / 2));
 
 		material = new THREE.MeshBasicMaterial({
 			side: THREE.DoubleSide,
@@ -37,9 +36,8 @@ module.exports = (function () {
 		});
 
 		mesh = new THREE.Mesh( geometry, material );
-		mesh.rotation.set( 0, -90 * Math.PI / 180, 0 );
 
-		//mesh.visible = false;
+		mesh.visible = false;
 
 		parent.add(mesh);
 
