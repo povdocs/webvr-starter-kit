@@ -17,7 +17,12 @@
 	function initUI() {
 		var container,
 			fsButton,
-			element;
+			element,
+
+			fullScreenElement = VR.canvas,
+			requestFullscreen = fullScreenElement.webkitRequestFullscreen ||
+					fullScreenElement.mozRequestFullScreen ||
+					fullScreenElement.msRequestFullscreen;
 
 		//set up meta viewport tag for mobile devices
 		element = document.createElement('meta');
@@ -30,20 +35,13 @@
 		document.body.appendChild(container);
 
 		//todo: use icons instead of text
-		fsButton = document.createElement('button');
-		fsButton.id = 'fs';
-		fsButton.innerHTML = 'FS';
-		fsButton.addEventListener('click', function () {
-			var fullScreenElement = VR.canvas,
-				requestFullscreen = fullScreenElement.webkitRequestFullscreen ||
-					fullScreenElement.mozRequestFullScreen ||
-					fullScreenElement.msRequestFullscreen;
-
-			if (requestFullscreen) {
-				requestFullscreen.call(fullScreenElement);
-			}
-		}, false);
-		container.appendChild(fsButton);
+		if (requestFullscreen) {
+			fsButton = document.createElement('button');
+			fsButton.id = 'fs';
+			fsButton.innerHTML = 'FS';
+			fsButton.addEventListener('click', requestFullscreen.bind(fullScreenElement), false);
+			container.appendChild(fsButton);
+		}
 
 		//report on HMD
 		VR.on('devicechange', function (mode) {
