@@ -15,7 +15,10 @@
                 z: -2.5
             });
 
-            box.sound('https://dl.dropboxusercontent.com/u/8165395/breakbeat.wav');//.moveTo(-10, 0, 0);
+            var soundSource = VR.sphere({
+                material: 'bricks'
+            });
+            soundSource.sound('https://dl.dropboxusercontent.com/u/8165395/breakbeat.wav');//.moveTo(-10, 0, 0);
 
             VR.image('http://i.imgur.com/dmLnKki.png').moveTo(0, 2, -3).setScale(3);
 
@@ -37,9 +40,11 @@
                 // VR.target.material.color.copy(oldColor);
             });
 
-            VR.animate(function (delta) {
+            VR.animate(function (delta, time) {
                 box.object.rotation.y += delta / 100;
                 torus.object.rotation.y += delta / 100;
+
+                soundSource.moveTo(10 * Math.cos(time / 1), 4, -4);
             });
 
             VR.on('shake', function () {
