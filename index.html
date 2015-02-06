@@ -19,7 +19,7 @@
             var soundSource = VR.sphere({
                 material: 'bricks'
             });
-            soundSource.sound('https://dl.dropboxusercontent.com/u/8165395/breakbeat.wav');//.moveTo(-10, 0, 0);
+            //soundSource.sound('https://dl.dropboxusercontent.com/u/8165395/breakbeat.wav');//.moveTo(-10, 0, 0);
 
             VR.image('http://i.imgur.com/dmLnKki.png').moveTo(0, 2, -3).setScale(3);
 
@@ -33,6 +33,9 @@
 
             var oldColor = new THREE.Color();
             VR.on('lookat', function () {
+                if (VR.target === box.object) {
+                    VR.vibrate(20);
+                }
                 // oldColor.copy(VR.target.material.color);
                 // VR.target.material.color.setRGB(1, 0.8, 0.8);
             });

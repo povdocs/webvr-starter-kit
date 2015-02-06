@@ -370,6 +370,8 @@
 			}
 		},
 
+		vibrate: navigator.vibrate ? navigator.vibrate.bind(navigator) : function () {},
+
 		camera: cameraWrapper,
 		body: bodyWrapper,
 		scene: scene,
