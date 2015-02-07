@@ -164,7 +164,7 @@
 		//global-ish declarations
 			THREE,
 			eventEmitter,
-			materials = __webpack_require__(/*! ./materials */ 5),
+			materials = __webpack_require__(/*! ./materials */ 4),
 	
 		//scene assets
 			camera,
@@ -188,7 +188,7 @@
 	
 		//exported object
 			VR,
-			VRObject = __webpack_require__(/*! ./vr-object */ 6),
+			VRObject = __webpack_require__(/*! ./vr-object */ 5),
 			objectMethods = [
 				'box',
 				'cylinder',
@@ -350,13 +350,13 @@
 			//need a scene to put all our objects in
 			scene = new THREE.Scene();
 	
-			bodyWrapper = new VRObject(scene, __webpack_require__(/*! ./objects/empty */ 7), {
+			bodyWrapper = new VRObject(scene, __webpack_require__(/*! ./objects/empty */ 6), {
 				name: 'body'
 			}).moveTo(0, 1.5, 0);
 			body = bodyWrapper.object;
 	
 			//Start body back a few meters so we can see objects created at 0, 0, 0
-			bodyWrapper.moveTo(0, 0, -4);
+			bodyWrapper.moveTo(0, 0, 4);
 	
 			cameraWrapper = new VRObject(body, function (parent) {
 				//need a camera with which to look at stuff
@@ -440,20 +440,20 @@
 		function initRequirements() {
 			//load external requirements
 			THREE = __webpack_require__(/*! three */ 24);
-			__webpack_require__(/*! imports?THREE=three!DeviceOrientationControls */ 18);
-			__webpack_require__(/*! imports?THREE=three!OrbitControls */ 19);
+			__webpack_require__(/*! imports?THREE=three!DeviceOrientationControls */ 17);
+			__webpack_require__(/*! imports?THREE=three!OrbitControls */ 18);
 	
 			//if (typeof __DEV__ !== 'undefined' && __DEV__) {
-				__webpack_require__(/*! imports?THREE=three!AugmentedConsole */ 20);
+				__webpack_require__(/*! imports?THREE=three!AugmentedConsole */ 19);
 			//}
 	
 			THREE.ImageUtils.crossOrigin = '';
 	
-			eventEmitter = __webpack_require__(/*! event-emitter */ 23);
+			eventEmitter = __webpack_require__(/*! event-emitter */ 22);
 	
 			//my VR stuff. todo: move these to a separate repo or two for easy packaging
-			__webpack_require__(/*! imports?THREE=three!./lib/VRStereoEffect */ 21);
-			__webpack_require__(/*! imports?THREE=three!./lib/VRControls */ 22);
+			__webpack_require__(/*! imports?THREE=three!./lib/VRStereoEffect */ 20);
+			__webpack_require__(/*! imports?THREE=three!./lib/VRControls */ 21);
 		}
 	
 		function initialize() {
@@ -538,7 +538,7 @@
 		};
 	
 		objectMethods.forEach(function (method) {
-			var creator = __webpack_require__(/*! ./objects */ 8)("./" + method);
+			var creator = __webpack_require__(/*! ./objects */ 7)("./" + method);
 	
 			VR[method] = function (options) {
 				var obj = new VRObject(scene, creator, options);
@@ -574,7 +574,7 @@
 	var content = __webpack_require__(/*! !./~/css-loader!./src/css/style.css */ 3);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(/*! ./~/style-loader/addStyles.js */ 4)(content, {});
+	var update = __webpack_require__(/*! ./~/style-loader/addStyles.js */ 8)(content, {});
 	// Hot Module Replacement
 	if(false) {
 		// When the styles change, update the <style> tags
@@ -594,210 +594,11 @@
   \******************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(/*! ./~/css-loader/cssToString.js */ 9)();
+	exports = module.exports = __webpack_require__(/*! ./~/css-loader/cssToString.js */ 23)();
 	exports.push([module.id, "body {\n\tfont-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;\n\tcolor: #eee;\n\toverflow: hidden;\n\tbackground: rgb(40, 40, 40);\n\n\theight: 100%;\n\twidth: 100%;\n\tmargin: 0px;\n\tpadding: 0px;\n}\n\ncanvas {\n\twidth: 100% !important;\n\theight: 100% !important;\n\t/*position: absolute;*/\n\ttop: 0;\n\tleft: 0;\n}\n\n#buttons {\n\tposition: absolute;\n\tbottom: 0;\n\tleft: 0;\n\tpadding: 20px;\n}\n\n#buttons > * {\n\tmargin-left: 10px;\n}\n\n#buttons > *:first-child {\n\tmargin-left: 0;\n}\n\n#vr {\n\tdisplay: none;\n}", ""]);
 
 /***/ },
 /* 4 */
-/*!*************************************!*\
-  !*** ./~/style-loader/addStyles.js ***!
-  \*************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	/*
-		MIT License http://www.opensource.org/licenses/mit-license.php
-		Author Tobias Koppers @sokra
-	*/
-	var stylesInDom = {},
-		memoize = function(fn) {
-			var memo;
-			return function () {
-				if (typeof memo === "undefined") memo = fn.apply(this, arguments);
-				return memo;
-			};
-		},
-		isIE9 = memoize(function() {
-			return /msie 9\b/.test(window.navigator.userAgent.toLowerCase());
-		}),
-		getHeadElement = memoize(function () {
-			return document.head || document.getElementsByTagName("head")[0];
-		}),
-		singletonElement = null,
-		singletonCounter = 0;
-	
-	module.exports = function(list, options) {
-		if(true) {
-			if(typeof document !== "object") throw new Error("The style-loader cannot be used in a non-browser environment");
-		}
-	
-		options = options || {};
-		// Force single-tag solution on IE9, which has a hard limit on the # of <style>
-		// tags it will allow on a page
-		if (typeof options.singleton === "undefined") options.singleton = isIE9();
-	
-		var styles = listToStyles(list);
-		addStylesToDom(styles, options);
-	
-		return function update(newList) {
-			var mayRemove = [];
-			for(var i = 0; i < styles.length; i++) {
-				var item = styles[i];
-				var domStyle = stylesInDom[item.id];
-				domStyle.refs--;
-				mayRemove.push(domStyle);
-			}
-			if(newList) {
-				var newStyles = listToStyles(newList);
-				addStylesToDom(newStyles, options);
-			}
-			for(var i = 0; i < mayRemove.length; i++) {
-				var domStyle = mayRemove[i];
-				if(domStyle.refs === 0) {
-					for(var j = 0; j < domStyle.parts.length; j++)
-						domStyle.parts[j]();
-					delete stylesInDom[domStyle.id];
-				}
-			}
-		};
-	}
-	
-	function addStylesToDom(styles, options) {
-		for(var i = 0; i < styles.length; i++) {
-			var item = styles[i];
-			var domStyle = stylesInDom[item.id];
-			if(domStyle) {
-				domStyle.refs++;
-				for(var j = 0; j < domStyle.parts.length; j++) {
-					domStyle.parts[j](item.parts[j]);
-				}
-				for(; j < item.parts.length; j++) {
-					domStyle.parts.push(addStyle(item.parts[j], options));
-				}
-			} else {
-				var parts = [];
-				for(var j = 0; j < item.parts.length; j++) {
-					parts.push(addStyle(item.parts[j], options));
-				}
-				stylesInDom[item.id] = {id: item.id, refs: 1, parts: parts};
-			}
-		}
-	}
-	
-	function listToStyles(list) {
-		var styles = [];
-		var newStyles = {};
-		for(var i = 0; i < list.length; i++) {
-			var item = list[i];
-			var id = item[0];
-			var css = item[1];
-			var media = item[2];
-			var sourceMap = item[3];
-			var part = {css: css, media: media, sourceMap: sourceMap};
-			if(!newStyles[id])
-				styles.push(newStyles[id] = {id: id, parts: [part]});
-			else
-				newStyles[id].parts.push(part);
-		}
-		return styles;
-	}
-	
-	function createStyleElement() {
-		var styleElement = document.createElement("style");
-		var head = getHeadElement();
-		styleElement.type = "text/css";
-		head.appendChild(styleElement);
-		return styleElement;
-	}
-	
-	function addStyle(obj, options) {
-		var styleElement, update, remove;
-	
-		if (options.singleton) {
-			var styleIndex = singletonCounter++;
-			styleElement = singletonElement || (singletonElement = createStyleElement());
-			update = applyToSingletonTag.bind(null, styleElement, styleIndex, false);
-			remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true);
-		} else {
-			styleElement = createStyleElement();
-			update = applyToTag.bind(null, styleElement);
-			remove = function () {
-				styleElement.parentNode.removeChild(styleElement);
-			};
-		}
-	
-		update(obj);
-	
-		return function updateStyle(newObj) {
-			if(newObj) {
-				if(newObj.css === obj.css && newObj.media === obj.media && newObj.sourceMap === obj.sourceMap)
-					return;
-				update(obj = newObj);
-			} else {
-				remove();
-			}
-		};
-	}
-	
-	function replaceText(source, id, replacement) {
-		var boundaries = ["/** >>" + id + " **/", "/** " + id + "<< **/"];
-		var start = source.lastIndexOf(boundaries[0]);
-		var wrappedReplacement = replacement
-			? (boundaries[0] + replacement + boundaries[1])
-			: "";
-		if (source.lastIndexOf(boundaries[0]) >= 0) {
-			var end = source.lastIndexOf(boundaries[1]) + boundaries[1].length;
-			return source.slice(0, start) + wrappedReplacement + source.slice(end);
-		} else {
-			return source + wrappedReplacement;
-		}
-	}
-	
-	function applyToSingletonTag(styleElement, index, remove, obj) {
-		var css = remove ? "" : obj.css;
-	
-		if(styleElement.styleSheet) {
-			styleElement.styleSheet.cssText = replaceText(styleElement.styleSheet.cssText, index, css);
-		} else {
-			var cssNode = document.createTextNode(css);
-			var childNodes = styleElement.childNodes;
-			if (childNodes[index]) styleElement.removeChild(childNodes[index]);
-			if (childNodes.length) {
-				styleElement.insertBefore(cssNode, childNodes[index]);
-			} else {
-				styleElement.appendChild(cssNode);
-			}
-		}
-	}
-	
-	function applyToTag(styleElement, obj) {
-		var css = obj.css;
-		var media = obj.media;
-		var sourceMap = obj.sourceMap;
-	
-		if(sourceMap && typeof btoa === "function") {
-			try {
-				css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(JSON.stringify(sourceMap)) + " */";
-				css = "@import url(\"data:text/css;base64," + btoa(css) + "\")";
-			} catch(e) {}
-		}
-	
-		if(media) {
-			styleElement.setAttribute("media", media)
-		}
-	
-		if(styleElement.styleSheet) {
-			styleElement.styleSheet.cssText = css;
-		} else {
-			while(styleElement.firstChild) {
-				styleElement.removeChild(styleElement.firstChild);
-			}
-			styleElement.appendChild(document.createTextNode(css));
-		}
-	}
-
-
-/***/ },
-/* 5 */
 /*!**************************!*\
   !*** ./src/materials.js ***!
   \**************************/
@@ -1093,7 +894,7 @@
 	}());
 
 /***/ },
-/* 6 */
+/* 5 */
 /*!**************************!*\
   !*** ./src/vr-object.js ***!
   \**************************/
@@ -1102,7 +903,7 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(/*! ./materials */ 5),
+		var materials = __webpack_require__(/*! ./materials */ 4),
 			THREE = __webpack_require__(/*! three */ 24);
 	
 		function VRObject(parent, creator, options) {
@@ -1237,7 +1038,7 @@
 	}());
 
 /***/ },
-/* 7 */
+/* 6 */
 /*!******************************!*\
   !*** ./src/objects/empty.js ***!
   \******************************/
@@ -1246,7 +1047,7 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(/*! ../materials */ 5),
+		var materials = __webpack_require__(/*! ../materials */ 4),
 			THREE = __webpack_require__(/*! three */ 24);
 	
 		return function empty(parent, options) {
@@ -1259,31 +1060,31 @@
 	}());
 
 /***/ },
-/* 8 */
+/* 7 */
 /*!******************************!*\
   !*** ./src/objects ^\.\/.*$ ***!
   \******************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	var map = {
-		"./box": 10,
-		"./box.js": 10,
-		"./cylinder": 11,
-		"./cylinder.js": 11,
-		"./empty": 7,
-		"./empty.js": 7,
-		"./floor": 12,
-		"./floor.js": 12,
-		"./image": 13,
-		"./image.js": 13,
-		"./panorama": 14,
-		"./panorama.js": 14,
-		"./sound": 15,
-		"./sound.js": 15,
-		"./sphere": 16,
-		"./sphere.js": 16,
-		"./torus": 17,
-		"./torus.js": 17
+		"./box": 9,
+		"./box.js": 9,
+		"./cylinder": 10,
+		"./cylinder.js": 10,
+		"./empty": 6,
+		"./empty.js": 6,
+		"./floor": 11,
+		"./floor.js": 11,
+		"./image": 12,
+		"./image.js": 12,
+		"./panorama": 13,
+		"./panorama.js": 13,
+		"./sound": 14,
+		"./sound.js": 14,
+		"./sphere": 15,
+		"./sphere.js": 15,
+		"./torus": 16,
+		"./torus.js": 16
 	};
 	function webpackContext(req) {
 		return __webpack_require__(webpackContextResolve(req));
@@ -1296,35 +1097,210 @@
 	};
 	webpackContext.resolve = webpackContextResolve;
 	module.exports = webpackContext;
-	webpackContext.id = 8;
+	webpackContext.id = 7;
+
+
+/***/ },
+/* 8 */
+/*!*************************************!*\
+  !*** ./~/style-loader/addStyles.js ***!
+  \*************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	/*
+		MIT License http://www.opensource.org/licenses/mit-license.php
+		Author Tobias Koppers @sokra
+	*/
+	var stylesInDom = {},
+		memoize = function(fn) {
+			var memo;
+			return function () {
+				if (typeof memo === "undefined") memo = fn.apply(this, arguments);
+				return memo;
+			};
+		},
+		isIE9 = memoize(function() {
+			return /msie 9\b/.test(window.navigator.userAgent.toLowerCase());
+		}),
+		getHeadElement = memoize(function () {
+			return document.head || document.getElementsByTagName("head")[0];
+		}),
+		singletonElement = null,
+		singletonCounter = 0;
+	
+	module.exports = function(list, options) {
+		if(true) {
+			if(typeof document !== "object") throw new Error("The style-loader cannot be used in a non-browser environment");
+		}
+	
+		options = options || {};
+		// Force single-tag solution on IE9, which has a hard limit on the # of <style>
+		// tags it will allow on a page
+		if (typeof options.singleton === "undefined") options.singleton = isIE9();
+	
+		var styles = listToStyles(list);
+		addStylesToDom(styles, options);
+	
+		return function update(newList) {
+			var mayRemove = [];
+			for(var i = 0; i < styles.length; i++) {
+				var item = styles[i];
+				var domStyle = stylesInDom[item.id];
+				domStyle.refs--;
+				mayRemove.push(domStyle);
+			}
+			if(newList) {
+				var newStyles = listToStyles(newList);
+				addStylesToDom(newStyles, options);
+			}
+			for(var i = 0; i < mayRemove.length; i++) {
+				var domStyle = mayRemove[i];
+				if(domStyle.refs === 0) {
+					for(var j = 0; j < domStyle.parts.length; j++)
+						domStyle.parts[j]();
+					delete stylesInDom[domStyle.id];
+				}
+			}
+		};
+	}
+	
+	function addStylesToDom(styles, options) {
+		for(var i = 0; i < styles.length; i++) {
+			var item = styles[i];
+			var domStyle = stylesInDom[item.id];
+			if(domStyle) {
+				domStyle.refs++;
+				for(var j = 0; j < domStyle.parts.length; j++) {
+					domStyle.parts[j](item.parts[j]);
+				}
+				for(; j < item.parts.length; j++) {
+					domStyle.parts.push(addStyle(item.parts[j], options));
+				}
+			} else {
+				var parts = [];
+				for(var j = 0; j < item.parts.length; j++) {
+					parts.push(addStyle(item.parts[j], options));
+				}
+				stylesInDom[item.id] = {id: item.id, refs: 1, parts: parts};
+			}
+		}
+	}
+	
+	function listToStyles(list) {
+		var styles = [];
+		var newStyles = {};
+		for(var i = 0; i < list.length; i++) {
+			var item = list[i];
+			var id = item[0];
+			var css = item[1];
+			var media = item[2];
+			var sourceMap = item[3];
+			var part = {css: css, media: media, sourceMap: sourceMap};
+			if(!newStyles[id])
+				styles.push(newStyles[id] = {id: id, parts: [part]});
+			else
+				newStyles[id].parts.push(part);
+		}
+		return styles;
+	}
+	
+	function createStyleElement() {
+		var styleElement = document.createElement("style");
+		var head = getHeadElement();
+		styleElement.type = "text/css";
+		head.appendChild(styleElement);
+		return styleElement;
+	}
+	
+	function addStyle(obj, options) {
+		var styleElement, update, remove;
+	
+		if (options.singleton) {
+			var styleIndex = singletonCounter++;
+			styleElement = singletonElement || (singletonElement = createStyleElement());
+			update = applyToSingletonTag.bind(null, styleElement, styleIndex, false);
+			remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true);
+		} else {
+			styleElement = createStyleElement();
+			update = applyToTag.bind(null, styleElement);
+			remove = function () {
+				styleElement.parentNode.removeChild(styleElement);
+			};
+		}
+	
+		update(obj);
+	
+		return function updateStyle(newObj) {
+			if(newObj) {
+				if(newObj.css === obj.css && newObj.media === obj.media && newObj.sourceMap === obj.sourceMap)
+					return;
+				update(obj = newObj);
+			} else {
+				remove();
+			}
+		};
+	}
+	
+	function replaceText(source, id, replacement) {
+		var boundaries = ["/** >>" + id + " **/", "/** " + id + "<< **/"];
+		var start = source.lastIndexOf(boundaries[0]);
+		var wrappedReplacement = replacement
+			? (boundaries[0] + replacement + boundaries[1])
+			: "";
+		if (source.lastIndexOf(boundaries[0]) >= 0) {
+			var end = source.lastIndexOf(boundaries[1]) + boundaries[1].length;
+			return source.slice(0, start) + wrappedReplacement + source.slice(end);
+		} else {
+			return source + wrappedReplacement;
+		}
+	}
+	
+	function applyToSingletonTag(styleElement, index, remove, obj) {
+		var css = remove ? "" : obj.css;
+	
+		if(styleElement.styleSheet) {
+			styleElement.styleSheet.cssText = replaceText(styleElement.styleSheet.cssText, index, css);
+		} else {
+			var cssNode = document.createTextNode(css);
+			var childNodes = styleElement.childNodes;
+			if (childNodes[index]) styleElement.removeChild(childNodes[index]);
+			if (childNodes.length) {
+				styleElement.insertBefore(cssNode, childNodes[index]);
+			} else {
+				styleElement.appendChild(cssNode);
+			}
+		}
+	}
+	
+	function applyToTag(styleElement, obj) {
+		var css = obj.css;
+		var media = obj.media;
+		var sourceMap = obj.sourceMap;
+	
+		if(sourceMap && typeof btoa === "function") {
+			try {
+				css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(JSON.stringify(sourceMap)) + " */";
+				css = "@import url(\"data:text/css;base64," + btoa(css) + "\")";
+			} catch(e) {}
+		}
+	
+		if(media) {
+			styleElement.setAttribute("media", media)
+		}
+	
+		if(styleElement.styleSheet) {
+			styleElement.styleSheet.cssText = css;
+		} else {
+			while(styleElement.firstChild) {
+				styleElement.removeChild(styleElement.firstChild);
+			}
+			styleElement.appendChild(document.createTextNode(css));
+		}
+	}
 
 
 /***/ },
 /* 9 */
-/*!*************************************!*\
-  !*** ./~/css-loader/cssToString.js ***!
-  \*************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = function() {
-		var list = [];
-		list.toString = function toString() {
-			var result = [];
-			for(var i = 0; i < this.length; i++) {
-				var item = this[i];
-				if(item[2]) {
-					result.push("@media " + item[2] + "{" + item[1] + "}");
-				} else {
-					result.push(item[1]);
-				}
-			}
-			return result.join("");
-		};
-		return list;
-	}
-
-/***/ },
-/* 10 */
 /*!****************************!*\
   !*** ./src/objects/box.js ***!
   \****************************/
@@ -1333,7 +1309,7 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(/*! ../materials */ 5),
+		var materials = __webpack_require__(/*! ../materials */ 4),
 			THREE = __webpack_require__(/*! three */ 24);
 	
 		return function box(parent, options) {
@@ -1351,7 +1327,7 @@
 	}());
 
 /***/ },
-/* 11 */
+/* 10 */
 /*!*********************************!*\
   !*** ./src/objects/cylinder.js ***!
   \*********************************/
@@ -1360,7 +1336,7 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(/*! ../materials */ 5),
+		var materials = __webpack_require__(/*! ../materials */ 4),
 			THREE = __webpack_require__(/*! three */ 24);
 	
 		function cylinder(parent, options) {
@@ -1387,7 +1363,7 @@
 	}());
 
 /***/ },
-/* 12 */
+/* 11 */
 /*!******************************!*\
   !*** ./src/objects/floor.js ***!
   \******************************/
@@ -1396,7 +1372,7 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(/*! ../materials */ 5),
+		var materials = __webpack_require__(/*! ../materials */ 4),
 			THREE = __webpack_require__(/*! three */ 24);
 	
 		function floor(parent, options) {
@@ -1423,7 +1399,7 @@
 	}());
 
 /***/ },
-/* 13 */
+/* 12 */
 /*!******************************!*\
   !*** ./src/objects/image.js ***!
   \******************************/
@@ -1432,7 +1408,7 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(/*! ../materials */ 5),
+		var materials = __webpack_require__(/*! ../materials */ 4),
 			THREE = __webpack_require__(/*! three */ 24);
 	
 		return function image(parent, options) {
@@ -1477,7 +1453,7 @@
 	}());
 
 /***/ },
-/* 14 */
+/* 13 */
 /*!*********************************!*\
   !*** ./src/objects/panorama.js ***!
   \*********************************/
@@ -1486,7 +1462,7 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(/*! ../materials */ 5),
+		var materials = __webpack_require__(/*! ../materials */ 4),
 			THREE = __webpack_require__(/*! three */ 24);
 	
 		return function panorama(parent, options) {
@@ -1527,7 +1503,7 @@
 	}());
 
 /***/ },
-/* 15 */
+/* 14 */
 /*!******************************!*\
   !*** ./src/objects/sound.js ***!
   \******************************/
@@ -1536,7 +1512,7 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(/*! ../materials */ 5),
+		var materials = __webpack_require__(/*! ../materials */ 4),
 			THREE = __webpack_require__(/*! three */ 24);
 	
 		__webpack_require__(/*! imports?THREE=three!../lib/ThreeAudio */ 28);
@@ -1569,7 +1545,7 @@
 	}());
 
 /***/ },
-/* 16 */
+/* 15 */
 /*!*******************************!*\
   !*** ./src/objects/sphere.js ***!
   \*******************************/
@@ -1578,7 +1554,7 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(/*! ../materials */ 5),
+		var materials = __webpack_require__(/*! ../materials */ 4),
 			THREE = __webpack_require__(/*! three */ 24);
 	
 		return function box(parent, options) {
@@ -1604,7 +1580,7 @@
 	}());
 
 /***/ },
-/* 17 */
+/* 16 */
 /*!******************************!*\
   !*** ./src/objects/torus.js ***!
   \******************************/
@@ -1613,7 +1589,7 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(/*! ../materials */ 5),
+		var materials = __webpack_require__(/*! ../materials */ 4),
 			THREE = __webpack_require__(/*! three */ 24);
 	
 		return function torus(parent, options) {
@@ -1637,7 +1613,7 @@
 	}());
 
 /***/ },
-/* 18 */
+/* 17 */
 /*!********************************************************************************************!*\
   !*** ./~/imports-loader?THREE=three!./bower_components/DeviceOrientationControls/index.js ***!
   \********************************************************************************************/
@@ -1742,7 +1718,7 @@
 
 
 /***/ },
-/* 19 */
+/* 18 */
 /*!********************************************************************************!*\
   !*** ./~/imports-loader?THREE=three!./bower_components/OrbitControls/index.js ***!
   \********************************************************************************/
@@ -2429,7 +2405,7 @@
 
 
 /***/ },
-/* 20 */
+/* 19 */
 /*!***********************************************************************************!*\
   !*** ./~/imports-loader?THREE=three!./bower_components/AugmentedConsole/index.js ***!
   \***********************************************************************************/
@@ -2558,7 +2534,7 @@
 	} )();
 
 /***/ },
-/* 21 */
+/* 20 */
 /*!******************************************************************!*\
   !*** ./~/imports-loader?THREE=three!./src/lib/VRStereoEffect.js ***!
   \******************************************************************/
@@ -2950,7 +2926,7 @@
 
 
 /***/ },
-/* 22 */
+/* 21 */
 /*!**************************************************************!*\
   !*** ./~/imports-loader?THREE=three!./src/lib/VRControls.js ***!
   \**************************************************************/
@@ -3103,7 +3079,7 @@
 
 
 /***/ },
-/* 23 */
+/* 22 */
 /*!**********************************!*\
   !*** ./~/event-emitter/index.js ***!
   \**********************************/
@@ -3242,6 +3218,30 @@
 	};
 	exports.methods = methods;
 
+
+/***/ },
+/* 23 */
+/*!*************************************!*\
+  !*** ./~/css-loader/cssToString.js ***!
+  \*************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = function() {
+		var list = [];
+		list.toString = function toString() {
+			var result = [];
+			for(var i = 0; i < this.length; i++) {
+				var item = this[i];
+				if(item[2]) {
+					result.push("@media " + item[2] + "{" + item[1] + "}");
+				} else {
+					result.push(item[1]);
+				}
+			}
+			return result.join("");
+		};
+		return list;
+	}
 
 /***/ },
 /* 24 */
@@ -38046,10 +38046,10 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var arrayEach = __webpack_require__(/*! lodash._arrayeach */ 44),
-	    baseEach = __webpack_require__(/*! lodash._baseeach */ 45),
+	var arrayEach = __webpack_require__(/*! lodash._arrayeach */ 45),
+	    baseEach = __webpack_require__(/*! lodash._baseeach */ 44),
 	    bindCallback = __webpack_require__(/*! lodash._bindcallback */ 46),
-	    isArray = __webpack_require__(/*! lodash.isarray */ 47);
+	    isArray = __webpack_require__(/*! lodash.isarray */ 48);
 	
 	/**
 	 * Iterates over elements of `collection` invoking `iteratee` for each element.
@@ -38101,7 +38101,7 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var baseAssign = __webpack_require__(/*! lodash._baseassign */ 48),
+	var baseAssign = __webpack_require__(/*! lodash._baseassign */ 47),
 	    createAssigner = __webpack_require__(/*! lodash._createassigner */ 49);
 	
 	/**
@@ -38497,46 +38497,6 @@
 
 /***/ },
 /* 44 */
-/*!*******************************************************!*\
-  !*** ./~/lodash.foreach/~/lodash._arrayeach/index.js ***!
-  \*******************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/**
-	 * A specialized version of `_.forEach` for arrays without support for callback
-	 * shorthands or `this` binding.
-	 *
-	 * @private
-	 * @param {Array} array The array to iterate over.
-	 * @param {Function} iteratee The function invoked per iteration.
-	 * @returns {Array} Returns `array`.
-	 */
-	function arrayEach(array, iteratee) {
-	  var index = -1,
-	      length = array.length;
-	
-	  while (++index < length) {
-	    if (iteratee(array[index], index, array) === false) {
-	      break;
-	    }
-	  }
-	  return array;
-	}
-	
-	module.exports = arrayEach;
-
-
-/***/ },
-/* 45 */
 /*!******************************************************!*\
   !*** ./~/lodash.foreach/~/lodash._baseeach/index.js ***!
   \******************************************************/
@@ -38679,6 +38639,46 @@
 
 
 /***/ },
+/* 45 */
+/*!*******************************************************!*\
+  !*** ./~/lodash.foreach/~/lodash._arrayeach/index.js ***!
+  \*******************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/**
+	 * A specialized version of `_.forEach` for arrays without support for callback
+	 * shorthands or `this` binding.
+	 *
+	 * @private
+	 * @param {Array} array The array to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @returns {Array} Returns `array`.
+	 */
+	function arrayEach(array, iteratee) {
+	  var index = -1,
+	      length = array.length;
+	
+	  while (++index < length) {
+	    if (iteratee(array[index], index, array) === false) {
+	      break;
+	    }
+	  }
+	  return array;
+	}
+	
+	module.exports = arrayEach;
+
+
+/***/ },
 /* 46 */
 /*!**********************************************************!*\
   !*** ./~/lodash.foreach/~/lodash._bindcallback/index.js ***!
@@ -38753,6 +38753,58 @@
 
 /***/ },
 /* 47 */
+/*!*******************************************************!*\
+  !*** ./~/lodash.assign/~/lodash._baseassign/index.js ***!
+  \*******************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var baseCopy = __webpack_require__(/*! lodash._basecopy */ 59),
+	    keys = __webpack_require__(/*! lodash.keys */ 61);
+	
+	/**
+	 * The base implementation of `_.assign` without support for argument juggling,
+	 * multiple sources, and `this` binding `customizer` functions.
+	 *
+	 * @private
+	 * @param {Object} object The destination object.
+	 * @param {Object} source The source object.
+	 * @param {Function} [customizer] The function to customize assigning values.
+	 * @returns {Object} Returns the destination object.
+	 */
+	function baseAssign(object, source, customizer) {
+	  var props = keys(source);
+	  if (!customizer) {
+	    return baseCopy(source, object, props);
+	  }
+	  var index = -1,
+	      length = props.length
+	
+	  while (++index < length) {
+	    var key = props[index],
+	        value = object[key],
+	        result = customizer(value, source[key], key, object, source);
+	
+	    if ((result === result ? result !== value : value === value) ||
+	        (typeof value == 'undefined' && !(key in object))) {
+	      object[key] = result;
+	    }
+	  }
+	  return object;
+	}
+	
+	module.exports = baseAssign;
+
+
+/***/ },
+/* 48 */
 /*!****************************************************!*\
   !*** ./~/lodash.foreach/~/lodash.isarray/index.js ***!
   \****************************************************/
@@ -38919,58 +38971,6 @@
 
 
 /***/ },
-/* 48 */
-/*!*******************************************************!*\
-  !*** ./~/lodash.assign/~/lodash._baseassign/index.js ***!
-  \*******************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var baseCopy = __webpack_require__(/*! lodash._basecopy */ 59),
-	    keys = __webpack_require__(/*! lodash.keys */ 60);
-	
-	/**
-	 * The base implementation of `_.assign` without support for argument juggling,
-	 * multiple sources, and `this` binding `customizer` functions.
-	 *
-	 * @private
-	 * @param {Object} object The destination object.
-	 * @param {Object} source The source object.
-	 * @param {Function} [customizer] The function to customize assigning values.
-	 * @returns {Object} Returns the destination object.
-	 */
-	function baseAssign(object, source, customizer) {
-	  var props = keys(source);
-	  if (!customizer) {
-	    return baseCopy(source, object, props);
-	  }
-	  var index = -1,
-	      length = props.length
-	
-	  while (++index < length) {
-	    var key = props[index],
-	        value = object[key],
-	        result = customizer(value, source[key], key, object, source);
-	
-	    if ((result === result ? result !== value : value === value) ||
-	        (typeof value == 'undefined' && !(key in object))) {
-	      object[key] = result;
-	    }
-	  }
-	  return object;
-	}
-	
-	module.exports = baseAssign;
-
-
-/***/ },
 /* 49 */
 /*!***********************************************************!*\
   !*** ./~/lodash.assign/~/lodash._createassigner/index.js ***!
@@ -38985,7 +38985,7 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var bindCallback = __webpack_require__(/*! lodash._bindcallback */ 61),
+	var bindCallback = __webpack_require__(/*! lodash._bindcallback */ 60),
 	    isIterateeCall = __webpack_require__(/*! lodash._isiterateecall */ 62);
 	
 	/**
@@ -39198,8 +39198,8 @@
 	 * Available under MIT license <https://lodash.com/license>
 	 */
 	var isArguments = __webpack_require__(/*! lodash.isarguments */ 65),
-	    isArray = __webpack_require__(/*! lodash.isarray */ 47),
-	    isNative = __webpack_require__(/*! lodash.isnative */ 66);
+	    isArray = __webpack_require__(/*! lodash.isarray */ 48),
+	    isNative = __webpack_require__(/*! lodash.isnative */ 67);
 	
 	/** Used for native method references. */
 	var objectProto = Object.prototype;
@@ -39474,6 +39474,79 @@
 
 /***/ },
 /* 60 */
+/*!**********************************************************************************!*\
+  !*** ./~/lodash.assign/~/lodash._createassigner/~/lodash._bindcallback/index.js ***!
+  \**********************************************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/**
+	 * A specialized version of `baseCallback` which only supports `this` binding
+	 * and specifying the number of arguments to provide to `func`.
+	 *
+	 * @private
+	 * @param {Function} func The function to bind.
+	 * @param {*} thisArg The `this` binding of `func`.
+	 * @param {number} [argCount] The number of arguments to provide to `func`.
+	 * @returns {Function} Returns the callback.
+	 */
+	function bindCallback(func, thisArg, argCount) {
+	  if (typeof func != 'function') {
+	    return identity;
+	  }
+	  if (typeof thisArg == 'undefined') {
+	    return func;
+	  }
+	  switch (argCount) {
+	    case 1: return function(value) {
+	      return func.call(thisArg, value);
+	    };
+	    case 3: return function(value, index, collection) {
+	      return func.call(thisArg, value, index, collection);
+	    };
+	    case 4: return function(accumulator, value, index, collection) {
+	      return func.call(thisArg, accumulator, value, index, collection);
+	    };
+	    case 5: return function(value, other, key, object, source) {
+	      return func.call(thisArg, value, other, key, object, source);
+	    };
+	  }
+	  return function() {
+	    return func.apply(thisArg, arguments);
+	  };
+	}
+	
+	/**
+	 * This method returns the first argument provided to it.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Utility
+	 * @param {*} value Any value.
+	 * @returns {*} Returns `value`.
+	 * @example
+	 *
+	 * var object = { 'user': 'fred' };
+	 * _.identity(object) === object;
+	 * // => true
+	 */
+	function identity(value) {
+	  return value;
+	}
+	
+	module.exports = bindCallback;
+
+
+/***/ },
+/* 61 */
 /*!*********************************************************************!*\
   !*** ./~/lodash.assign/~/lodash._baseassign/~/lodash.keys/index.js ***!
   \*********************************************************************/
@@ -39487,9 +39560,9 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var isArguments = __webpack_require__(/*! lodash.isarguments */ 67),
-	    isArray = __webpack_require__(/*! lodash.isarray */ 68),
-	    isNative = __webpack_require__(/*! lodash.isnative */ 69);
+	var isArguments = __webpack_require__(/*! lodash.isarguments */ 66),
+	    isArray = __webpack_require__(/*! lodash.isarray */ 71),
+	    isNative = __webpack_require__(/*! lodash.isnative */ 70);
 	
 	/** Used for native method references. */
 	var objectProto = Object.prototype;
@@ -39720,79 +39793,6 @@
 
 
 /***/ },
-/* 61 */
-/*!**********************************************************************************!*\
-  !*** ./~/lodash.assign/~/lodash._createassigner/~/lodash._bindcallback/index.js ***!
-  \**********************************************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/**
-	 * A specialized version of `baseCallback` which only supports `this` binding
-	 * and specifying the number of arguments to provide to `func`.
-	 *
-	 * @private
-	 * @param {Function} func The function to bind.
-	 * @param {*} thisArg The `this` binding of `func`.
-	 * @param {number} [argCount] The number of arguments to provide to `func`.
-	 * @returns {Function} Returns the callback.
-	 */
-	function bindCallback(func, thisArg, argCount) {
-	  if (typeof func != 'function') {
-	    return identity;
-	  }
-	  if (typeof thisArg == 'undefined') {
-	    return func;
-	  }
-	  switch (argCount) {
-	    case 1: return function(value) {
-	      return func.call(thisArg, value);
-	    };
-	    case 3: return function(value, index, collection) {
-	      return func.call(thisArg, value, index, collection);
-	    };
-	    case 4: return function(accumulator, value, index, collection) {
-	      return func.call(thisArg, accumulator, value, index, collection);
-	    };
-	    case 5: return function(value, other, key, object, source) {
-	      return func.call(thisArg, value, other, key, object, source);
-	    };
-	  }
-	  return function() {
-	    return func.apply(thisArg, arguments);
-	  };
-	}
-	
-	/**
-	 * This method returns the first argument provided to it.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Utility
-	 * @param {*} value Any value.
-	 * @returns {*} Returns `value`.
-	 * @example
-	 *
-	 * var object = { 'user': 'fred' };
-	 * _.identity(object) === object;
-	 * // => true
-	 */
-	function identity(value) {
-	  return value;
-	}
-	
-	module.exports = bindCallback;
-
-
-/***/ },
 /* 62 */
 /*!************************************************************************************!*\
   !*** ./~/lodash.assign/~/lodash._createassigner/~/lodash._isiterateecall/index.js ***!
@@ -39923,9 +39923,9 @@
 
 	'use strict';
 	
-	module.exports = __webpack_require__(/*! ./is-implemented */ 70)()
+	module.exports = __webpack_require__(/*! ./is-implemented */ 68)()
 		? Object.keys
-		: __webpack_require__(/*! ./shim */ 71);
+		: __webpack_require__(/*! ./shim */ 69);
 
 
 /***/ },
@@ -40012,6 +40012,88 @@
 
 /***/ },
 /* 66 */
+/*!******************************************************************************************!*\
+  !*** ./~/lodash.assign/~/lodash._baseassign/~/lodash.keys/~/lodash.isarguments/index.js ***!
+  \******************************************************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** `Object#toString` result references. */
+	var argsTag = '[object Arguments]';
+	
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return (value && typeof value == 'object') || false;
+	}
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/**
+	 * Used to resolve the `toStringTag` of values.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
+	 * for more details.
+	 */
+	var objToString = objectProto.toString;
+	
+	/**
+	 * Used as the maximum length of an array-like value.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+	 * for more details.
+	 */
+	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * Checks if `value` is classified as an `arguments` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * (function() { return _.isArguments(arguments); })();
+	 * // => true
+	 *
+	 * _.isArguments([1, 2, 3]);
+	 * // => false
+	 */
+	function isArguments(value) {
+	  var length = isObjectLike(value) ? value.length : undefined;
+	  return (isLength(length) && objToString.call(value) == argsTag) || false;
+	}
+	
+	module.exports = isArguments;
+
+
+/***/ },
+/* 67 */
 /*!**************************************************************************************!*\
   !*** ./~/lodash.foreach/~/lodash._baseeach/~/lodash.keys/~/lodash.isnative/index.js ***!
   \**************************************************************************************/
@@ -40136,10 +40218,43 @@
 
 
 /***/ },
-/* 67 */
-/*!******************************************************************************************!*\
-  !*** ./~/lodash.assign/~/lodash._baseassign/~/lodash.keys/~/lodash.isarguments/index.js ***!
-  \******************************************************************************************/
+/* 68 */
+/*!*****************************************************************!*\
+  !*** ./~/event-emitter/~/es5-ext/object/keys/is-implemented.js ***!
+  \*****************************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = function () {
+		try {
+			Object.keys('primitive');
+			return true;
+		} catch (e) { return false; }
+	};
+
+
+/***/ },
+/* 69 */
+/*!*******************************************************!*\
+  !*** ./~/event-emitter/~/es5-ext/object/keys/shim.js ***!
+  \*******************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var keys = Object.keys;
+	
+	module.exports = function (object) {
+		return keys(object == null ? object : Object(object));
+	};
+
+
+/***/ },
+/* 70 */
+/*!***************************************************************************************!*\
+  !*** ./~/lodash.assign/~/lodash._baseassign/~/lodash.keys/~/lodash.isnative/index.js ***!
+  \***************************************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -40152,7 +40267,33 @@
 	 */
 	
 	/** `Object#toString` result references. */
-	var argsTag = '[object Arguments]';
+	var funcTag = '[object Function]';
+	
+	/** Used to detect host constructors (Safari > 5). */
+	var reHostCtor = /^\[object .+?Constructor\]$/;
+	
+	/**
+	 * Used to match `RegExp` special characters.
+	 * See this [article on `RegExp` characters](http://www.regular-expressions.info/characters.html#special)
+	 * for more details.
+	 */
+	var reRegExpChars = /[.*+?^${}()|[\]\/\\]/g,
+	    reHasRegExpChars = RegExp(reRegExpChars.source);
+	
+	/**
+	 * Converts `value` to a string if it is not one. An empty string is returned
+	 * for `null` or `undefined` values.
+	 *
+	 * @private
+	 * @param {*} value The value to process.
+	 * @returns {string} Returns the string.
+	 */
+	function baseToString(value) {
+	  if (typeof value == 'string') {
+	    return value;
+	  }
+	  return value == null ? '' : (value + '');
+	}
 	
 	/**
 	 * Checks if `value` is object-like.
@@ -40168,6 +40309,9 @@
 	/** Used for native method references. */
 	var objectProto = Object.prototype;
 	
+	/** Used to resolve the decompiled source of functions. */
+	var fnToString = Function.prototype.toString;
+	
 	/**
 	 * Used to resolve the `toStringTag` of values.
 	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
@@ -40175,50 +40319,64 @@
 	 */
 	var objToString = objectProto.toString;
 	
-	/**
-	 * Used as the maximum length of an array-like value.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
-	 * for more details.
-	 */
-	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
+	/** Used to detect if a method is native. */
+	var reNative = RegExp('^' +
+	  escapeRegExp(objToString)
+	  .replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+	);
 	
 	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * Checks if `value` is classified as an `arguments` object.
+	 * Checks if `value` is a native function.
 	 *
 	 * @static
 	 * @memberOf _
 	 * @category Lang
 	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
 	 * @example
 	 *
-	 * (function() { return _.isArguments(arguments); })();
+	 * _.isNative(Array.prototype.push);
 	 * // => true
 	 *
-	 * _.isArguments([1, 2, 3]);
+	 * _.isNative(_);
 	 * // => false
 	 */
-	function isArguments(value) {
-	  var length = isObjectLike(value) ? value.length : undefined;
-	  return (isLength(length) && objToString.call(value) == argsTag) || false;
+	function isNative(value) {
+	  if (value == null) {
+	    return false;
+	  }
+	  if (objToString.call(value) == funcTag) {
+	    return reNative.test(fnToString.call(value));
+	  }
+	  return (isObjectLike(value) && reHostCtor.test(value)) || false;
 	}
 	
-	module.exports = isArguments;
+	/**
+	 * Escapes the `RegExp` special characters "\", "^", "$", ".", "|", "?", "*",
+	 * "+", "(", ")", "[", "]", "{" and "}" in `string`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category String
+	 * @param {string} [string=''] The string to escape.
+	 * @returns {string} Returns the escaped string.
+	 * @example
+	 *
+	 * _.escapeRegExp('[lodash](https://lodash.com/)');
+	 * // => '\[lodash\]\(https://lodash\.com/\)'
+	 */
+	function escapeRegExp(string) {
+	  string = baseToString(string);
+	  return (string && reHasRegExpChars.test(string))
+	    ? string.replace(reRegExpChars, '\\$&')
+	    : string;
+	}
+	
+	module.exports = isNative;
 
 
 /***/ },
-/* 68 */
+/* 71 */
 /*!**************************************************************************************!*\
   !*** ./~/lodash.assign/~/lodash._baseassign/~/lodash.keys/~/lodash.isarray/index.js ***!
   \**************************************************************************************/
@@ -40382,164 +40540,6 @@
 	}
 	
 	module.exports = isArray;
-
-
-/***/ },
-/* 69 */
-/*!***************************************************************************************!*\
-  !*** ./~/lodash.assign/~/lodash._baseassign/~/lodash.keys/~/lodash.isnative/index.js ***!
-  \***************************************************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/** `Object#toString` result references. */
-	var funcTag = '[object Function]';
-	
-	/** Used to detect host constructors (Safari > 5). */
-	var reHostCtor = /^\[object .+?Constructor\]$/;
-	
-	/**
-	 * Used to match `RegExp` special characters.
-	 * See this [article on `RegExp` characters](http://www.regular-expressions.info/characters.html#special)
-	 * for more details.
-	 */
-	var reRegExpChars = /[.*+?^${}()|[\]\/\\]/g,
-	    reHasRegExpChars = RegExp(reRegExpChars.source);
-	
-	/**
-	 * Converts `value` to a string if it is not one. An empty string is returned
-	 * for `null` or `undefined` values.
-	 *
-	 * @private
-	 * @param {*} value The value to process.
-	 * @returns {string} Returns the string.
-	 */
-	function baseToString(value) {
-	  if (typeof value == 'string') {
-	    return value;
-	  }
-	  return value == null ? '' : (value + '');
-	}
-	
-	/**
-	 * Checks if `value` is object-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 */
-	function isObjectLike(value) {
-	  return (value && typeof value == 'object') || false;
-	}
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/** Used to resolve the decompiled source of functions. */
-	var fnToString = Function.prototype.toString;
-	
-	/**
-	 * Used to resolve the `toStringTag` of values.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
-	 * for more details.
-	 */
-	var objToString = objectProto.toString;
-	
-	/** Used to detect if a method is native. */
-	var reNative = RegExp('^' +
-	  escapeRegExp(objToString)
-	  .replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
-	);
-	
-	/**
-	 * Checks if `value` is a native function.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
-	 * @example
-	 *
-	 * _.isNative(Array.prototype.push);
-	 * // => true
-	 *
-	 * _.isNative(_);
-	 * // => false
-	 */
-	function isNative(value) {
-	  if (value == null) {
-	    return false;
-	  }
-	  if (objToString.call(value) == funcTag) {
-	    return reNative.test(fnToString.call(value));
-	  }
-	  return (isObjectLike(value) && reHostCtor.test(value)) || false;
-	}
-	
-	/**
-	 * Escapes the `RegExp` special characters "\", "^", "$", ".", "|", "?", "*",
-	 * "+", "(", ")", "[", "]", "{" and "}" in `string`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category String
-	 * @param {string} [string=''] The string to escape.
-	 * @returns {string} Returns the escaped string.
-	 * @example
-	 *
-	 * _.escapeRegExp('[lodash](https://lodash.com/)');
-	 * // => '\[lodash\]\(https://lodash\.com/\)'
-	 */
-	function escapeRegExp(string) {
-	  string = baseToString(string);
-	  return (string && reHasRegExpChars.test(string))
-	    ? string.replace(reRegExpChars, '\\$&')
-	    : string;
-	}
-	
-	module.exports = isNative;
-
-
-/***/ },
-/* 70 */
-/*!*****************************************************************!*\
-  !*** ./~/event-emitter/~/es5-ext/object/keys/is-implemented.js ***!
-  \*****************************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = function () {
-		try {
-			Object.keys('primitive');
-			return true;
-		} catch (e) { return false; }
-	};
-
-
-/***/ },
-/* 71 */
-/*!*******************************************************!*\
-  !*** ./~/event-emitter/~/es5-ext/object/keys/shim.js ***!
-  \*******************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var keys = Object.keys;
-	
-	module.exports = function (object) {
-		return keys(object == null ? object : Object(object));
-	};
 
 
 /***/ }
