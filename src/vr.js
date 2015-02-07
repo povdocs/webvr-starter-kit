@@ -199,6 +199,9 @@
 		}).moveTo(0, 1.5, 0);
 		body = bodyWrapper.object;
 
+		//Start body back a few meters so we can see objects created at 0, 0, 0
+		bodyWrapper.moveTo(0, 0, -4);
+
 		cameraWrapper = new VRObject(body, function (parent) {
 			//need a camera with which to look at stuff
 			camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, NEAR, FAR);
