@@ -6,13 +6,13 @@
 
 todo: describe common options and methods for all objects
 
-#### VR.box
+#### VR.box()
 
 Create a cube.
 
 ##### Options: none
 
-#### VR.cylinder
+#### VR.cylinder()
 
 Create a cylinder. You can also create a cone by change the radius at one end to zero.
 
@@ -24,7 +24,7 @@ Create a cylinder. You can also create a cone by change the radius at one end to
 - `heightSegments` — Number of rows of faces along the height of the cylinder. Default: 1
 - `openEnded` — A Boolean indicating whether the ends of the cylinder are open or capped. Default: false (capped)
 
-#### VR.sphere
+#### VR.sphere()
 
 Create a sphere. Parts of spheres or slices can be created by specifying different values for `phiStart`, `phiLength`, `thetaStart` or `thetaLength`.
 
@@ -38,7 +38,7 @@ Create a sphere. Parts of spheres or slices can be created by specifying differe
 - `thetaStart` — specify vertical starting angle. Default: 0
 - `thetaLength` — specify vertical sweep angle size. Default: PI
 
-#### VR.torus
+#### VR.torus()
 
 Create a torus (like a donut).
 
@@ -50,14 +50,14 @@ Create a torus (like a donut).
 - `tubularSegments` — Default: 16
 - `arc` — Central angle, or how much around the center point the torus is filled in. Default: PI * 2
 
-#### VR.floor
+#### VR.floor()
 
 ##### Options:
 
 - `widthSegments` — Default: 1
 - `heightSegments` — Default: 1
 
-#### VR.image
+#### VR.image()
 
 A plane displaying an image.
 
@@ -65,7 +65,7 @@ A plane displaying an image.
 
 - `src` - A url pointing to the image file
 
-#### VR.panorama
+#### VR.panorama()
 
 A sphere with an image displayed on the inside
 
@@ -73,7 +73,7 @@ A sphere with an image displayed on the inside
 
 - `src` - A url pointing to the image file
 
-#### VR.empty
+#### VR.empty()
 
 An empty object, not displayed. Can be used to group other objects
 
@@ -81,14 +81,14 @@ An empty object, not displayed. Can be used to group other objects
 
 ### Utility Methods
 
-#### VR.animate
-#### VR.end
-#### VR.preview
-#### VR.render
-#### VR.requestFullScreen
-#### VR.resize
-#### VR.vibrate
-#### VR.zeroSensor
+#### VR.animate()
+#### VR.end()
+#### VR.preview()
+#### VR.render()
+#### VR.requestFullScreen()
+#### VR.resize()
+#### VR.vibrate()
+#### VR.zeroSensor()
 
 ### Properties
 
