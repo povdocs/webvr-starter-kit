@@ -352,11 +352,8 @@
 	
 			bodyWrapper = new VRObject(scene, __webpack_require__(/*! ./objects/empty */ 6), {
 				name: 'body'
-			}).moveTo(0, 1.5, 0);
+			}).moveTo(0, 1.5, 4);
 			body = bodyWrapper.object;
-	
-			//Start body back a few meters so we can see objects created at 0, 0, 0
-			bodyWrapper.moveTo(0, 0, 4);
 	
 			cameraWrapper = new VRObject(body, function (parent) {
 				//need a camera with which to look at stuff
@@ -439,7 +436,7 @@
 	
 		function initRequirements() {
 			//load external requirements
-			THREE = __webpack_require__(/*! three */ 24);
+			THREE = __webpack_require__(/*! three */ 23);
 			__webpack_require__(/*! imports?THREE=three!DeviceOrientationControls */ 17);
 			__webpack_require__(/*! imports?THREE=three!OrbitControls */ 18);
 	
@@ -594,7 +591,7 @@
   \******************************************/
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(/*! ./~/css-loader/cssToString.js */ 23)();
+	exports = module.exports = __webpack_require__(/*! ./~/css-loader/cssToString.js */ 24)();
 	exports.push([module.id, "body {\n\tfont-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;\n\tcolor: #eee;\n\toverflow: hidden;\n\tbackground: rgb(40, 40, 40);\n\n\theight: 100%;\n\twidth: 100%;\n\tmargin: 0px;\n\tpadding: 0px;\n}\n\ncanvas {\n\twidth: 100% !important;\n\theight: 100% !important;\n\t/*position: absolute;*/\n\ttop: 0;\n\tleft: 0;\n}\n\n#buttons {\n\tposition: absolute;\n\tbottom: 0;\n\tleft: 0;\n\tpadding: 20px;\n}\n\n#buttons > * {\n\tmargin-left: 10px;\n}\n\n#buttons > *:first-child {\n\tmargin-left: 0;\n}\n\n#vr {\n\tdisplay: none;\n}", ""]);
 
 /***/ },
@@ -607,7 +604,7 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var THREE = __webpack_require__(/*! three */ 24),
+		var THREE = __webpack_require__(/*! three */ 23),
 			forEach = __webpack_require__(/*! lodash.foreach */ 26),
 			assign = __webpack_require__(/*! lodash.assign */ 27),
 	
@@ -904,7 +901,7 @@
 		'use strict';
 	
 		var materials = __webpack_require__(/*! ./materials */ 4),
-			THREE = __webpack_require__(/*! three */ 24);
+			THREE = __webpack_require__(/*! three */ 23);
 	
 		function VRObject(parent, creator, options) {
 			var material,
@@ -1048,7 +1045,7 @@
 		'use strict';
 	
 		var materials = __webpack_require__(/*! ../materials */ 4),
-			THREE = __webpack_require__(/*! three */ 24);
+			THREE = __webpack_require__(/*! three */ 23);
 	
 		return function empty(parent, options) {
 			var obj = new THREE.Object3D();
@@ -1310,7 +1307,7 @@
 		'use strict';
 	
 		var materials = __webpack_require__(/*! ../materials */ 4),
-			THREE = __webpack_require__(/*! three */ 24);
+			THREE = __webpack_require__(/*! three */ 23);
 	
 		return function box(parent, options) {
 			var geometry,
@@ -1337,7 +1334,7 @@
 		'use strict';
 	
 		var materials = __webpack_require__(/*! ../materials */ 4),
-			THREE = __webpack_require__(/*! three */ 24);
+			THREE = __webpack_require__(/*! three */ 23);
 	
 		function cylinder(parent, options) {
 			var geometry,
@@ -1373,7 +1370,7 @@
 		'use strict';
 	
 		var materials = __webpack_require__(/*! ../materials */ 4),
-			THREE = __webpack_require__(/*! three */ 24);
+			THREE = __webpack_require__(/*! three */ 23);
 	
 		function floor(parent, options) {
 			var obj,
@@ -1409,7 +1406,7 @@
 		'use strict';
 	
 		var materials = __webpack_require__(/*! ../materials */ 4),
-			THREE = __webpack_require__(/*! three */ 24);
+			THREE = __webpack_require__(/*! three */ 23);
 	
 		return function image(parent, options) {
 			var geometry,
@@ -1463,7 +1460,7 @@
 		'use strict';
 	
 		var materials = __webpack_require__(/*! ../materials */ 4),
-			THREE = __webpack_require__(/*! three */ 24);
+			THREE = __webpack_require__(/*! three */ 23);
 	
 		return function panorama(parent, options) {
 			var geometry,
@@ -1513,7 +1510,7 @@
 		'use strict';
 	
 		var materials = __webpack_require__(/*! ../materials */ 4),
-			THREE = __webpack_require__(/*! three */ 24);
+			THREE = __webpack_require__(/*! three */ 23);
 	
 		__webpack_require__(/*! imports?THREE=three!../lib/ThreeAudio */ 28);
 	
@@ -1555,7 +1552,7 @@
 		'use strict';
 	
 		var materials = __webpack_require__(/*! ../materials */ 4),
-			THREE = __webpack_require__(/*! three */ 24);
+			THREE = __webpack_require__(/*! three */ 23);
 	
 		return function box(parent, options) {
 			var geometry,
@@ -1590,7 +1587,7 @@
 		'use strict';
 	
 		var materials = __webpack_require__(/*! ../materials */ 4),
-			THREE = __webpack_require__(/*! three */ 24);
+			THREE = __webpack_require__(/*! three */ 23);
 	
 		return function torus(parent, options) {
 			var geometry,
@@ -1620,7 +1617,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(/*! three */ 24);
+	var THREE = __webpack_require__(/*! three */ 23);
 	
 	/**
 	 * @author richt / http://richt.me
@@ -1725,7 +1722,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(/*! three */ 24);
+	var THREE = __webpack_require__(/*! three */ 23);
 	
 	/**
 	 * @author qiao / https://github.com/qiao
@@ -2412,7 +2409,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(/*! three */ 24);
+	var THREE = __webpack_require__(/*! three */ 23);
 	
 	( function() {
 	
@@ -2541,7 +2538,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(/*! three */ 24);
+	var THREE = __webpack_require__(/*! three */ 23);
 	
 	/**
 	 * @author bchirls / http://bchirls.com/
@@ -2933,7 +2930,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(/*! three */ 24);
+	var THREE = __webpack_require__(/*! three */ 23);
 	
 	THREE.VRControls = function ( object, options ) {
 	
@@ -3087,7 +3084,7 @@
 
 	'use strict';
 	
-	var d        = __webpack_require__(/*! d */ 29)
+	var d        = __webpack_require__(/*! d */ 42)
 	  , callable = __webpack_require__(/*! es5-ext/object/valid-callable */ 43)
 	
 	  , apply = Function.prototype.apply, call = Function.prototype.call
@@ -3221,30 +3218,6 @@
 
 /***/ },
 /* 23 */
-/*!*************************************!*\
-  !*** ./~/css-loader/cssToString.js ***!
-  \*************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = function() {
-		var list = [];
-		list.toString = function toString() {
-			var result = [];
-			for(var i = 0; i < this.length; i++) {
-				var item = this[i];
-				if(item[2]) {
-					result.push("@media " + item[2] + "{" + item[1] + "}");
-				} else {
-					result.push(item[1]);
-				}
-			}
-			return result.join("");
-		};
-		return list;
-	}
-
-/***/ },
-/* 24 */
 /*!**************************!*\
   !*** ./~/three/three.js ***!
   \**************************/
@@ -37996,6 +37969,30 @@
 
 
 /***/ },
+/* 24 */
+/*!*************************************!*\
+  !*** ./~/css-loader/cssToString.js ***!
+  \*************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = function() {
+		var list = [];
+		list.toString = function toString() {
+			var result = [];
+			for(var i = 0; i < this.length; i++) {
+				var item = this[i];
+				if(item[2]) {
+					result.push("@media " + item[2] + "{" + item[1] + "}");
+				} else {
+					result.push(item[1]);
+				}
+			}
+			return result.join("");
+		};
+		return list;
+	}
+
+/***/ },
 /* 25 */
 /*!*****************************!*\
   !*** ./src/images ^\.\/.*$ ***!
@@ -38003,19 +38000,19 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	var map = {
-		"./asphalt.jpg": 30,
-		"./brick-tiles.jpg": 31,
-		"./bricks-normal.jpg": 32,
-		"./bricks-specular.jpg": 33,
-		"./bricks.jpg": 34,
-		"./checkerboard.png": 35,
-		"./grass.jpg": 36,
-		"./metal-floor.jpg": 37,
-		"./metal.jpg": 38,
-		"./stone.jpg": 39,
-		"./tiles.jpg": 40,
-		"./weathered-wood.jpg": 41,
-		"./wood.jpg": 42
+		"./asphalt.jpg": 29,
+		"./brick-tiles.jpg": 30,
+		"./bricks-normal.jpg": 31,
+		"./bricks-specular.jpg": 32,
+		"./bricks.jpg": 33,
+		"./checkerboard.png": 34,
+		"./grass.jpg": 35,
+		"./metal-floor.jpg": 36,
+		"./metal.jpg": 37,
+		"./stone.jpg": 38,
+		"./tiles.jpg": 39,
+		"./weathered-wood.jpg": 40,
+		"./wood.jpg": 41
 	};
 	function webpackContext(req) {
 		return __webpack_require__(webpackContextResolve(req));
@@ -38046,10 +38043,10 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var arrayEach = __webpack_require__(/*! lodash._arrayeach */ 45),
-	    baseEach = __webpack_require__(/*! lodash._baseeach */ 44),
+	var arrayEach = __webpack_require__(/*! lodash._arrayeach */ 44),
+	    baseEach = __webpack_require__(/*! lodash._baseeach */ 45),
 	    bindCallback = __webpack_require__(/*! lodash._bindcallback */ 46),
-	    isArray = __webpack_require__(/*! lodash.isarray */ 48);
+	    isArray = __webpack_require__(/*! lodash.isarray */ 47);
 	
 	/**
 	 * Iterates over elements of `collection` invoking `iteratee` for each element.
@@ -38101,7 +38098,7 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var baseAssign = __webpack_require__(/*! lodash._baseassign */ 47),
+	var baseAssign = __webpack_require__(/*! lodash._baseassign */ 48),
 	    createAssigner = __webpack_require__(/*! lodash._createassigner */ 49);
 	
 	/**
@@ -38146,7 +38143,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(/*! three */ 24);
+	var THREE = __webpack_require__(/*! three */ 23);
 	
 	/**
 	 * @author mrdoob / http://mrdoob.com/
@@ -38293,6 +38290,123 @@
 
 /***/ },
 /* 29 */
+/*!********************************!*\
+  !*** ./src/images/asphalt.jpg ***!
+  \********************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/asphalt.jpg"
+
+/***/ },
+/* 30 */
+/*!************************************!*\
+  !*** ./src/images/brick-tiles.jpg ***!
+  \************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/brick-tiles.jpg"
+
+/***/ },
+/* 31 */
+/*!**************************************!*\
+  !*** ./src/images/bricks-normal.jpg ***!
+  \**************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/bricks-normal.jpg"
+
+/***/ },
+/* 32 */
+/*!****************************************!*\
+  !*** ./src/images/bricks-specular.jpg ***!
+  \****************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/bricks-specular.jpg"
+
+/***/ },
+/* 33 */
+/*!*******************************!*\
+  !*** ./src/images/bricks.jpg ***!
+  \*******************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/bricks.jpg"
+
+/***/ },
+/* 34 */
+/*!*************************************!*\
+  !*** ./src/images/checkerboard.png ***!
+  \*************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAABlBMVEUsLCzp6enLhVdXAAAAAWJLR0QAiAUdSAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB94KFBIOCP7R3TQAAAA4SURBVGje7dAhEgAACMOw/f/T4Gc5XKqjmlRTBQAAAAAAAAAAAAAA4AiMAQAAAAAAAAAAAADgGSyKafDiEFszywAAAABJRU5ErkJggg=="
+
+/***/ },
+/* 35 */
+/*!******************************!*\
+  !*** ./src/images/grass.jpg ***!
+  \******************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/grass.jpg"
+
+/***/ },
+/* 36 */
+/*!************************************!*\
+  !*** ./src/images/metal-floor.jpg ***!
+  \************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/metal-floor.jpg"
+
+/***/ },
+/* 37 */
+/*!******************************!*\
+  !*** ./src/images/metal.jpg ***!
+  \******************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/metal.jpg"
+
+/***/ },
+/* 38 */
+/*!******************************!*\
+  !*** ./src/images/stone.jpg ***!
+  \******************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/stone.jpg"
+
+/***/ },
+/* 39 */
+/*!******************************!*\
+  !*** ./src/images/tiles.jpg ***!
+  \******************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/tiles.jpg"
+
+/***/ },
+/* 40 */
+/*!***************************************!*\
+  !*** ./src/images/weathered-wood.jpg ***!
+  \***************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/weathered-wood.jpg"
+
+/***/ },
+/* 41 */
+/*!*****************************!*\
+  !*** ./src/images/wood.jpg ***!
+  \*****************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/wood.jpg"
+
+/***/ },
+/* 42 */
 /*!**************************************!*\
   !*** ./~/event-emitter/~/d/index.js ***!
   \**************************************/
@@ -38364,123 +38478,6 @@
 
 
 /***/ },
-/* 30 */
-/*!********************************!*\
-  !*** ./src/images/asphalt.jpg ***!
-  \********************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/asphalt.jpg"
-
-/***/ },
-/* 31 */
-/*!************************************!*\
-  !*** ./src/images/brick-tiles.jpg ***!
-  \************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/brick-tiles.jpg"
-
-/***/ },
-/* 32 */
-/*!**************************************!*\
-  !*** ./src/images/bricks-normal.jpg ***!
-  \**************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/bricks-normal.jpg"
-
-/***/ },
-/* 33 */
-/*!****************************************!*\
-  !*** ./src/images/bricks-specular.jpg ***!
-  \****************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/bricks-specular.jpg"
-
-/***/ },
-/* 34 */
-/*!*******************************!*\
-  !*** ./src/images/bricks.jpg ***!
-  \*******************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/bricks.jpg"
-
-/***/ },
-/* 35 */
-/*!*************************************!*\
-  !*** ./src/images/checkerboard.png ***!
-  \*************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAABlBMVEUsLCzp6enLhVdXAAAAAWJLR0QAiAUdSAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB94KFBIOCP7R3TQAAAA4SURBVGje7dAhEgAACMOw/f/T4Gc5XKqjmlRTBQAAAAAAAAAAAAAA4AiMAQAAAAAAAAAAAADgGSyKafDiEFszywAAAABJRU5ErkJggg=="
-
-/***/ },
-/* 36 */
-/*!******************************!*\
-  !*** ./src/images/grass.jpg ***!
-  \******************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/grass.jpg"
-
-/***/ },
-/* 37 */
-/*!************************************!*\
-  !*** ./src/images/metal-floor.jpg ***!
-  \************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/metal-floor.jpg"
-
-/***/ },
-/* 38 */
-/*!******************************!*\
-  !*** ./src/images/metal.jpg ***!
-  \******************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/metal.jpg"
-
-/***/ },
-/* 39 */
-/*!******************************!*\
-  !*** ./src/images/stone.jpg ***!
-  \******************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/stone.jpg"
-
-/***/ },
-/* 40 */
-/*!******************************!*\
-  !*** ./src/images/tiles.jpg ***!
-  \******************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/tiles.jpg"
-
-/***/ },
-/* 41 */
-/*!***************************************!*\
-  !*** ./src/images/weathered-wood.jpg ***!
-  \***************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/weathered-wood.jpg"
-
-/***/ },
-/* 42 */
-/*!*****************************!*\
-  !*** ./src/images/wood.jpg ***!
-  \*****************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/wood.jpg"
-
-/***/ },
 /* 43 */
 /*!************************************************************!*\
   !*** ./~/event-emitter/~/es5-ext/object/valid-callable.js ***!
@@ -38497,6 +38494,46 @@
 
 /***/ },
 /* 44 */
+/*!*******************************************************!*\
+  !*** ./~/lodash.foreach/~/lodash._arrayeach/index.js ***!
+  \*******************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/**
+	 * A specialized version of `_.forEach` for arrays without support for callback
+	 * shorthands or `this` binding.
+	 *
+	 * @private
+	 * @param {Array} array The array to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @returns {Array} Returns `array`.
+	 */
+	function arrayEach(array, iteratee) {
+	  var index = -1,
+	      length = array.length;
+	
+	  while (++index < length) {
+	    if (iteratee(array[index], index, array) === false) {
+	      break;
+	    }
+	  }
+	  return array;
+	}
+	
+	module.exports = arrayEach;
+
+
+/***/ },
+/* 45 */
 /*!******************************************************!*\
   !*** ./~/lodash.foreach/~/lodash._baseeach/index.js ***!
   \******************************************************/
@@ -38510,7 +38547,7 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var keys = __webpack_require__(/*! lodash.keys */ 58);
+	var keys = __webpack_require__(/*! lodash.keys */ 54);
 	
 	/**
 	 * Used as the maximum length of an array-like value.
@@ -38639,46 +38676,6 @@
 
 
 /***/ },
-/* 45 */
-/*!*******************************************************!*\
-  !*** ./~/lodash.foreach/~/lodash._arrayeach/index.js ***!
-  \*******************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/**
-	 * A specialized version of `_.forEach` for arrays without support for callback
-	 * shorthands or `this` binding.
-	 *
-	 * @private
-	 * @param {Array} array The array to iterate over.
-	 * @param {Function} iteratee The function invoked per iteration.
-	 * @returns {Array} Returns `array`.
-	 */
-	function arrayEach(array, iteratee) {
-	  var index = -1,
-	      length = array.length;
-	
-	  while (++index < length) {
-	    if (iteratee(array[index], index, array) === false) {
-	      break;
-	    }
-	  }
-	  return array;
-	}
-	
-	module.exports = arrayEach;
-
-
-/***/ },
 /* 46 */
 /*!**********************************************************!*\
   !*** ./~/lodash.foreach/~/lodash._bindcallback/index.js ***!
@@ -38753,58 +38750,6 @@
 
 /***/ },
 /* 47 */
-/*!*******************************************************!*\
-  !*** ./~/lodash.assign/~/lodash._baseassign/index.js ***!
-  \*******************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var baseCopy = __webpack_require__(/*! lodash._basecopy */ 59),
-	    keys = __webpack_require__(/*! lodash.keys */ 61);
-	
-	/**
-	 * The base implementation of `_.assign` without support for argument juggling,
-	 * multiple sources, and `this` binding `customizer` functions.
-	 *
-	 * @private
-	 * @param {Object} object The destination object.
-	 * @param {Object} source The source object.
-	 * @param {Function} [customizer] The function to customize assigning values.
-	 * @returns {Object} Returns the destination object.
-	 */
-	function baseAssign(object, source, customizer) {
-	  var props = keys(source);
-	  if (!customizer) {
-	    return baseCopy(source, object, props);
-	  }
-	  var index = -1,
-	      length = props.length
-	
-	  while (++index < length) {
-	    var key = props[index],
-	        value = object[key],
-	        result = customizer(value, source[key], key, object, source);
-	
-	    if ((result === result ? result !== value : value === value) ||
-	        (typeof value == 'undefined' && !(key in object))) {
-	      object[key] = result;
-	    }
-	  }
-	  return object;
-	}
-	
-	module.exports = baseAssign;
-
-
-/***/ },
-/* 48 */
 /*!****************************************************!*\
   !*** ./~/lodash.foreach/~/lodash.isarray/index.js ***!
   \****************************************************/
@@ -38971,6 +38916,58 @@
 
 
 /***/ },
+/* 48 */
+/*!*******************************************************!*\
+  !*** ./~/lodash.assign/~/lodash._baseassign/index.js ***!
+  \*******************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var baseCopy = __webpack_require__(/*! lodash._basecopy */ 55),
+	    keys = __webpack_require__(/*! lodash.keys */ 56);
+	
+	/**
+	 * The base implementation of `_.assign` without support for argument juggling,
+	 * multiple sources, and `this` binding `customizer` functions.
+	 *
+	 * @private
+	 * @param {Object} object The destination object.
+	 * @param {Object} source The source object.
+	 * @param {Function} [customizer] The function to customize assigning values.
+	 * @returns {Object} Returns the destination object.
+	 */
+	function baseAssign(object, source, customizer) {
+	  var props = keys(source);
+	  if (!customizer) {
+	    return baseCopy(source, object, props);
+	  }
+	  var index = -1,
+	      length = props.length
+	
+	  while (++index < length) {
+	    var key = props[index],
+	        value = object[key],
+	        result = customizer(value, source[key], key, object, source);
+	
+	    if ((result === result ? result !== value : value === value) ||
+	        (typeof value == 'undefined' && !(key in object))) {
+	      object[key] = result;
+	    }
+	  }
+	  return object;
+	}
+	
+	module.exports = baseAssign;
+
+
+/***/ },
 /* 49 */
 /*!***********************************************************!*\
   !*** ./~/lodash.assign/~/lodash._createassigner/index.js ***!
@@ -38985,8 +38982,8 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var bindCallback = __webpack_require__(/*! lodash._bindcallback */ 60),
-	    isIterateeCall = __webpack_require__(/*! lodash._isiterateecall */ 62);
+	var bindCallback = __webpack_require__(/*! lodash._bindcallback */ 57),
+	    isIterateeCall = __webpack_require__(/*! lodash._isiterateecall */ 58);
 	
 	/**
 	 * Creates a function that assigns properties of source object(s) to a given
@@ -39081,9 +39078,9 @@
 
 	'use strict';
 	
-	module.exports = __webpack_require__(/*! ./is-implemented */ 54)()
+	module.exports = __webpack_require__(/*! ./is-implemented */ 59)()
 		? Object.assign
-		: __webpack_require__(/*! ./shim */ 55);
+		: __webpack_require__(/*! ./shim */ 60);
 
 
 /***/ },
@@ -39095,95 +39092,13 @@
 
 	'use strict';
 	
-	module.exports = __webpack_require__(/*! ./is-implemented */ 56)()
+	module.exports = __webpack_require__(/*! ./is-implemented */ 61)()
 		? String.prototype.contains
-		: __webpack_require__(/*! ./shim */ 57);
+		: __webpack_require__(/*! ./shim */ 62);
 
 
 /***/ },
 /* 54 */
-/*!*******************************************************************!*\
-  !*** ./~/event-emitter/~/es5-ext/object/assign/is-implemented.js ***!
-  \*******************************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = function () {
-		var assign = Object.assign, obj;
-		if (typeof assign !== 'function') return false;
-		obj = { foo: 'raz' };
-		assign(obj, { bar: 'dwa' }, { trzy: 'trzy' });
-		return (obj.foo + obj.bar + obj.trzy) === 'razdwatrzy';
-	};
-
-
-/***/ },
-/* 55 */
-/*!*********************************************************!*\
-  !*** ./~/event-emitter/~/es5-ext/object/assign/shim.js ***!
-  \*********************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var keys  = __webpack_require__(/*! ../keys */ 64)
-	  , value = __webpack_require__(/*! ../valid-value */ 63)
-	
-	  , max = Math.max;
-	
-	module.exports = function (dest, src/*, …srcn*/) {
-		var error, i, l = max(arguments.length, 2), assign;
-		dest = Object(value(dest));
-		assign = function (key) {
-			try { dest[key] = src[key]; } catch (e) {
-				if (!error) error = e;
-			}
-		};
-		for (i = 1; i < l; ++i) {
-			src = arguments[i];
-			keys(src).forEach(assign);
-		}
-		if (error !== undefined) throw error;
-		return dest;
-	};
-
-
-/***/ },
-/* 56 */
-/*!***********************************************************************!*\
-  !*** ./~/event-emitter/~/es5-ext/string/#/contains/is-implemented.js ***!
-  \***********************************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var str = 'razdwatrzy';
-	
-	module.exports = function () {
-		if (typeof str.contains !== 'function') return false;
-		return ((str.contains('dwa') === true) && (str.contains('foo') === false));
-	};
-
-
-/***/ },
-/* 57 */
-/*!*************************************************************!*\
-  !*** ./~/event-emitter/~/es5-ext/string/#/contains/shim.js ***!
-  \*************************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var indexOf = String.prototype.indexOf;
-	
-	module.exports = function (searchString/*, position*/) {
-		return indexOf.call(this, searchString, arguments[1]) > -1;
-	};
-
-
-/***/ },
-/* 58 */
 /*!********************************************************************!*\
   !*** ./~/lodash.foreach/~/lodash._baseeach/~/lodash.keys/index.js ***!
   \********************************************************************/
@@ -39198,8 +39113,8 @@
 	 * Available under MIT license <https://lodash.com/license>
 	 */
 	var isArguments = __webpack_require__(/*! lodash.isarguments */ 65),
-	    isArray = __webpack_require__(/*! lodash.isarray */ 48),
-	    isNative = __webpack_require__(/*! lodash.isnative */ 67);
+	    isArray = __webpack_require__(/*! lodash.isarray */ 47),
+	    isNative = __webpack_require__(/*! lodash.isnative */ 66);
 	
 	/** Used for native method references. */
 	var objectProto = Object.prototype;
@@ -39430,7 +39345,7 @@
 
 
 /***/ },
-/* 59 */
+/* 55 */
 /*!**************************************************************************!*\
   !*** ./~/lodash.assign/~/lodash._baseassign/~/lodash._basecopy/index.js ***!
   \**************************************************************************/
@@ -39473,7 +39388,254 @@
 
 
 /***/ },
-/* 60 */
+/* 56 */
+/*!*********************************************************************!*\
+  !*** ./~/lodash.assign/~/lodash._baseassign/~/lodash.keys/index.js ***!
+  \*********************************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.2 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var isArguments = __webpack_require__(/*! lodash.isarguments */ 67),
+	    isArray = __webpack_require__(/*! lodash.isarray */ 68),
+	    isNative = __webpack_require__(/*! lodash.isnative */ 69);
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/** Native method references. */
+	var propertyIsEnumerable = objectProto.propertyIsEnumerable;
+	
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeKeys = isNative(nativeKeys = Object.keys) && nativeKeys;
+	
+	/**
+	 * Used as the maximum length of an array-like value.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
+	 * for more details.
+	 */
+	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
+	
+	/**
+	 * An object environment feature flags.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @type Object
+	 */
+	var support = {};
+	
+	(function(x) {
+	
+	  /**
+	   * Detect if `arguments` object indexes are non-enumerable.
+	   *
+	   * In Firefox < 4, IE < 9, PhantomJS, and Safari < 5.1 `arguments` object
+	   * indexes are non-enumerable. Chrome < 25 and Node.js < 0.11.0 treat
+	   * `arguments` object indexes as non-enumerable and fail `hasOwnProperty`
+	   * checks for indexes that exceed their function's formal parameters with
+	   * associated values of `0`.
+	   *
+	   * @memberOf _.support
+	   * @type boolean
+	   */
+	  try {
+	    support.nonEnumArgs = !propertyIsEnumerable.call(arguments, 1);
+	  } catch(e) {
+	    support.nonEnumArgs = true;
+	  }
+	}(0, 0));
+	
+	/**
+	 * Checks if `value` is a valid array-like index.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+	 */
+	function isIndex(value, length) {
+	  value = +value;
+	  length = length == null ? MAX_SAFE_INTEGER : length;
+	  return value > -1 && value % 1 == 0 && value < length;
+	}
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on ES `ToLength`. See the
+	 * [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+	 * for more details.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * A fallback implementation of `Object.keys` which creates an array of the
+	 * own enumerable property names of `object`.
+	 *
+	 * @private
+	 * @param {Object} object The object to inspect.
+	 * @returns {Array} Returns the array of property names.
+	 */
+	function shimKeys(object) {
+	  var props = keysIn(object),
+	      propsLength = props.length,
+	      length = propsLength && object.length;
+	
+	  var allowIndexes = length && isLength(length) &&
+	    (isArray(object) || (support.nonEnumArgs && isArguments(object)));
+	
+	  var index = -1,
+	      result = [];
+	
+	  while (++index < propsLength) {
+	    var key = props[index];
+	    if ((allowIndexes && isIndex(key, length)) || hasOwnProperty.call(object, key)) {
+	      result.push(key);
+	    }
+	  }
+	  return result;
+	}
+	
+	/**
+	 * Checks if `value` is the language type of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * **Note:** See the [ES5 spec](https://es5.github.io/#x8) for more details.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(1);
+	 * // => false
+	 */
+	function isObject(value) {
+	  // Avoid a V8 JIT bug in Chrome 19-20.
+	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+	  var type = typeof value;
+	  return type == 'function' || (value && type == 'object') || false;
+	}
+	
+	/**
+	 * Creates an array of the own enumerable property names of `object`.
+	 *
+	 * **Note:** Non-object values are coerced to objects. See the
+	 * [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.keys)
+	 * for more details.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Object
+	 * @param {Object} object The object to inspect.
+	 * @returns {Array} Returns the array of property names.
+	 * @example
+	 *
+	 * function Foo() {
+	 *   this.a = 1;
+	 *   this.b = 2;
+	 * }
+	 *
+	 * Foo.prototype.c = 3;
+	 *
+	 * _.keys(new Foo);
+	 * // => ['a', 'b'] (iteration order is not guaranteed)
+	 *
+	 * _.keys('hi');
+	 * // => ['0', '1']
+	 */
+	var keys = !nativeKeys ? shimKeys : function(object) {
+	  if (object) {
+	    var Ctor = object.constructor,
+	        length = object.length;
+	  }
+	  if ((typeof Ctor == 'function' && Ctor.prototype === object) ||
+	     (typeof object != 'function' && (length && isLength(length)))) {
+	    return shimKeys(object);
+	  }
+	  return isObject(object) ? nativeKeys(object) : [];
+	};
+	
+	/**
+	 * Creates an array of the own and inherited enumerable property names of `object`.
+	 *
+	 * **Note:** Non-object values are coerced to objects.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Object
+	 * @param {Object} object The object to inspect.
+	 * @returns {Array} Returns the array of property names.
+	 * @example
+	 *
+	 * function Foo() {
+	 *   this.a = 1;
+	 *   this.b = 2;
+	 * }
+	 *
+	 * Foo.prototype.c = 3;
+	 *
+	 * _.keysIn(new Foo);
+	 * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
+	 */
+	function keysIn(object) {
+	  if (object == null) {
+	    return [];
+	  }
+	  if (!isObject(object)) {
+	    object = Object(object);
+	  }
+	  var length = object.length;
+	  length = (length && isLength(length) &&
+	    (isArray(object) || (support.nonEnumArgs && isArguments(object))) && length) || 0;
+	
+	  var Ctor = object.constructor,
+	      index = -1,
+	      isProto = typeof Ctor == 'function' && Ctor.prototype == object,
+	      result = Array(length),
+	      skipIndexes = length > 0;
+	
+	  while (++index < length) {
+	    result[index] = (index + '');
+	  }
+	  for (var key in object) {
+	    if (!(skipIndexes && isIndex(key, length)) &&
+	        !(key == 'constructor' && (isProto || !hasOwnProperty.call(object, key)))) {
+	      result.push(key);
+	    }
+	  }
+	  return result;
+	}
+	
+	module.exports = keys;
+
+
+/***/ },
+/* 57 */
 /*!**********************************************************************************!*\
   !*** ./~/lodash.assign/~/lodash._createassigner/~/lodash._bindcallback/index.js ***!
   \**********************************************************************************/
@@ -39546,254 +39708,7 @@
 
 
 /***/ },
-/* 61 */
-/*!*********************************************************************!*\
-  !*** ./~/lodash.assign/~/lodash._baseassign/~/lodash.keys/index.js ***!
-  \*********************************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.2 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var isArguments = __webpack_require__(/*! lodash.isarguments */ 66),
-	    isArray = __webpack_require__(/*! lodash.isarray */ 71),
-	    isNative = __webpack_require__(/*! lodash.isnative */ 70);
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/** Used to check objects for own properties. */
-	var hasOwnProperty = objectProto.hasOwnProperty;
-	
-	/** Native method references. */
-	var propertyIsEnumerable = objectProto.propertyIsEnumerable;
-	
-	/* Native method references for those with the same name as other `lodash` methods. */
-	var nativeKeys = isNative(nativeKeys = Object.keys) && nativeKeys;
-	
-	/**
-	 * Used as the maximum length of an array-like value.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
-	 * for more details.
-	 */
-	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
-	
-	/**
-	 * An object environment feature flags.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @type Object
-	 */
-	var support = {};
-	
-	(function(x) {
-	
-	  /**
-	   * Detect if `arguments` object indexes are non-enumerable.
-	   *
-	   * In Firefox < 4, IE < 9, PhantomJS, and Safari < 5.1 `arguments` object
-	   * indexes are non-enumerable. Chrome < 25 and Node.js < 0.11.0 treat
-	   * `arguments` object indexes as non-enumerable and fail `hasOwnProperty`
-	   * checks for indexes that exceed their function's formal parameters with
-	   * associated values of `0`.
-	   *
-	   * @memberOf _.support
-	   * @type boolean
-	   */
-	  try {
-	    support.nonEnumArgs = !propertyIsEnumerable.call(arguments, 1);
-	  } catch(e) {
-	    support.nonEnumArgs = true;
-	  }
-	}(0, 0));
-	
-	/**
-	 * Checks if `value` is a valid array-like index.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
-	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
-	 */
-	function isIndex(value, length) {
-	  value = +value;
-	  length = length == null ? MAX_SAFE_INTEGER : length;
-	  return value > -1 && value % 1 == 0 && value < length;
-	}
-	
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * **Note:** This function is based on ES `ToLength`. See the
-	 * [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
-	 * for more details.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * A fallback implementation of `Object.keys` which creates an array of the
-	 * own enumerable property names of `object`.
-	 *
-	 * @private
-	 * @param {Object} object The object to inspect.
-	 * @returns {Array} Returns the array of property names.
-	 */
-	function shimKeys(object) {
-	  var props = keysIn(object),
-	      propsLength = props.length,
-	      length = propsLength && object.length;
-	
-	  var allowIndexes = length && isLength(length) &&
-	    (isArray(object) || (support.nonEnumArgs && isArguments(object)));
-	
-	  var index = -1,
-	      result = [];
-	
-	  while (++index < propsLength) {
-	    var key = props[index];
-	    if ((allowIndexes && isIndex(key, length)) || hasOwnProperty.call(object, key)) {
-	      result.push(key);
-	    }
-	  }
-	  return result;
-	}
-	
-	/**
-	 * Checks if `value` is the language type of `Object`.
-	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
-	 *
-	 * **Note:** See the [ES5 spec](https://es5.github.io/#x8) for more details.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
-	 * @example
-	 *
-	 * _.isObject({});
-	 * // => true
-	 *
-	 * _.isObject([1, 2, 3]);
-	 * // => true
-	 *
-	 * _.isObject(1);
-	 * // => false
-	 */
-	function isObject(value) {
-	  // Avoid a V8 JIT bug in Chrome 19-20.
-	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
-	  var type = typeof value;
-	  return type == 'function' || (value && type == 'object') || false;
-	}
-	
-	/**
-	 * Creates an array of the own enumerable property names of `object`.
-	 *
-	 * **Note:** Non-object values are coerced to objects. See the
-	 * [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.keys)
-	 * for more details.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Object
-	 * @param {Object} object The object to inspect.
-	 * @returns {Array} Returns the array of property names.
-	 * @example
-	 *
-	 * function Foo() {
-	 *   this.a = 1;
-	 *   this.b = 2;
-	 * }
-	 *
-	 * Foo.prototype.c = 3;
-	 *
-	 * _.keys(new Foo);
-	 * // => ['a', 'b'] (iteration order is not guaranteed)
-	 *
-	 * _.keys('hi');
-	 * // => ['0', '1']
-	 */
-	var keys = !nativeKeys ? shimKeys : function(object) {
-	  if (object) {
-	    var Ctor = object.constructor,
-	        length = object.length;
-	  }
-	  if ((typeof Ctor == 'function' && Ctor.prototype === object) ||
-	     (typeof object != 'function' && (length && isLength(length)))) {
-	    return shimKeys(object);
-	  }
-	  return isObject(object) ? nativeKeys(object) : [];
-	};
-	
-	/**
-	 * Creates an array of the own and inherited enumerable property names of `object`.
-	 *
-	 * **Note:** Non-object values are coerced to objects.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Object
-	 * @param {Object} object The object to inspect.
-	 * @returns {Array} Returns the array of property names.
-	 * @example
-	 *
-	 * function Foo() {
-	 *   this.a = 1;
-	 *   this.b = 2;
-	 * }
-	 *
-	 * Foo.prototype.c = 3;
-	 *
-	 * _.keysIn(new Foo);
-	 * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
-	 */
-	function keysIn(object) {
-	  if (object == null) {
-	    return [];
-	  }
-	  if (!isObject(object)) {
-	    object = Object(object);
-	  }
-	  var length = object.length;
-	  length = (length && isLength(length) &&
-	    (isArray(object) || (support.nonEnumArgs && isArguments(object))) && length) || 0;
-	
-	  var Ctor = object.constructor,
-	      index = -1,
-	      isProto = typeof Ctor == 'function' && Ctor.prototype == object,
-	      result = Array(length),
-	      skipIndexes = length > 0;
-	
-	  while (++index < length) {
-	    result[index] = (index + '');
-	  }
-	  for (var key in object) {
-	    if (!(skipIndexes && isIndex(key, length)) &&
-	        !(key == 'constructor' && (isProto || !hasOwnProperty.call(object, key)))) {
-	      result.push(key);
-	    }
-	  }
-	  return result;
-	}
-	
-	module.exports = keys;
-
-
-/***/ },
-/* 62 */
+/* 58 */
 /*!************************************************************************************!*\
   !*** ./~/lodash.assign/~/lodash._createassigner/~/lodash._isiterateecall/index.js ***!
   \************************************************************************************/
@@ -39900,6 +39815,88 @@
 
 
 /***/ },
+/* 59 */
+/*!*******************************************************************!*\
+  !*** ./~/event-emitter/~/es5-ext/object/assign/is-implemented.js ***!
+  \*******************************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = function () {
+		var assign = Object.assign, obj;
+		if (typeof assign !== 'function') return false;
+		obj = { foo: 'raz' };
+		assign(obj, { bar: 'dwa' }, { trzy: 'trzy' });
+		return (obj.foo + obj.bar + obj.trzy) === 'razdwatrzy';
+	};
+
+
+/***/ },
+/* 60 */
+/*!*********************************************************!*\
+  !*** ./~/event-emitter/~/es5-ext/object/assign/shim.js ***!
+  \*********************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var keys  = __webpack_require__(/*! ../keys */ 64)
+	  , value = __webpack_require__(/*! ../valid-value */ 63)
+	
+	  , max = Math.max;
+	
+	module.exports = function (dest, src/*, …srcn*/) {
+		var error, i, l = max(arguments.length, 2), assign;
+		dest = Object(value(dest));
+		assign = function (key) {
+			try { dest[key] = src[key]; } catch (e) {
+				if (!error) error = e;
+			}
+		};
+		for (i = 1; i < l; ++i) {
+			src = arguments[i];
+			keys(src).forEach(assign);
+		}
+		if (error !== undefined) throw error;
+		return dest;
+	};
+
+
+/***/ },
+/* 61 */
+/*!***********************************************************************!*\
+  !*** ./~/event-emitter/~/es5-ext/string/#/contains/is-implemented.js ***!
+  \***********************************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var str = 'razdwatrzy';
+	
+	module.exports = function () {
+		if (typeof str.contains !== 'function') return false;
+		return ((str.contains('dwa') === true) && (str.contains('foo') === false));
+	};
+
+
+/***/ },
+/* 62 */
+/*!*************************************************************!*\
+  !*** ./~/event-emitter/~/es5-ext/string/#/contains/shim.js ***!
+  \*************************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var indexOf = String.prototype.indexOf;
+	
+	module.exports = function (searchString/*, position*/) {
+		return indexOf.call(this, searchString, arguments[1]) > -1;
+	};
+
+
+/***/ },
 /* 63 */
 /*!*********************************************************!*\
   !*** ./~/event-emitter/~/es5-ext/object/valid-value.js ***!
@@ -39923,9 +39920,9 @@
 
 	'use strict';
 	
-	module.exports = __webpack_require__(/*! ./is-implemented */ 68)()
+	module.exports = __webpack_require__(/*! ./is-implemented */ 70)()
 		? Object.keys
-		: __webpack_require__(/*! ./shim */ 69);
+		: __webpack_require__(/*! ./shim */ 71);
 
 
 /***/ },
@@ -40012,88 +40009,6 @@
 
 /***/ },
 /* 66 */
-/*!******************************************************************************************!*\
-  !*** ./~/lodash.assign/~/lodash._baseassign/~/lodash.keys/~/lodash.isarguments/index.js ***!
-  \******************************************************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/** `Object#toString` result references. */
-	var argsTag = '[object Arguments]';
-	
-	/**
-	 * Checks if `value` is object-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 */
-	function isObjectLike(value) {
-	  return (value && typeof value == 'object') || false;
-	}
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/**
-	 * Used to resolve the `toStringTag` of values.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
-	 * for more details.
-	 */
-	var objToString = objectProto.toString;
-	
-	/**
-	 * Used as the maximum length of an array-like value.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
-	 * for more details.
-	 */
-	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
-	
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * Checks if `value` is classified as an `arguments` object.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
-	 * @example
-	 *
-	 * (function() { return _.isArguments(arguments); })();
-	 * // => true
-	 *
-	 * _.isArguments([1, 2, 3]);
-	 * // => false
-	 */
-	function isArguments(value) {
-	  var length = isObjectLike(value) ? value.length : undefined;
-	  return (isLength(length) && objToString.call(value) == argsTag) || false;
-	}
-	
-	module.exports = isArguments;
-
-
-/***/ },
-/* 67 */
 /*!**************************************************************************************!*\
   !*** ./~/lodash.foreach/~/lodash._baseeach/~/lodash.keys/~/lodash.isnative/index.js ***!
   \**************************************************************************************/
@@ -40218,43 +40133,10 @@
 
 
 /***/ },
-/* 68 */
-/*!*****************************************************************!*\
-  !*** ./~/event-emitter/~/es5-ext/object/keys/is-implemented.js ***!
-  \*****************************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = function () {
-		try {
-			Object.keys('primitive');
-			return true;
-		} catch (e) { return false; }
-	};
-
-
-/***/ },
-/* 69 */
-/*!*******************************************************!*\
-  !*** ./~/event-emitter/~/es5-ext/object/keys/shim.js ***!
-  \*******************************************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var keys = Object.keys;
-	
-	module.exports = function (object) {
-		return keys(object == null ? object : Object(object));
-	};
-
-
-/***/ },
-/* 70 */
-/*!***************************************************************************************!*\
-  !*** ./~/lodash.assign/~/lodash._baseassign/~/lodash.keys/~/lodash.isnative/index.js ***!
-  \***************************************************************************************/
+/* 67 */
+/*!******************************************************************************************!*\
+  !*** ./~/lodash.assign/~/lodash._baseassign/~/lodash.keys/~/lodash.isarguments/index.js ***!
+  \******************************************************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -40267,33 +40149,7 @@
 	 */
 	
 	/** `Object#toString` result references. */
-	var funcTag = '[object Function]';
-	
-	/** Used to detect host constructors (Safari > 5). */
-	var reHostCtor = /^\[object .+?Constructor\]$/;
-	
-	/**
-	 * Used to match `RegExp` special characters.
-	 * See this [article on `RegExp` characters](http://www.regular-expressions.info/characters.html#special)
-	 * for more details.
-	 */
-	var reRegExpChars = /[.*+?^${}()|[\]\/\\]/g,
-	    reHasRegExpChars = RegExp(reRegExpChars.source);
-	
-	/**
-	 * Converts `value` to a string if it is not one. An empty string is returned
-	 * for `null` or `undefined` values.
-	 *
-	 * @private
-	 * @param {*} value The value to process.
-	 * @returns {string} Returns the string.
-	 */
-	function baseToString(value) {
-	  if (typeof value == 'string') {
-	    return value;
-	  }
-	  return value == null ? '' : (value + '');
-	}
+	var argsTag = '[object Arguments]';
 	
 	/**
 	 * Checks if `value` is object-like.
@@ -40309,9 +40165,6 @@
 	/** Used for native method references. */
 	var objectProto = Object.prototype;
 	
-	/** Used to resolve the decompiled source of functions. */
-	var fnToString = Function.prototype.toString;
-	
 	/**
 	 * Used to resolve the `toStringTag` of values.
 	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
@@ -40319,64 +40172,50 @@
 	 */
 	var objToString = objectProto.toString;
 	
-	/** Used to detect if a method is native. */
-	var reNative = RegExp('^' +
-	  escapeRegExp(objToString)
-	  .replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
-	);
+	/**
+	 * Used as the maximum length of an array-like value.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+	 * for more details.
+	 */
+	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
 	
 	/**
-	 * Checks if `value` is a native function.
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * Checks if `value` is classified as an `arguments` object.
 	 *
 	 * @static
 	 * @memberOf _
 	 * @category Lang
 	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
 	 * @example
 	 *
-	 * _.isNative(Array.prototype.push);
+	 * (function() { return _.isArguments(arguments); })();
 	 * // => true
 	 *
-	 * _.isNative(_);
+	 * _.isArguments([1, 2, 3]);
 	 * // => false
 	 */
-	function isNative(value) {
-	  if (value == null) {
-	    return false;
-	  }
-	  if (objToString.call(value) == funcTag) {
-	    return reNative.test(fnToString.call(value));
-	  }
-	  return (isObjectLike(value) && reHostCtor.test(value)) || false;
+	function isArguments(value) {
+	  var length = isObjectLike(value) ? value.length : undefined;
+	  return (isLength(length) && objToString.call(value) == argsTag) || false;
 	}
 	
-	/**
-	 * Escapes the `RegExp` special characters "\", "^", "$", ".", "|", "?", "*",
-	 * "+", "(", ")", "[", "]", "{" and "}" in `string`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category String
-	 * @param {string} [string=''] The string to escape.
-	 * @returns {string} Returns the escaped string.
-	 * @example
-	 *
-	 * _.escapeRegExp('[lodash](https://lodash.com/)');
-	 * // => '\[lodash\]\(https://lodash\.com/\)'
-	 */
-	function escapeRegExp(string) {
-	  string = baseToString(string);
-	  return (string && reHasRegExpChars.test(string))
-	    ? string.replace(reRegExpChars, '\\$&')
-	    : string;
-	}
-	
-	module.exports = isNative;
+	module.exports = isArguments;
 
 
 /***/ },
-/* 71 */
+/* 68 */
 /*!**************************************************************************************!*\
   !*** ./~/lodash.assign/~/lodash._baseassign/~/lodash.keys/~/lodash.isarray/index.js ***!
   \**************************************************************************************/
@@ -40540,6 +40379,164 @@
 	}
 	
 	module.exports = isArray;
+
+
+/***/ },
+/* 69 */
+/*!***************************************************************************************!*\
+  !*** ./~/lodash.assign/~/lodash._baseassign/~/lodash.keys/~/lodash.isnative/index.js ***!
+  \***************************************************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** `Object#toString` result references. */
+	var funcTag = '[object Function]';
+	
+	/** Used to detect host constructors (Safari > 5). */
+	var reHostCtor = /^\[object .+?Constructor\]$/;
+	
+	/**
+	 * Used to match `RegExp` special characters.
+	 * See this [article on `RegExp` characters](http://www.regular-expressions.info/characters.html#special)
+	 * for more details.
+	 */
+	var reRegExpChars = /[.*+?^${}()|[\]\/\\]/g,
+	    reHasRegExpChars = RegExp(reRegExpChars.source);
+	
+	/**
+	 * Converts `value` to a string if it is not one. An empty string is returned
+	 * for `null` or `undefined` values.
+	 *
+	 * @private
+	 * @param {*} value The value to process.
+	 * @returns {string} Returns the string.
+	 */
+	function baseToString(value) {
+	  if (typeof value == 'string') {
+	    return value;
+	  }
+	  return value == null ? '' : (value + '');
+	}
+	
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return (value && typeof value == 'object') || false;
+	}
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to resolve the decompiled source of functions. */
+	var fnToString = Function.prototype.toString;
+	
+	/**
+	 * Used to resolve the `toStringTag` of values.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
+	 * for more details.
+	 */
+	var objToString = objectProto.toString;
+	
+	/** Used to detect if a method is native. */
+	var reNative = RegExp('^' +
+	  escapeRegExp(objToString)
+	  .replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+	);
+	
+	/**
+	 * Checks if `value` is a native function.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
+	 * @example
+	 *
+	 * _.isNative(Array.prototype.push);
+	 * // => true
+	 *
+	 * _.isNative(_);
+	 * // => false
+	 */
+	function isNative(value) {
+	  if (value == null) {
+	    return false;
+	  }
+	  if (objToString.call(value) == funcTag) {
+	    return reNative.test(fnToString.call(value));
+	  }
+	  return (isObjectLike(value) && reHostCtor.test(value)) || false;
+	}
+	
+	/**
+	 * Escapes the `RegExp` special characters "\", "^", "$", ".", "|", "?", "*",
+	 * "+", "(", ")", "[", "]", "{" and "}" in `string`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category String
+	 * @param {string} [string=''] The string to escape.
+	 * @returns {string} Returns the escaped string.
+	 * @example
+	 *
+	 * _.escapeRegExp('[lodash](https://lodash.com/)');
+	 * // => '\[lodash\]\(https://lodash\.com/\)'
+	 */
+	function escapeRegExp(string) {
+	  string = baseToString(string);
+	  return (string && reHasRegExpChars.test(string))
+	    ? string.replace(reRegExpChars, '\\$&')
+	    : string;
+	}
+	
+	module.exports = isNative;
+
+
+/***/ },
+/* 70 */
+/*!*****************************************************************!*\
+  !*** ./~/event-emitter/~/es5-ext/object/keys/is-implemented.js ***!
+  \*****************************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = function () {
+		try {
+			Object.keys('primitive');
+			return true;
+		} catch (e) { return false; }
+	};
+
+
+/***/ },
+/* 71 */
+/*!*******************************************************!*\
+  !*** ./~/event-emitter/~/es5-ext/object/keys/shim.js ***!
+  \*******************************************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var keys = Object.keys;
+	
+	module.exports = function (object) {
+		return keys(object == null ? object : Object(object));
+	};
 
 
 /***/ }
