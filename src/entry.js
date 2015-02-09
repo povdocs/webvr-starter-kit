@@ -2,10 +2,7 @@
 	'use strict';
 
 	//global-ish declarations
-	var VR,
-
-	//ui elements
-		vrButton;
+	var VR;
 
 	function initRequirements() {
 		//load styles
@@ -16,13 +13,40 @@
 
 	function initUI() {
 		var container,
-			fsButton,
+			enableFullscreen,
+			disableFullscreen,
+			vrButton,
+			orientationButton,
 			element,
 
-			fullScreenElement = VR.canvas,
+			fullScreenElement = document.body,
 			requestFullscreen = fullScreenElement.webkitRequestFullscreen ||
 					fullScreenElement.mozRequestFullScreen ||
 					fullScreenElement.msRequestFullscreen;
+
+		function svgButton(source, id) {
+			var span = document.createElement('span'),
+				svg;
+
+			span.innerHTML = source;
+			span.id = id;
+
+			svg = span.firstChild;
+			svg.setAttribute('width', 18);
+			svg.setAttribute('height', 18);
+
+			container.appendChild(span);
+
+			return span;
+		}
+
+		function toggleOrientation() {
+			if (VR.orientationEnabled()) {
+				VR.disableOrientation();
+			} else {
+				VR.enableOrientation();
+			}
+		}
 
 		//set up meta viewport tag for mobile devices
 		element = document.createElement('meta');
@@ -36,29 +60,49 @@
 
 		//todo: use icons instead of text
 		if (requestFullscreen) {
-			fsButton = document.createElement('button');
-			fsButton.id = 'fs';
-			fsButton.innerHTML = 'FS';
-			fsButton.addEventListener('click', requestFullscreen.bind(fullScreenElement), false);
-			container.appendChild(fsButton);
+			enableFullscreen = svgButton(require('raw!open-iconic/svg/fullscreen-enter.svg'), 'fs-enable');
+			enableFullscreen.setAttribute('title', 'Enable Full Screen');
+			enableFullscreen.addEventListener('click', requestFullscreen.bind(fullScreenElement), false);
+
+			disableFullscreen = svgButton(require('raw!open-iconic/svg/fullscreen-exit.svg'), 'fs-disable');
+			disableFullscreen.setAttribute('title', 'Exit Full Screen');
+			disableFullscreen.addEventListener('click', VR.exitFullscreen, false);
 		}
+
+		VR.on('fullscreenchange', function () {
+			if (VR.isFullscreen()) {
+				disableFullscreen.style.display = 'inline-block';
+				enableFullscreen.style.display = 'none';
+			} else {
+				disableFullscreen.style.display = '';
+				enableFullscreen.style.display = '';
+			}
+		});
+
+		vrButton = svgButton(require('raw!open-iconic/svg/eye.svg'), 'vr');
+		vrButton.setAttribute('title', 'Toggle Virtual Reality');
+		vrButton.className = 'unsupported';
+		vrButton.addEventListener('click', VR.requestVR, false);
+
+		orientationButton = svgButton(require('raw!open-iconic/svg/compass.svg'), 'orientation');
+		orientationButton.setAttribute('title', 'Toggle Orientation');
+		orientationButton.className = 'unsupported';
+		orientationButton.addEventListener('click', toggleOrientation, false);
 
 		//report on HMD
 		VR.on('devicechange', function (mode) {
 			if (mode) {
-				vrButton.style.display = 'inline-block';
+				vrButton.classList.remove('unsupported');
+				orientationButton.classList.remove('unsupported');
 			}
 
 			//todo: enable this
 			//info.innerHTML = hmd && hmd.deviceName ? 'HMD: ' + hmd.deviceName : '';
 			//info.className = hmd && hmd.deviceId !== 'debug-0' ? 'has-hmd' : '';
-		});
 
-		vrButton = document.createElement('button');
-		vrButton.id = 'vr';
-		vrButton.innerHTML = 'VR';
-		vrButton.addEventListener('click', VR.requestFullScreen, false);
-		container.appendChild(vrButton);
+			if (!orientationButton) {
+			}
+		});
 
 		//keyboard shortcuts for making life a little easier
 		window.addEventListener('keydown', function (evt) {
@@ -67,7 +111,7 @@
 			} else if (evt.keyCode === 'P'.charCodeAt(0)) {
 				VR.preview();
 			} else if (evt.keyCode === 13) {
-				VR.requestFullScreen();
+				VR.requestFullscreen();
 			}
 		}, false);
 	}
@@ -82,9 +126,7 @@
 		initUI();
 
 		VR.resize();
-		window.addEventListener('resize', function () {
-			VR.resize();
-		}, false);
+		window.addEventListener('resize', VR.resize, false);
 
 		/*
 		export global things
