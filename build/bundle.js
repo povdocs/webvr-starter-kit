@@ -66,9 +66,15 @@
 				element,
 	
 				fullScreenElement = document.body,
+	
+				fullscreenEnabled = document.fullscreenEnabled ||
+					document.webkitFullscreenEnabled ||
+					document.mozFullScreenEnabled ||
+					document.msFullScreenEnabled,
+	
 				requestFullscreen = fullScreenElement.webkitRequestFullscreen ||
-						fullScreenElement.mozRequestFullScreen ||
-						fullScreenElement.msRequestFullscreen;
+					fullScreenElement.mozRequestFullScreen ||
+					fullScreenElement.msRequestFullscreen;
 	
 			function svgButton(source, id) {
 				var span = document.createElement('span'),
@@ -116,7 +122,7 @@
 			document.body.appendChild(container);
 	
 			//todo: use icons instead of text
-			if (requestFullscreen) {
+			if (requestFullscreen && fullscreenEnabled) {
 				enableFullscreen = svgButton(__webpack_require__(50), 'fs-enable');
 				enableFullscreen.setAttribute('title', 'Enable Full Screen');
 				enableFullscreen.addEventListener('click', requestFullscreen.bind(fullScreenElement), false);
@@ -154,10 +160,10 @@
 			window.addEventListener('keydown', function (evt) {
 				if (evt.keyCode === 'Z'.charCodeAt(0)) {
 					VR.zeroSensor();
-				} else if (evt.keyCode === 'P'.charCodeAt(0)) {
-					VR.preview();
+				} else if (evt.keyCode === 'O'.charCodeAt(0)) {
+					VR.enableOrientation();
 				} else if (evt.keyCode === 13) {
-					VR.requestFullscreen();
+					VR.requestVR();
 				}
 			}, false);
 	
@@ -509,6 +515,13 @@
 				document.msFullscreenElement);
 		}
 	
+		function fullScreenError() {
+			vrMode = false;
+			if (vrEffect) {
+				vrEffect.exit();
+			}
+		}
+	
 		function raycast() {
 			var i,
 				intersect,
@@ -765,6 +778,10 @@
 			} else {
 				window.addEventListener('load', attachCanvas, false);
 			}
+	
+			VR.canvas.addEventListener('mozfullscreenerror', fullScreenError, false);
+			VR.canvas.addEventListener('webkitfullscreenerror', fullScreenError, false);
+			VR.canvas.addEventListener('fullscreenerror', fullScreenError, false);
 		}
 	
 		function initRequirements() {
@@ -39637,6 +39654,11 @@
 		this.requestFullScreen = function () {
 			vrMode = true;
 			requestFullscreen();
+		};
+	
+		this.exit = function () {
+			vrMode = false;
+			vrPreview = false;
 		};
 	
 		this.setSize = function ( w, h ) {

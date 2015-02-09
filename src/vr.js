@@ -65,6 +65,13 @@
 			document.msFullscreenElement);
 	}
 
+	function fullScreenError() {
+		vrMode = false;
+		if (vrEffect) {
+			vrEffect.exit();
+		}
+	}
+
 	function raycast() {
 		var i,
 			intersect,
@@ -321,6 +328,10 @@
 		} else {
 			window.addEventListener('load', attachCanvas, false);
 		}
+
+		VR.canvas.addEventListener('mozfullscreenerror', fullScreenError, false);
+		VR.canvas.addEventListener('webkitfullscreenerror', fullScreenError, false);
+		VR.canvas.addEventListener('fullscreenerror', fullScreenError, false);
 	}
 
 	function initRequirements() {

@@ -224,6 +224,11 @@ THREE.VRStereoEffect = function ( renderer, fullScreenElement, options ) {
 		requestFullscreen();
 	};
 
+	this.exit = function () {
+		vrMode = false;
+		vrPreview = false;
+	};
+
 	this.setSize = function ( w, h ) {
 		width = w;
 		height = h;
