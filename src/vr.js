@@ -421,6 +421,7 @@
 		},
 
 		exitVR: function () {
+			vrMode = false;
 			if (isFullscreen()) {
 				exitFullscreen();
 				return;
