@@ -57,7 +57,7 @@
 		vrButton = document.createElement('button');
 		vrButton.id = 'vr';
 		vrButton.innerHTML = 'VR';
-		vrButton.addEventListener('click', VR.requestFullScreen, false);
+		vrButton.addEventListener('click', VR.requestVR, false);
 		container.appendChild(vrButton);
 
 		//keyboard shortcuts for making life a little easier
@@ -67,7 +67,7 @@
 			} else if (evt.keyCode === 'P'.charCodeAt(0)) {
 				VR.preview();
 			} else if (evt.keyCode === 13) {
-				VR.requestFullScreen();
+				VR.requestFullscreen();
 			}
 		}, false);
 	}

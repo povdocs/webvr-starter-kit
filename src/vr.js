@@ -9,6 +9,13 @@
 		THREE,
 		eventEmitter,
 		materials = require('./materials'),
+		nop = function () {},
+		requestFullscreen = nop,
+		exitFullscreen = (document.exitFullscreen ||
+			document.mozCancelFullScreen ||
+			document.webkitExitFullscreen ||
+			document.msExitFullscreen ||
+			nop).bind(document),
 
 	//scene assets
 		camera,
@@ -29,6 +36,9 @@
 
 	//state
 		going = false,
+		vrMode = false,
+		orientationEnabled,
+		orientationPossible = false,
 
 	//exported object
 		VR,
@@ -47,6 +57,13 @@
 
 		lastTick = 0,
 		animationCallbacks = [];
+
+	function isFullScreen() {
+		return !(document.fullscreenElement ||
+			document.mozFullScreenElement ||
+			document.webkitFullscreenElement ||
+			document.msFullscreenElement);
+	}
 
 	function raycast() {
 		var i,
@@ -177,6 +194,8 @@
 			lastX = current.x;
 			lastY = current.y;
 			lastZ = current.z;
+
+			orientationPossible = true;
 		}, false);
 	}
 
@@ -221,20 +240,32 @@
 		vrEffect = new THREE.VRStereoEffect(renderer);
 		vrEffect.near = NEAR;
 		vrEffect.far = FAR;
-		vrEffect.addEventListener('fullscreenchange', function () {
-			var fs = document.fullscreenElement ||
-				document.mozFullScreenElement ||
-				document.webkitFullscreenElement;
+		vrEffect.addEventListener('fullscreenchange', function (evt) {
+			if (isFullscreen()) {
+				if (vrMode) {
+					//no mouse control
+					mouseControls.enabled = false;
 
-			vrControls.freeze = !(vrEffect.isFullscreen() || vrEffect.vrPreview() || fs && vrControls.mode() === 'deviceorientation');
-			if (vrControls.freeze) {
-				vrControls.reset();
-				camera.position.z = 0.0001;
+					vrControls.reset();
+					camera.position.z = 0.0001;
+				}
+			} else {
+				VR.exitVR();
 			}
+
+			VR.emit('fullscreenchange', evt);
+			//vrControls.freeze = !(vrEffect.isFullscreen() || vrEffect.vrPreview() || isFullscreen() && vrControls.mode() === 'deviceorientation');
 		});
 
 		//report on HMD
 		vrControls.addEventListener('devicechange', function () {
+			if (vrControls.mode() === 'deviceorientation') {
+				orientationPossible = true;
+				if (orientationEnabled === undefined) {
+					orientationEnabled = true;
+				}
+			}
+
 			VR.emit('devicechange', vrControls.mode, vrEffect.hmd());
 		});
 
@@ -271,7 +302,6 @@
 			VR.camera = cameraWrapper;
 			VR.body = bodyWrapper;
 			VR.canvas = renderer.domElement;
-			VR.requestFullScreen = vrEffect.requestFullScreen;
 			VR.zeroSensor = vrControls.zeroSensor;
 		}
 
@@ -351,26 +381,57 @@
 			}
 		},
 
-		requestFullScreen: function () {},
-		zeroSensor: function () {},
+		requestVR: function () {
+			//todo: check if it's possible
+			if (vrMode || !vrEffect) {
+				return;
+			}
+
+			vrMode = true;
+
+			//full screen and render two eyes
+			//always full screen
+			vrEffect.requestFullScreen();
+		},
+
+		exitVR: function () {
+			vrMode = false;
+
+		},
+
+		vrMode: function () {
+			return vrMode && isFullscreen();
+		},
+
+		orientationEnabled: function () {
+			return !!orientationEnabled;
+		},
+
+		requestFullscreen: requestFullscreen,
+		exitFullscreen: function () {
+			if (isFullscreen()) {
+				exitFullscreen();
+			}
+		},
+
+		zeroSensor: nop,
 		preview: function () {
-			var fs;
 			if (vrEffect && !vrEffect.isFullscreen()) {
 				vrEffect.vrPreview(!vrEffect.vrPreview());
 
-				fs = document.fullscreenElement ||
-					document.mozFullScreenElement ||
-					document.webkitFullscreenElement;
+				/*
+				todo: restore preview mode if we feel like it
 
 				vrControls.freeze = !(vrEffect.isFullscreen() || vrEffect.vrPreview() || vrControls.mode() === 'deviceorientation');
 				if (vrControls.freeze) {
 					vrControls.reset();
 					camera.position.z = 0.0001;
 				}
+				*/
 			}
 		},
 
-		vibrate: navigator.vibrate ? navigator.vibrate.bind(navigator) : function () {},
+		vibrate: navigator.vibrate ? navigator.vibrate.bind(navigator) : nop,
 
 		camera: cameraWrapper,
 		body: bodyWrapper,
