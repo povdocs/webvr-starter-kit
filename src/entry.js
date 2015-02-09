@@ -17,6 +17,7 @@
 	function initUI() {
 		var container,
 			fsButton,
+			orientationButton,
 			element,
 
 			fullScreenElement = VR.canvas,
@@ -52,6 +53,20 @@
 			//todo: enable this
 			//info.innerHTML = hmd && hmd.deviceName ? 'HMD: ' + hmd.deviceName : '';
 			//info.className = hmd && hmd.deviceId !== 'debug-0' ? 'has-hmd' : '';
+
+			if (!orientationButton && mode === 'deviceorientation') {
+				orientationButton = document.createElement('button');
+				orientationButton.id = 'orientation';
+				orientationButton.innerHTML = 'O';
+				orientationButton.addEventListener('click', function () {
+					if (VR.orientationEnabled()) {
+						VR.disableOrientation();
+					} else {
+						VR.enableOrientation();
+					}
+				}, false);
+				container.appendChild(orientationButton);
+			}
 		});
 
 		vrButton = document.createElement('button');
@@ -82,9 +97,7 @@
 		initUI();
 
 		VR.resize();
-		window.addEventListener('resize', function () {
-			VR.resize();
-		}, false);
+		window.addEventListener('resize', VR.resize, false);
 
 		/*
 		export global things

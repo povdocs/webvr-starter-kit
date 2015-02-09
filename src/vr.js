@@ -58,8 +58,8 @@
 		lastTick = 0,
 		animationCallbacks = [];
 
-	function isFullScreen() {
-		return !(document.fullscreenElement ||
+	function isFullscreen() {
+		return !!(document.fullscreenElement ||
 			document.mozFullScreenElement ||
 			document.webkitFullscreenElement ||
 			document.msFullscreenElement);
@@ -142,8 +142,8 @@
 	}
 
 	function resize(width, height) {
-		width = width || window.innerWidth;
-		height = height || window.innerHeight;
+		width = typeof width === 'number' && width || window.innerWidth;
+		height = typeof height === 'number' && height || window.innerHeight;
 
 		camera.aspect = width / height;
 		camera.updateProjectionMatrix();
@@ -234,7 +234,9 @@
 
 		//VRControls point the camera wherever we're looking
 		vrControls = new THREE.VRControls(camera);
-		vrControls.freeze = true;
+		if (orientationEnabled === false || vrControls.mode() !== 'deviceorientation') {
+			vrControls.freeze = true;
+		}
 
 		//render left and right eye
 		vrEffect = new THREE.VRStereoEffect(renderer);
@@ -246,12 +248,14 @@
 					//no mouse control
 					mouseControls.enabled = false;
 
+					vrControls.freeze = false;
 					vrControls.reset();
-					camera.position.z = 0.0001;
 				}
 			} else {
 				VR.exitVR();
 			}
+
+			camera.position.set(0, 0.0001, 0.0001);
 
 			VR.emit('fullscreenchange', evt);
 			//vrControls.freeze = !(vrEffect.isFullscreen() || vrEffect.vrPreview() || isFullscreen() && vrControls.mode() === 'deviceorientation');
@@ -266,7 +270,9 @@
 				}
 			}
 
-			VR.emit('devicechange', vrControls.mode, vrEffect.hmd());
+			vrControls.freeze = !orientationEnabled || !vrMode && vrControls.mode() !== 'deviceorientation';
+
+			VR.emit('devicechange', vrControls.mode(), vrEffect.hmd());
 		});
 
 		//mouse control in case got no orientation device
@@ -395,8 +401,15 @@
 		},
 
 		exitVR: function () {
-			vrMode = false;
+			if (isFullscreen()) {
+				exitFullscreen();
+				return;
+			}
 
+			mouseControls.enabled = true;
+			if (orientationEnabled === false || vrControls.mode() !== 'deviceorientation') {
+				vrControls.freeze = true;
+			}
 		},
 
 		vrMode: function () {
@@ -405,6 +418,18 @@
 
 		orientationEnabled: function () {
 			return !!orientationEnabled;
+		},
+		enableOrientation: function () {
+			orientationEnabled = true;
+			if (!vrMode) {
+				vrControls.freeze = false;
+			}
+		},
+		disableOrientation: function () {
+			orientationEnabled = false;
+			if (!vrMode && vrControls.mode() === 'deviceorientation') {
+				vrControls.freeze = true;
+			}
 		},
 
 		requestFullscreen: requestFullscreen,
