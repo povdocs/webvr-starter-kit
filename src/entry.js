@@ -54,7 +54,7 @@
 			//info.innerHTML = hmd && hmd.deviceName ? 'HMD: ' + hmd.deviceName : '';
 			//info.className = hmd && hmd.deviceId !== 'debug-0' ? 'has-hmd' : '';
 
-			if (!orientationButton && mode === 'deviceorientation') {
+			if (!orientationButton) {
 				orientationButton = document.createElement('button');
 				orientationButton.id = 'orientation';
 				orientationButton.innerHTML = 'O';
