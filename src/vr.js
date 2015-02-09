@@ -200,6 +200,11 @@
 	}
 
 	function initScene() {
+		function attachCanvas() {
+			document.body.insertBefore(renderer.domElement, document.body.firstChild || null);
+			resize();
+		}
+
 		if (renderer) {
 			return;
 		}
@@ -211,7 +216,6 @@
 		});
 		// renderer.shadowMapEnabled = true;
 		// renderer.shadowMapSoft = true;
-		document.body.insertBefore(renderer.domElement, document.body.firstChild || null);
 
 		//need a scene to put all our objects in
 		scene = new THREE.Scene();
@@ -311,6 +315,12 @@
 		}
 
 		raycaster = new THREE.Raycaster();
+
+		if (document.body) {
+			attachCanvas();
+		} else {
+			window.addEventListener('load', attachCanvas, false);
+		}
 	}
 
 	function initRequirements() {
@@ -435,6 +445,10 @@
 			if (isFullscreen()) {
 				exitFullscreen();
 			}
+		},
+
+		controlMode: function () {
+			return vrControls && vrControls.mode();
 		},
 
 		zeroSensor: nop,

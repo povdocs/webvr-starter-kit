@@ -48,6 +48,17 @@
 			}
 		}
 
+		function deviceChange() {
+			if (VR.controlMode()) {
+				vrButton.classList.remove('unsupported');
+				orientationButton.classList.remove('unsupported');
+			}
+
+			//todo: enable this
+			//info.innerHTML = hmd && hmd.deviceName ? 'HMD: ' + hmd.deviceName : '';
+			//info.className = hmd && hmd.deviceId !== 'debug-0' ? 'has-hmd' : '';
+		}
+
 		//set up meta viewport tag for mobile devices
 		element = document.createElement('meta');
 		element.setAttribute('name', 'viewport');
@@ -90,19 +101,8 @@
 		orientationButton.addEventListener('click', toggleOrientation, false);
 
 		//report on HMD
-		VR.on('devicechange', function (mode) {
-			if (mode) {
-				vrButton.classList.remove('unsupported');
-				orientationButton.classList.remove('unsupported');
-			}
-
-			//todo: enable this
-			//info.innerHTML = hmd && hmd.deviceName ? 'HMD: ' + hmd.deviceName : '';
-			//info.className = hmd && hmd.deviceId !== 'debug-0' ? 'has-hmd' : '';
-
-			if (!orientationButton) {
-			}
-		});
+		VR.on('devicechange', deviceChange);
+		deviceChange();
 
 		//keyboard shortcuts for making life a little easier
 		window.addEventListener('keydown', function (evt) {
@@ -114,6 +114,8 @@
 				VR.requestFullscreen();
 			}
 		}, false);
+
+		VR.resize();
 	}
 
 	function initialize() {
@@ -123,9 +125,12 @@
 
 		VR.init();
 
-		initUI();
+		if (document.body) {
+			initUI();
+		} else {
+			window.addEventListener('load', initUI, false);
+		}
 
-		VR.resize();
 		window.addEventListener('resize', VR.resize, false);
 
 		/*
