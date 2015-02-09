@@ -10,6 +10,9 @@
   "author": "Brian Chirls <brian@chirls.com>",
   "license": "MIT",
   "devDependencies": {
+    "css-loader": "^0.9.1",
+    "event-emitter": "^0.3.2",
+    "file-loader": "^0.8.1",
     "gulp": "^3.8.10",
     "gulp-header": "^1.2.2",
     "gulp-rename": "^1.2.0",
@@ -22,13 +25,11 @@
     "lodash.assign": "^3.0.0",
     "lodash.foreach": "^3.0.1",
     "main-bower-files": "^2.5.0",
-    "webpack": "^1.5.1",
-    "webpack-dev-server": "^1.7.0",
-    "css-loader": "^0.9.1",
-    "event-emitter": "^0.3.2",
-    "file-loader": "^0.8.1",
+    "raw-loader": "^0.5.1",
     "style-loader": "^0.8.3",
     "three": "^0.69.0",
-    "url-loader": "^0.5.5"
+    "url-loader": "^0.5.5",
+    "webpack": "^1.5.1",
+    "webpack-dev-server": "^1.7.0"
   }
 }

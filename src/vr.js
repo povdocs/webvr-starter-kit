@@ -206,6 +206,9 @@
 
 		//create renderer and place in document
 		renderer = new THREE.WebGLRenderer();
+		renderer.domElement.addEventListener('webglcontextlost', function contextLost(event) {
+			console.log('lost context', event);
+		});
 		// renderer.shadowMapEnabled = true;
 		// renderer.shadowMapSoft = true;
 		document.body.insertBefore(renderer.domElement, document.body.firstChild || null);
@@ -254,6 +257,7 @@
 			}
 
 			camera.position.set(0, 0.0001, 0.0001);
+			camera.rotation.set(0, 0, 0);
 
 			VR.emit('fullscreenchange', evt);
 		});
@@ -265,7 +269,7 @@
 				orientationEnabled = vrControls.mode() === 'deviceorientation';
 			}
 
-			vrControls.freeze = !orientationEnabled || !vrMode;
+			vrControls.freeze = !orientationEnabled && !vrMode;
 
 			VR.emit('devicechange', vrControls.mode(), vrEffect.hmd());
 		});
@@ -403,6 +407,7 @@
 
 			mouseControls.enabled = true;
 			vrControls.freeze = !orientationEnabled;
+			camera.rotation.set(0, 0, 0);
 		},
 
 		vrMode: function () {
@@ -420,9 +425,11 @@
 		},
 		disableOrientation: function () {
 			orientationEnabled = false;
+			camera.rotation.set(0, 0, 0);
 			vrControls.freeze = !vrMode;
 		},
 
+		isFullscreen: isFullscreen,
 		requestFullscreen: requestFullscreen,
 		exitFullscreen: function () {
 			if (isFullscreen()) {
@@ -431,11 +438,6 @@
 		},
 
 		zeroSensor: nop,
-		preview: function () {
-			if (vrEffect && !vrEffect.isFullscreen()) {
-				vrEffect.vrPreview(!vrEffect.vrPreview());
-			}
-		},
 
 		vibrate: navigator.vibrate ? navigator.vibrate.bind(navigator) : nop,
 

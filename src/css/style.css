@@ -22,17 +22,28 @@ canvas {
 	position: absolute;
 	bottom: 0;
 	left: 0;
-	padding: 20px;
+	padding: 12px;
+	margin: 8px;
+	border-radius: 8px;
+	background-color: rgba(128, 128, 128, 0.6);
 }
 
 #buttons > * {
-	margin-left: 10px;
+	margin: 0 10px;
+	display: inline-block;
+	width: 18px;
+	height: 18px;
+	cursor: pointer;
 }
 
 #buttons > *:first-child {
 	margin-left: 0;
 }
 
-#vr {
+#buttons > .unsupported {
+	display: none;
+}
+
+#fs-disable {
 	display: none;
 }

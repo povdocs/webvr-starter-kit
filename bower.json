@@ -25,6 +25,7 @@
   "dependencies": {
     "DeviceOrientationControls": "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/js/controls/DeviceOrientationControls.js",
     "OrbitControls": "http://threejs.org/examples/js/controls/OrbitControls.js",
-    "AugmentedConsole": "https://raw.githubusercontent.com/spite/THREE.AugmentedConsole.js/master/src/THREE.AugmentedConsole.js"
+    "AugmentedConsole": "https://raw.githubusercontent.com/spite/THREE.AugmentedConsole.js/master/src/THREE.AugmentedConsole.js",
+    "open-iconic": "~1.1.1"
   }
 }
