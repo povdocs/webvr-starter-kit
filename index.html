@@ -72,8 +72,8 @@
             });
 
             VR.animate(function (delta, time) {
-                box.rotateY(delta / 100);
-                torus.rotateY(delta / 100);
+                box.rotateY(delta * Math.PI * 2);
+                torus.rotateY(delta / 10);
 
                 soundSource.moveTo(10 * Math.cos(time / 1), 4, 0);
 

@@ -104,7 +104,7 @@
 
 	function render() {
 		var now = Date.now() / 1000,
-			delta = Math.max(1, now - lastTick);
+			delta = Math.min(1, now - lastTick);
 
 		vrControls.update();
 

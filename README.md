@@ -89,9 +89,18 @@ This method can be passed a callback function, which is run every time a new fra
 
 ##### Options:
 
-- `callback` - A function to be run on every frame
+- `callback` - A function to be run on every frame. Receives two arguments: `delta`, the number of seconds since the last frame, and `time`, the current time in seconds
 
 ##### Examples:
+
+Create a box and make it rotate, one full rotation per second
+
+``` Javascript
+var box = VR.box();
+VR.animate(function (delta) {
+    box.rotateY(delta * Math.PI 2);
+});
+```
 
 #### VR.end()
 #### VR.render()

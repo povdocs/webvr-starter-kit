@@ -554,7 +554,7 @@
 	
 		function render() {
 			var now = Date.now() / 1000,
-				delta = Math.max(1, now - lastTick);
+				delta = Math.min(1, now - lastTick);
 	
 			vrControls.update();
 	
@@ -37952,19 +37952,19 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	var map = {
-		"./asphalt.jpg": 54,
-		"./brick-tiles.jpg": 55,
-		"./bricks-normal.jpg": 56,
-		"./bricks-specular.jpg": 57,
-		"./bricks.jpg": 58,
-		"./checkerboard.png": 59,
-		"./grass.jpg": 60,
-		"./metal-floor.jpg": 61,
-		"./metal.jpg": 62,
-		"./stone.jpg": 63,
-		"./tiles.jpg": 64,
-		"./weathered-wood.jpg": 65,
-		"./wood.jpg": 66
+		"./asphalt.jpg": 63,
+		"./brick-tiles.jpg": 64,
+		"./bricks-normal.jpg": 65,
+		"./bricks-specular.jpg": 66,
+		"./bricks.jpg": 67,
+		"./checkerboard.png": 68,
+		"./grass.jpg": 69,
+		"./metal-floor.jpg": 70,
+		"./metal.jpg": 71,
+		"./stone.jpg": 72,
+		"./tiles.jpg": 73,
+		"./weathered-wood.jpg": 74,
+		"./wood.jpg": 75
 	};
 	function webpackContext(req) {
 		return __webpack_require__(webpackContextResolve(req));
@@ -40045,24 +40045,24 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	var map = {
-		"./box": 67,
-		"./box.js": 67,
-		"./cylinder": 68,
-		"./cylinder.js": 68,
+		"./box": 54,
+		"./box.js": 54,
+		"./cylinder": 55,
+		"./cylinder.js": 55,
 		"./empty": 32,
 		"./empty.js": 32,
-		"./floor": 69,
-		"./floor.js": 69,
-		"./image": 70,
-		"./image.js": 70,
-		"./panorama": 71,
-		"./panorama.js": 71,
-		"./sound": 72,
-		"./sound.js": 72,
-		"./sphere": 74,
-		"./sphere.js": 74,
-		"./torus": 75,
-		"./torus.js": 75
+		"./floor": 56,
+		"./floor.js": 56,
+		"./image": 57,
+		"./image.js": 57,
+		"./panorama": 58,
+		"./panorama.js": 58,
+		"./sound": 59,
+		"./sound.js": 59,
+		"./sphere": 61,
+		"./sphere.js": 61,
+		"./torus": 62,
+		"./torus.js": 62
 	};
 	function webpackContext(req) {
 		return __webpack_require__(webpackContextResolve(req));
@@ -40080,84 +40080,6 @@
 
 /***/ },
 /* 54 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/asphalt.jpg"
-
-/***/ },
-/* 55 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/brick-tiles.jpg"
-
-/***/ },
-/* 56 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/bricks-normal.jpg"
-
-/***/ },
-/* 57 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/bricks-specular.jpg"
-
-/***/ },
-/* 58 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/bricks.jpg"
-
-/***/ },
-/* 59 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAABlBMVEUsLCzp6enLhVdXAAAAAWJLR0QAiAUdSAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB94KFBIOCP7R3TQAAAA4SURBVGje7dAhEgAACMOw/f/T4Gc5XKqjmlRTBQAAAAAAAAAAAAAA4AiMAQAAAAAAAAAAAADgGSyKafDiEFszywAAAABJRU5ErkJggg=="
-
-/***/ },
-/* 60 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/grass.jpg"
-
-/***/ },
-/* 61 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/metal-floor.jpg"
-
-/***/ },
-/* 62 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/metal.jpg"
-
-/***/ },
-/* 63 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/stone.jpg"
-
-/***/ },
-/* 64 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/tiles.jpg"
-
-/***/ },
-/* 65 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/weathered-wood.jpg"
-
-/***/ },
-/* 66 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/wood.jpg"
-
-/***/ },
-/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = (function () {
@@ -40181,7 +40103,7 @@
 	}());
 
 /***/ },
-/* 68 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = (function () {
@@ -40214,7 +40136,7 @@
 	}());
 
 /***/ },
-/* 69 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = (function () {
@@ -40247,7 +40169,7 @@
 	}());
 
 /***/ },
-/* 70 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = (function () {
@@ -40298,7 +40220,7 @@
 	}());
 
 /***/ },
-/* 71 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = (function () {
@@ -40345,7 +40267,7 @@
 	}());
 
 /***/ },
-/* 72 */
+/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = (function () {
@@ -40354,7 +40276,7 @@
 		var materials = __webpack_require__(10),
 			THREE = __webpack_require__(11);
 	
-		__webpack_require__(73);
+		__webpack_require__(60);
 	
 		return function sound(parent, options) {
 			var obj,
@@ -40384,7 +40306,7 @@
 	}());
 
 /***/ },
-/* 73 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
@@ -40534,7 +40456,7 @@
 
 
 /***/ },
-/* 74 */
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = (function () {
@@ -40566,7 +40488,7 @@
 	}());
 
 /***/ },
-/* 75 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = (function () {
@@ -40594,6 +40516,84 @@
 			return mesh;
 		};
 	}());
+
+/***/ },
+/* 63 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/asphalt.jpg"
+
+/***/ },
+/* 64 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/brick-tiles.jpg"
+
+/***/ },
+/* 65 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/bricks-normal.jpg"
+
+/***/ },
+/* 66 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/bricks-specular.jpg"
+
+/***/ },
+/* 67 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/bricks.jpg"
+
+/***/ },
+/* 68 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAABlBMVEUsLCzp6enLhVdXAAAAAWJLR0QAiAUdSAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB94KFBIOCP7R3TQAAAA4SURBVGje7dAhEgAACMOw/f/T4Gc5XKqjmlRTBQAAAAAAAAAAAAAA4AiMAQAAAAAAAAAAAADgGSyKafDiEFszywAAAABJRU5ErkJggg=="
+
+/***/ },
+/* 69 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/grass.jpg"
+
+/***/ },
+/* 70 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/metal-floor.jpg"
+
+/***/ },
+/* 71 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/metal.jpg"
+
+/***/ },
+/* 72 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/stone.jpg"
+
+/***/ },
+/* 73 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/tiles.jpg"
+
+/***/ },
+/* 74 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/weathered-wood.jpg"
+
+/***/ },
+/* 75 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/wood.jpg"
 
 /***/ }
 /******/ ])
