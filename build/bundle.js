@@ -70,7 +70,7 @@
 				fullscreenEnabled = document.fullscreenEnabled ||
 					document.webkitFullscreenEnabled ||
 					document.mozFullScreenEnabled ||
-					document.msFullScreenEnabled,
+					document.msFullscreenEnabled,
 	
 				requestFullscreen = fullScreenElement.webkitRequestFullscreen ||
 					fullScreenElement.mozRequestFullScreen ||
@@ -123,11 +123,11 @@
 	
 			//todo: use icons instead of text
 			if (requestFullscreen && fullscreenEnabled) {
-				enableFullscreen = svgButton(__webpack_require__(6), 'fs-enable');
+				enableFullscreen = svgButton(__webpack_require__(50), 'fs-enable');
 				enableFullscreen.setAttribute('title', 'Enable Full Screen');
 				enableFullscreen.addEventListener('click', requestFullscreen.bind(fullScreenElement), false);
 	
-				disableFullscreen = svgButton(__webpack_require__(7), 'fs-disable');
+				disableFullscreen = svgButton(__webpack_require__(51), 'fs-disable');
 				disableFullscreen.setAttribute('title', 'Exit Full Screen');
 				disableFullscreen.addEventListener('click', VR.exitFullscreen, false);
 			}
@@ -142,12 +142,12 @@
 				}
 			});
 	
-			vrButton = svgButton(__webpack_require__(8), 'vr');
+			vrButton = svgButton(__webpack_require__(52), 'vr');
 			vrButton.setAttribute('title', 'Toggle Virtual Reality');
 			vrButton.className = 'unsupported';
 			vrButton.addEventListener('click', VR.requestVR, false);
 	
-			orientationButton = svgButton(__webpack_require__(9), 'orientation');
+			orientationButton = svgButton(__webpack_require__(53), 'orientation');
 			orientationButton.setAttribute('title', 'Toggle Orientation');
 			orientationButton.className = 'unsupported';
 			orientationButton.addEventListener('click', toggleOrientation, false);
@@ -458,7 +458,7 @@
 		//global-ish declarations
 			THREE,
 			eventEmitter,
-			materials = __webpack_require__(10),
+			materials = __webpack_require__(6),
 			nop = function () {},
 			requestFullscreen = nop,
 			exitFullscreen = (document.exitFullscreen ||
@@ -492,7 +492,7 @@
 	
 		//exported object
 			VR,
-			VRObject = __webpack_require__(31),
+			VRObject = __webpack_require__(27),
 			objectMethods = [
 				'box',
 				'cylinder',
@@ -677,7 +677,7 @@
 			//need a scene to put all our objects in
 			scene = new THREE.Scene();
 	
-			bodyWrapper = new VRObject(scene, __webpack_require__(32), {
+			bodyWrapper = new VRObject(scene, __webpack_require__(28), {
 				name: 'body'
 			}).moveTo(0, 1.5, 4);
 			body = bodyWrapper.object;
@@ -786,21 +786,21 @@
 	
 		function initRequirements() {
 			//load external requirements
-			THREE = __webpack_require__(11);
-			__webpack_require__(33);
-			__webpack_require__(34);
+			THREE = __webpack_require__(7);
+			__webpack_require__(29);
+			__webpack_require__(30);
 	
 			//if (typeof __DEV__ !== 'undefined' && __DEV__) {
-				__webpack_require__(35);
+				__webpack_require__(31);
 			//}
 	
 			THREE.ImageUtils.crossOrigin = '';
 	
-			eventEmitter = __webpack_require__(36);
+			eventEmitter = __webpack_require__(32);
 	
 			//my VR stuff. todo: move these to a separate repo or two for easy packaging
-			__webpack_require__(51);
-			__webpack_require__(52);
+			__webpack_require__(47);
+			__webpack_require__(48);
 		}
 	
 		function initialize() {
@@ -924,7 +924,7 @@
 		};
 	
 		objectMethods.forEach(function (method) {
-			var creator = __webpack_require__(53)("./" + method);
+			var creator = __webpack_require__(49)("./" + method);
 	
 			VR[method] = function (options) {
 				var obj = new VRObject(scene, creator, options);
@@ -951,36 +951,12 @@
 /* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M0 0v4l1.5-1.5 1.5 1.5 1-1-1.5-1.5 1.5-1.5h-4zm5 4l-1 1 1.5 1.5-1.5 1.5h4v-4l-1.5 1.5-1.5-1.5z\" />\n</svg>"
-
-/***/ },
-/* 7 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M1 0l-1 1 1.5 1.5-1.5 1.5h4v-4l-1.5 1.5-1.5-1.5zm3 4v4l1.5-1.5 1.5 1.5 1-1-1.5-1.5 1.5-1.5h-4z\" />\n</svg>"
-
-/***/ },
-/* 8 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M4.03 0c-2.53 0-4.03 3-4.03 3s1.5 3 4.03 3c2.47 0 3.97-3 3.97-3s-1.5-3-3.97-3zm-.03 1c1.11 0 2 .9 2 2 0 1.11-.89 2-2 2-1.1 0-2-.89-2-2 0-1.1.9-2 2-2zm0 1c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1c0-.1-.04-.19-.06-.28-.08.16-.24.28-.44.28-.28 0-.5-.22-.5-.5 0-.2.12-.36.28-.44-.09-.03-.18-.06-.28-.06z\"\n  transform=\"translate(0 1)\" />\n</svg>"
-
-/***/ },
-/* 9 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M4 0c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 1c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm2 1l-3 1-1 3 3-1 1-3zm-2 1.5c.28 0 .5.22.5.5s-.22.5-.5.5-.5-.22-.5-.5.22-.5.5-.5z\" />\n</svg>"
-
-/***/ },
-/* 10 */
-/***/ function(module, exports, __webpack_require__) {
-
 	module.exports = (function () {
 		'use strict';
 	
-		var THREE = __webpack_require__(11),
-			forEach = __webpack_require__(12),
-			assign = __webpack_require__(20),
+		var THREE = __webpack_require__(7),
+			forEach = __webpack_require__(8),
+			assign = __webpack_require__(16),
 	
 			iOS = navigator.userAgent.match(/(iPad|iPhone|iPod)/g),
 	
@@ -1241,7 +1217,7 @@
 				options = options || {};
 	
 				return function (opts) {
-					var texture = imageTexture(imagePath(__webpack_require__(30)("./" + file)));
+					var texture = imageTexture(imagePath(__webpack_require__(26)("./" + file)));
 	
 					opts = assign({}, options, opts);
 	
@@ -1287,7 +1263,7 @@
 	}());
 
 /***/ },
-/* 11 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var self = self || {};// File:src/Three.js
@@ -36036,7 +36012,7 @@
 
 
 /***/ },
-/* 12 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -36047,10 +36023,10 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var arrayEach = __webpack_require__(13),
-	    baseEach = __webpack_require__(14),
-	    bindCallback = __webpack_require__(19),
-	    isArray = __webpack_require__(17);
+	var arrayEach = __webpack_require__(9),
+	    baseEach = __webpack_require__(10),
+	    bindCallback = __webpack_require__(15),
+	    isArray = __webpack_require__(13);
 	
 	/**
 	 * Iterates over elements of `collection` invoking `iteratee` for each element.
@@ -36088,7 +36064,7 @@
 
 
 /***/ },
-/* 13 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -36125,7 +36101,7 @@
 
 
 /***/ },
-/* 14 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -36136,7 +36112,7 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var keys = __webpack_require__(15);
+	var keys = __webpack_require__(11);
 	
 	/**
 	 * Used as the maximum length of an array-like value.
@@ -36265,7 +36241,7 @@
 
 
 /***/ },
-/* 15 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {/**
@@ -36276,9 +36252,9 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var isArguments = __webpack_require__(16),
-	    isArray = __webpack_require__(17),
-	    isNative = __webpack_require__(18);
+	var isArguments = __webpack_require__(12),
+	    isArray = __webpack_require__(13),
+	    isNative = __webpack_require__(14);
 	
 	/** Used for native method references. */
 	var objectProto = Object.prototype;
@@ -36521,7 +36497,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 16 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -36600,7 +36576,7 @@
 
 
 /***/ },
-/* 17 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -36764,7 +36740,7 @@
 
 
 /***/ },
-/* 18 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -36886,7 +36862,7 @@
 
 
 /***/ },
-/* 19 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -36956,7 +36932,7 @@
 
 
 /***/ },
-/* 20 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -36967,8 +36943,8 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var baseAssign = __webpack_require__(21),
-	    createAssigner = __webpack_require__(27);
+	var baseAssign = __webpack_require__(17),
+	    createAssigner = __webpack_require__(23);
 	
 	/**
 	 * Assigns own enumerable properties of source object(s) to the destination
@@ -37005,7 +36981,7 @@
 
 
 /***/ },
-/* 21 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -37016,8 +36992,8 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var baseCopy = __webpack_require__(22),
-	    keys = __webpack_require__(23);
+	var baseCopy = __webpack_require__(18),
+	    keys = __webpack_require__(19);
 	
 	/**
 	 * The base implementation of `_.assign` without support for argument juggling,
@@ -37054,7 +37030,7 @@
 
 
 /***/ },
-/* 22 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -37094,7 +37070,7 @@
 
 
 /***/ },
-/* 23 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {/**
@@ -37105,9 +37081,9 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var isArguments = __webpack_require__(24),
-	    isArray = __webpack_require__(25),
-	    isNative = __webpack_require__(26);
+	var isArguments = __webpack_require__(20),
+	    isArray = __webpack_require__(21),
+	    isNative = __webpack_require__(22);
 	
 	/** Used for native method references. */
 	var objectProto = Object.prototype;
@@ -37350,7 +37326,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 24 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -37429,7 +37405,7 @@
 
 
 /***/ },
-/* 25 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -37593,7 +37569,7 @@
 
 
 /***/ },
-/* 26 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -37715,7 +37691,7 @@
 
 
 /***/ },
-/* 27 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -37726,8 +37702,8 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var bindCallback = __webpack_require__(28),
-	    isIterateeCall = __webpack_require__(29);
+	var bindCallback = __webpack_require__(24),
+	    isIterateeCall = __webpack_require__(25);
 	
 	/**
 	 * Creates a function that assigns properties of source object(s) to a given
@@ -37769,7 +37745,7 @@
 
 
 /***/ },
-/* 28 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -37839,7 +37815,7 @@
 
 
 /***/ },
-/* 29 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -37939,7 +37915,7 @@
 
 
 /***/ },
-/* 30 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var map = {
@@ -37968,18 +37944,18 @@
 	};
 	webpackContext.resolve = webpackContextResolve;
 	module.exports = webpackContext;
-	webpackContext.id = 30;
+	webpackContext.id = 26;
 
 
 /***/ },
-/* 31 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(11);
+		var materials = __webpack_require__(6),
+			THREE = __webpack_require__(7);
 	
 		function VRObject(parent, creator, options) {
 			var material,
@@ -38113,14 +38089,14 @@
 	}());
 
 /***/ },
-/* 32 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(11);
+		var materials = __webpack_require__(6),
+			THREE = __webpack_require__(7);
 	
 		return function empty(parent, options) {
 			var obj = new THREE.Object3D();
@@ -38132,11 +38108,11 @@
 	}());
 
 /***/ },
-/* 33 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(11);
+	var THREE = __webpack_require__(7);
 	
 	/**
 	 * @author richt / http://richt.me
@@ -38234,11 +38210,11 @@
 
 
 /***/ },
-/* 34 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(11);
+	var THREE = __webpack_require__(7);
 	
 	/**
 	 * @author qiao / https://github.com/qiao
@@ -38923,11 +38899,11 @@
 
 
 /***/ },
-/* 35 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(11);
+	var THREE = __webpack_require__(7);
 	
 	( function() {
 	
@@ -39049,13 +39025,13 @@
 	} )();
 
 /***/ },
-/* 36 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var d        = __webpack_require__(37)
-	  , callable = __webpack_require__(50)
+	var d        = __webpack_require__(33)
+	  , callable = __webpack_require__(46)
 	
 	  , apply = Function.prototype.apply, call = Function.prototype.call
 	  , create = Object.create, defineProperty = Object.defineProperty
@@ -39187,15 +39163,15 @@
 
 
 /***/ },
-/* 37 */
+/* 33 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var assign        = __webpack_require__(38)
-	  , normalizeOpts = __webpack_require__(45)
-	  , isCallable    = __webpack_require__(46)
-	  , contains      = __webpack_require__(47)
+	var assign        = __webpack_require__(34)
+	  , normalizeOpts = __webpack_require__(41)
+	  , isCallable    = __webpack_require__(42)
+	  , contains      = __webpack_require__(43)
 	
 	  , d;
 	
@@ -39256,18 +39232,18 @@
 
 
 /***/ },
-/* 38 */
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	module.exports = __webpack_require__(39)()
+	module.exports = __webpack_require__(35)()
 		? Object.assign
-		: __webpack_require__(40);
+		: __webpack_require__(36);
 
 
 /***/ },
-/* 39 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -39282,13 +39258,13 @@
 
 
 /***/ },
-/* 40 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var keys  = __webpack_require__(41)
-	  , value = __webpack_require__(44)
+	var keys  = __webpack_require__(37)
+	  , value = __webpack_require__(40)
 	
 	  , max = Math.max;
 	
@@ -39310,18 +39286,18 @@
 
 
 /***/ },
-/* 41 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	module.exports = __webpack_require__(42)()
+	module.exports = __webpack_require__(38)()
 		? Object.keys
-		: __webpack_require__(43);
+		: __webpack_require__(39);
 
 
 /***/ },
-/* 42 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -39335,7 +39311,7 @@
 
 
 /***/ },
-/* 43 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -39348,7 +39324,7 @@
 
 
 /***/ },
-/* 44 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -39360,12 +39336,12 @@
 
 
 /***/ },
-/* 45 */
+/* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var assign = __webpack_require__(38)
+	var assign = __webpack_require__(34)
 	
 	  , forEach = Array.prototype.forEach
 	  , create = Object.create, getPrototypeOf = Object.getPrototypeOf
@@ -39388,7 +39364,7 @@
 
 
 /***/ },
-/* 46 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Deprecated
@@ -39399,18 +39375,18 @@
 
 
 /***/ },
-/* 47 */
+/* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	module.exports = __webpack_require__(48)()
+	module.exports = __webpack_require__(44)()
 		? String.prototype.contains
-		: __webpack_require__(49);
+		: __webpack_require__(45);
 
 
 /***/ },
-/* 48 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -39424,7 +39400,7 @@
 
 
 /***/ },
-/* 49 */
+/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -39437,7 +39413,7 @@
 
 
 /***/ },
-/* 50 */
+/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -39449,11 +39425,11 @@
 
 
 /***/ },
-/* 51 */
+/* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(11);
+	var THREE = __webpack_require__(7);
 	
 	/**
 	 * @author bchirls / http://bchirls.com/
@@ -39634,7 +39610,7 @@
 		function onFullscreenChange() {
 			if (!document.webkitFullscreenElement &&
 					!document.mozFullScreenElement &&
-					!document.msFullScreenElement) {
+					!document.msFullscreenElement) {
 				vrMode = false;
 			}
 	
@@ -39662,9 +39638,11 @@
 		if (requestFullscreen) {
 			requestFullscreen = requestFullscreen.bind(fullScreenElement, fullScreenParam);
 		}
+	
+		document.addEventListener('fullscreenchange', onFullscreenChange, false);
 		document.addEventListener('webkitfullscreenchange', onFullscreenChange, false);
 		document.addEventListener('mozfullscreenchange', onFullscreenChange, false);
-		document.addEventListener('msfullscreenchange', onFullscreenChange, false);
+		document.addEventListener('MSFullscreenChange', onFullscreenChange, false);
 	
 		//todo: method for adjusting HMD FOV
 	
@@ -39843,11 +39821,11 @@
 
 
 /***/ },
-/* 52 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(11);
+	var THREE = __webpack_require__(7);
 	
 	THREE.VRControls = function ( object, options ) {
 	
@@ -39993,7 +39971,7 @@
 
 
 /***/ },
-/* 53 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var map = {
@@ -40001,8 +39979,8 @@
 		"./box.js": 67,
 		"./cylinder": 68,
 		"./cylinder.js": 68,
-		"./empty": 32,
-		"./empty.js": 32,
+		"./empty": 28,
+		"./empty.js": 28,
 		"./floor": 69,
 		"./floor.js": 69,
 		"./image": 70,
@@ -40027,8 +40005,32 @@
 	};
 	webpackContext.resolve = webpackContextResolve;
 	module.exports = webpackContext;
-	webpackContext.id = 53;
+	webpackContext.id = 49;
 
+
+/***/ },
+/* 50 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M0 0v4l1.5-1.5 1.5 1.5 1-1-1.5-1.5 1.5-1.5h-4zm5 4l-1 1 1.5 1.5-1.5 1.5h4v-4l-1.5 1.5-1.5-1.5z\" />\n</svg>"
+
+/***/ },
+/* 51 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M1 0l-1 1 1.5 1.5-1.5 1.5h4v-4l-1.5 1.5-1.5-1.5zm3 4v4l1.5-1.5 1.5 1.5 1-1-1.5-1.5 1.5-1.5h-4z\" />\n</svg>"
+
+/***/ },
+/* 52 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M4.03 0c-2.53 0-4.03 3-4.03 3s1.5 3 4.03 3c2.47 0 3.97-3 3.97-3s-1.5-3-3.97-3zm-.03 1c1.11 0 2 .9 2 2 0 1.11-.89 2-2 2-1.1 0-2-.89-2-2 0-1.1.9-2 2-2zm0 1c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1c0-.1-.04-.19-.06-.28-.08.16-.24.28-.44.28-.28 0-.5-.22-.5-.5 0-.2.12-.36.28-.44-.09-.03-.18-.06-.28-.06z\"\n  transform=\"translate(0 1)\" />\n</svg>"
+
+/***/ },
+/* 53 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M4 0c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 1c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm2 1l-3 1-1 3 3-1 1-3zm-2 1.5c.28 0 .5.22.5.5s-.22.5-.5.5-.5-.22-.5-.5.22-.5.5-.5z\" />\n</svg>"
 
 /***/ },
 /* 54 */
@@ -40115,8 +40117,8 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(11);
+		var materials = __webpack_require__(6),
+			THREE = __webpack_require__(7);
 	
 		return function box(parent, options) {
 			var geometry,
@@ -40139,8 +40141,8 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(11);
+		var materials = __webpack_require__(6),
+			THREE = __webpack_require__(7);
 	
 		function cylinder(parent, options) {
 			var geometry,
@@ -40172,8 +40174,8 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(11);
+		var materials = __webpack_require__(6),
+			THREE = __webpack_require__(7);
 	
 		function floor(parent, options) {
 			var obj,
@@ -40205,8 +40207,8 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(11);
+		var materials = __webpack_require__(6),
+			THREE = __webpack_require__(7);
 	
 		return function image(parent, options) {
 			var geometry,
@@ -40256,8 +40258,8 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(11);
+		var materials = __webpack_require__(6),
+			THREE = __webpack_require__(7);
 	
 		return function panorama(parent, options) {
 			var geometry,
@@ -40303,8 +40305,8 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(11);
+		var materials = __webpack_require__(6),
+			THREE = __webpack_require__(7);
 	
 		__webpack_require__(73);
 	
@@ -40340,7 +40342,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(11);
+	var THREE = __webpack_require__(7);
 	
 	/**
 	 * @author mrdoob / http://mrdoob.com/
@@ -40492,8 +40494,8 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(11);
+		var materials = __webpack_require__(6),
+			THREE = __webpack_require__(7);
 	
 		return function box(parent, options) {
 			var geometry,
@@ -40524,8 +40526,8 @@
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(11);
+		var materials = __webpack_require__(6),
+			THREE = __webpack_require__(7);
 	
 		return function torus(parent, options) {
 			var geometry,

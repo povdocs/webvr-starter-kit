@@ -24,7 +24,7 @@
 			fullscreenEnabled = document.fullscreenEnabled ||
 				document.webkitFullscreenEnabled ||
 				document.mozFullScreenEnabled ||
-				document.msFullScreenEnabled,
+				document.msFullscreenEnabled,
 
 			requestFullscreen = fullScreenElement.webkitRequestFullscreen ||
 				fullScreenElement.mozRequestFullScreen ||

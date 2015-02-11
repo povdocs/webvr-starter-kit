@@ -177,7 +177,7 @@ THREE.VRStereoEffect = function ( renderer, fullScreenElement, options ) {
 	function onFullscreenChange() {
 		if (!document.webkitFullscreenElement &&
 				!document.mozFullScreenElement &&
-				!document.msFullScreenElement) {
+				!document.msFullscreenElement) {
 			vrMode = false;
 		}
 
@@ -205,9 +205,11 @@ THREE.VRStereoEffect = function ( renderer, fullScreenElement, options ) {
 	if (requestFullscreen) {
 		requestFullscreen = requestFullscreen.bind(fullScreenElement, fullScreenParam);
 	}
+
+	document.addEventListener('fullscreenchange', onFullscreenChange, false);
 	document.addEventListener('webkitfullscreenchange', onFullscreenChange, false);
 	document.addEventListener('mozfullscreenchange', onFullscreenChange, false);
-	document.addEventListener('msfullscreenchange', onFullscreenChange, false);
+	document.addEventListener('MSFullscreenChange', onFullscreenChange, false);
 
 	//todo: method for adjusting HMD FOV
 
