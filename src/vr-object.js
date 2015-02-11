@@ -2,7 +2,11 @@ module.exports = (function () {
 	'use strict';
 
 	var materials = require('./materials'),
-		THREE = require('three');
+		THREE = require('three'),
+
+		xAxis = new THREE.Vector3(1, 0, 0),
+		yAxis = new THREE.Vector3(0, 1, 0),
+		zAxis = new THREE.Vector3(0, 0, 1);
 
 	function VRObject(parent, creator, options) {
 		var material,
@@ -71,6 +75,37 @@ module.exports = (function () {
 
 		position.set(x, y, z);
 
+		return this;
+	};
+
+	VRObject.prototype.moveX = function (distance) {
+		this.object.translateX(distance);
+		return this;
+	};
+
+	VRObject.prototype.moveY = function (distance) {
+		this.object.translateY(distance);
+		return this;
+	};
+	VRObject.prototype.moveUp = VRObject.prototype.moveY;
+
+	VRObject.prototype.moveZ = function (distance) {
+		this.object.translateZ(distance);
+		return this;
+	};
+
+	VRObject.prototype.rotateX = function (angle) {
+		this.object.rotateOnAxis(xAxis, angle);
+		return this;
+	};
+
+	VRObject.prototype.rotateY = function (angle) {
+		this.object.rotateOnAxis(yAxis, angle);
+		return this;
+	};
+
+	VRObject.prototype.rotateZ = function (angle) {
+		this.object.rotateOnAxis(zAxis, angle);
 		return this;
 	};
 

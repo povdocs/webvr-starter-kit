@@ -11,9 +11,9 @@
             VR.panorama('http://i.imgur.com/6QW3fZI.jpg');
             var box = VR.box({
                 color: 0x1111DD,
-                x: -1,
+                x: -2,
                 y: 1,
-                z: 1
+                z: 0
             });
 
             var soundSource = VR.sphere({
@@ -21,15 +21,42 @@
             });
             //soundSource.sound('https://dl.dropboxusercontent.com/u/8165395/breakbeat.wav');//.moveTo(-10, 0, 0);
 
-            VR.image('http://i.imgur.com/dmLnKki.png').moveTo(0, 2, 0).setScale(3);
+            VR.image('http://i.imgur.com/dmLnKki.png')
+                .moveTo(-4, 2, 0)
+                .setScale(3)
+                .rotateY(Math.PI / 4);
 
             box.sphere({
                 material: VR.materials.metal({
                     repeat: 1
                 })
             }).moveTo(1, 0, 0).setScale(0.5);
-            VR.cylinder().moveTo(1, 1, 2);
+
+            VR.cylinder().moveTo(2, 1, 1);
+
             var torus = VR.torus().moveTo(3, 2, 4);
+
+            var portal = VR.empty().moveUp(2);
+            VR.times(8, function (i) {
+                var torus = portal.torus({
+                    color: 'purple',
+                    tube: 0.05,
+                    tubularSegments: 32
+                })
+                    .moveZ(i * -20)
+                    .setScale(4)
+                    .rotateZ(i * Math.PI / 6);
+
+                VR.times(4, function (n) {
+                    var angle = n * Math.PI * 2 / 4,
+                        cos = Math.cos(angle),
+                        sin = Math.sin(angle);
+
+                    torus.box({
+                        color: 'rgb(180, 180, 40)'
+                    }).setScale(1 / 12).moveTo(cos / 3, sin / 3, 0);
+                });
+            });
 
             var oldColor = new THREE.Color();
             VR.on('lookat', function () {
@@ -40,15 +67,21 @@
                 // VR.target.material.color.setRGB(1, 0.8, 0.8);
             });
 
-            VR.on('lookoff', function (target) {
+            VR.on('lookaway', function (target) {
                 // VR.target.material.color.copy(oldColor);
             });
 
             VR.animate(function (delta, time) {
-                box.object.rotation.y += delta / 100;
-                torus.object.rotation.y += delta / 100;
+                box.rotateY(delta / 100);
+                torus.rotateY(delta / 100);
 
                 soundSource.moveTo(10 * Math.cos(time / 1), 4, 0);
+
+                portal.rotateZ(delta / 100);
+                portal.moveZ(delta / 5);
+                if (portal.position.z > 140) {
+                    portal.moveTo(0, 2, -140);
+                }
             });
 
             VR.on('shake', function () {

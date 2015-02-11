@@ -67,7 +67,9 @@ A plane displaying an image.
 
 #### VR.panorama()
 
-A sphere with an image displayed on the inside
+A very large sphere with an image displayed on the inside. This is useful for loading an image to be used as a sky or a landscape. It works best if most objects in the photo are far away.
+
+Spherical photos can be taken with the [Android Camera](https://www.youtube.com/watch?v=NPs3eIiWRaw) or a [similar app](https://itunes.apple.com/us/app/photo-sphere-camera/id904418768?mt=8) on an iPhone.
 
 ##### Options:
 
@@ -75,15 +77,23 @@ A sphere with an image displayed on the inside
 
 #### VR.empty()
 
-An empty object, not displayed. Can be used to group other objects
+An empty object, not displayed. Can be used to group other objects.
 
 ##### Options: none
 
 ### Utility Methods
 
 #### VR.animate()
+
+This method can be passed a callback function, which is run every time a new frame is rendered. Objects in the scene can be animated by changing their position, scale or rotation according to how much time has passed since the last update.
+
+##### Options:
+
+- `callback` - A function to be run on every frame
+
+##### Examples:
+
 #### VR.end()
-#### VR.preview()
 #### VR.render()
 #### VR.requestFullScreen()
 #### VR.resize()

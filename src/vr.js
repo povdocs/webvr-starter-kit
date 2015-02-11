@@ -467,6 +467,15 @@
 
 		vibrate: navigator.vibrate ? navigator.vibrate.bind(navigator) : nop,
 
+		// Utility
+		times: function (n, callback) {
+			var i;
+
+			for (i = 0; i < n; i++) {
+				callback(i);
+			}
+		},
+
 		camera: cameraWrapper,
 		body: bodyWrapper,
 		scene: scene,
