@@ -111,6 +111,8 @@ module.exports = (function () {
 		return this;
 	};
 
+	VRObject.prototype.update = function () {};
+
 	VRObject.repeat = function (count, options) {
 		var i,
 			change = false,

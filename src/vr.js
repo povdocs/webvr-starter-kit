@@ -93,7 +93,7 @@
 		//todo: emit VRObject?
 		if (target !== object) {
 			if (target) {
-				VR.emit('lookoff', target);
+				VR.emit('lookaway', target);
 			}
 			target = object;
 			if (target) {
