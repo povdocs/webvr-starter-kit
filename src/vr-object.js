@@ -16,7 +16,7 @@ module.exports = (function () {
 		options = options || {};
 
 		//todo: get material from options
-		this.object = object = creator(parent, options);
+		this.object = object = creator.call(this, parent, options);
 		this.parent = this.object.parent || parent;
 
 		if (object instanceof THREE.Mesh) {
