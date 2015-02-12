@@ -11,11 +11,13 @@
 		materials = require('./materials'),
 		nop = function () {},
 		requestFullscreen = nop,
-		exitFullscreen = (document.exitFullscreen ||
+		exitFullscreen = (
+			document.exitFullscreen ||
 			document.mozCancelFullScreen ||
 			document.webkitExitFullscreen ||
 			document.msExitFullscreen ||
-			nop).bind(document),
+			nop
+		).bind(document),
 
 	//scene assets
 		camera,
@@ -42,6 +44,7 @@
 
 	//exported object
 		VR,
+
 		VRObject = require('./vr-object'),
 		objectMethods = [
 			'box',
@@ -51,9 +54,13 @@
 			'empty',
 			'sound',
 			'floor',
+			'snow',
 			'panorama',
 			'image'
 		],
+
+		//todo: use a weak map or set instead
+		vrObjects = [],
 
 		lastTick = 0,
 		animationCallbacks = [];
@@ -110,6 +117,10 @@
 
 		animationCallbacks.forEach(function (cb) {
 			cb(delta, now);
+		});
+
+		vrObjects.forEach(function (object) {
+			object.update(now);
 		});
 
 		raycast();
@@ -487,11 +498,13 @@
 
 		VR[method] = function (options) {
 			var obj = new VRObject(scene, creator, options);
+			vrObjects.push(obj);
 			return obj;
 		};
 
 		VRObject.prototype[method] = function (options) {
 			var obj = new VRObject(this.object, creator, options);
+			vrObjects.push(obj);
 			return obj;
 		};
 	});
