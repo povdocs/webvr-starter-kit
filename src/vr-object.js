@@ -54,6 +54,15 @@ module.exports = (function () {
 				self[prop] = object[prop];
 			}
 		});
+
+		Object.defineProperty(this, 'visible', {
+			set: function (val) {
+				self.object.visible = !!val;
+			},
+			get: function () {
+				return self.object.visible;
+			}
+		});
 	}
 
 	VRObject.prototype.hide = function () {
