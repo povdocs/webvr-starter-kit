@@ -17,7 +17,7 @@ module.exports = (function () {
 			options.thetaStart,
 			options.thetaLength
 		);
-		mesh = new THREE.Mesh(geometry, materials.standard);
+		mesh = new THREE.Mesh(geometry, materials.standard());
 		mesh.name = 'sphere';
 
 		parent.add(mesh);

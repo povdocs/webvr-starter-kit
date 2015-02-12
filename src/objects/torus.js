@@ -15,7 +15,7 @@ module.exports = (function () {
 			options.tubularSegments === undefined ? 16 : options.tubularSegments,
 			options.arc
 		);
-		mesh = new THREE.Mesh(geometry, materials.standard);
+		mesh = new THREE.Mesh(geometry, materials.standard());
 		mesh.name = 'torus';
 
 		parent.add(mesh);

@@ -9,7 +9,7 @@ module.exports = (function () {
 			mesh;
 
 		geometry = new THREE.BoxGeometry( 1, 1, 1 );
-		mesh = new THREE.Mesh(geometry, materials.standard);
+		mesh = new THREE.Mesh(geometry, materials.standard());
 		mesh.name = 'box';
 
 		parent.add(mesh);

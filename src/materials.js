@@ -244,11 +244,13 @@ module.exports = (function () {
 	}());
 
 	materials = {
-		standard: new THREE.MeshLambertMaterial(),
+		standard: function () {
+			return new THREE.MeshLambertMaterial();
+		},
 		textures: textures,
 		imageTexture: imageTexture,
 		material: material,
-		library: []
+		library: ['standard']
 	};
 
 	forEach(textureFiles, function (props, key) {

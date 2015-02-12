@@ -31,6 +31,7 @@ module.exports = (function () {
 		if (options.name !== undefined) {
 			object.name = options.name;
 		}
+		self.name = object.name;
 
 		object.position.set(
 			parseFloat(options.x) || 0,
@@ -42,9 +43,6 @@ module.exports = (function () {
 
 		if (options.color) {
 			material = object.material;
-			if (material === materials.standard) {
-				material = this.object.material = material.clone();
-			}
 			material.color = new THREE.Color(options.color);
 			material.ambient = material.color;
 		}
