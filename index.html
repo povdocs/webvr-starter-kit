@@ -43,7 +43,7 @@
                     tube: 0.05,
                     tubularSegments: 32
                 })
-                    .moveZ(i * -20)
+                    .moveZ(i * -10)
                     .setScale(4)
                     .rotateZ(i * Math.PI / 6);
 
@@ -72,13 +72,13 @@
             });
 
             VR.animate(function (delta, time) {
-                box.rotateY(delta * Math.PI * 2);
+                box.rotateY(delta * Math.PI);
                 torus.rotateY(delta / 10);
 
                 soundSource.moveTo(10 * Math.cos(time / 1), 4, 0);
 
-                portal.rotateZ(delta / 100);
-                portal.moveZ(delta / 5);
+                portal.rotateZ(delta * Math.PI);
+                portal.moveZ(delta * 5);
                 if (portal.position.z > 140) {
                     portal.moveTo(0, 2, -140);
                 }

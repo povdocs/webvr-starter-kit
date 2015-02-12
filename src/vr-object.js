@@ -1,19 +1,85 @@
 module.exports = (function () {
 	'use strict';
 
-	var materials = require('./materials'),
+	var	NEAR_DISTANCE = 3,
+		materials = require('./materials'),
 		THREE = require('three'),
+		eventEmitter = require('event-emitter'),
 
 		xAxis = new THREE.Vector3(1, 0, 0),
 		yAxis = new THREE.Vector3(0, 1, 0),
-		zAxis = new THREE.Vector3(0, 0, 1);
+		zAxis = new THREE.Vector3(0, 0, 1),
 
-	function VRObject(parent, creator, options) {
+		scratchVector1 = new THREE.Vector3(),
+		scratchVector2 = new THREE.Vector3();
+
+	function distance(object, origin) {
+		var geometry;
+
+		geometry = object.geometry;
+
+		//assumes object world matrix has been updated
+		scratchVector1.setFromMatrixPosition(origin.matrixWorld);
+
+		if (!geometry) {
+			//first convert to world coordinate
+			scratchVector2.setFromMatrixPosition(object.matrixWorld);
+			return scratchVector2.distanceTo(scratchVector1);
+		}
+
+		geometry.computeBoundingBox();
+		object.worldToLocal(scratchVector1);
+		return object.geometry.boundingBox.distanceToPoint(scratchVector1);
+	}
+
+	function VRObject(parent, creator, camera, options) {
 		var material,
 			object,
-			self = this;
+			self = this,
+
+			isNear = false,
+			isTarget = false,
+			raycaster;
 
 		options = options || {};
+
+		eventEmitter(this);
+
+		if (camera) {
+			// raycaster = new THREE.Raycaster();
+
+			this.update = function () {
+				var wasNear = isNear,
+					wasTarget = isTarget,
+
+					intersects, intersect, i;
+
+				isNear = self.distance < NEAR_DISTANCE;
+				if (isNear !== wasNear) {
+					if (isNear) {
+						self.emit('near', self);
+					} else {
+						self.emit('far', self);
+					}
+				}
+
+				/*
+				raycaster.ray.origin.copy(origin);
+				raycaster.ray.direction.set(0, 0, 0.5).unproject(camera).sub(origin).normalize();
+
+				//todo: consider whether this needs to be recursive. maybe a different event
+				intersects = raycaster.intersectObject(object);
+				if (intersects.length) {
+					isTarget = true;
+					if (!wasTarget) {
+						self.emit('target-on', intersects[0]);
+					}
+				} else if (wasTarget) {
+					self.emit('target-off');
+				}
+				*/
+			};
+		}
 
 		//todo: get material from options
 		this.object = object = creator.call(this, parent, options);
@@ -59,6 +125,12 @@ module.exports = (function () {
 			},
 			get: function () {
 				return self.object.visible;
+			}
+		});
+
+		Object.defineProperty(this, 'distance', {
+			get: function () {
+				return distance(self.object, camera || parent);
 			}
 		});
 	}

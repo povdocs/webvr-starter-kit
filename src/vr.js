@@ -119,6 +119,8 @@
 			cb(delta, now);
 		});
 
+		scene.updateMatrixWorld();
+
 		vrObjects.forEach(function (object) {
 			object.update(now);
 		});
@@ -238,7 +240,7 @@
 		//need a scene to put all our objects in
 		scene = new THREE.Scene();
 
-		bodyWrapper = new VRObject(scene, require('./objects/empty'), {
+		bodyWrapper = new VRObject(scene, require('./objects/empty'), null, {
 			name: 'body'
 		}).moveTo(0, 1.5, 4);
 		body = bodyWrapper.object;
@@ -328,6 +330,7 @@
 		if (VR) {
 			VR.camera = cameraWrapper;
 			VR.body = bodyWrapper;
+			VR.scene = scene;
 			VR.canvas = renderer.domElement;
 			VR.zeroSensor = vrControls.zeroSensor;
 		}
@@ -497,13 +500,13 @@
 		var creator = require('./objects/' + method);
 
 		VR[method] = function (options) {
-			var obj = new VRObject(scene, creator, options);
+			var obj = new VRObject(scene, creator, body, options);
 			vrObjects.push(obj);
 			return obj;
 		};
 
 		VRObject.prototype[method] = function (options) {
-			var obj = new VRObject(this.object, creator, options);
+			var obj = new VRObject(this.object, creator, body, options);
 			vrObjects.push(obj);
 			return obj;
 		};

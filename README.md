@@ -85,6 +85,13 @@ An empty object, not displayed. Can be used to group other objects.
 
 The following methods are available on all object types for manipulating the shape, size, material, orientation, position and any other aspects of that object.
 
+All methods (except for ones that create child objects), return the object itself, so methods can be chained:
+
+``` Javascript
+// create a box, move it up 2 meters, and set the material to "wood"
+VR.box().moveUp(2).setMaterial('wood');
+```
+
 #### hide()
 
 Make the object invisible. All objects are visible by default.

@@ -1,0 +1,35 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>WebVR Starter Kit</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    </head>
+    <body>
+        <script type="text/javascript" src="build/bundle.js" charset="utf-8"></script>
+        <script type="text/javascript">
+        VR.floor();
+
+        function near(object) {
+            //tint blue
+            object.material.color.setRGB(0.0, 0.0, 1);
+        }
+
+        function far(object) {
+            //back to white
+            object.material.color.setRGB(1, 1, 1);
+        }
+
+        var center = VR.empty().moveUp(1.5);
+
+        center.box().moveZ(-2).on('near', near).on('far', far);//.setMaterial('metal');
+        center.sphere().moveZ(2).on('near', near).on('far', far);//.setMaterial('wood');
+        center.cylinder().moveX(-2).on('near', near).on('far', far);//.setMaterial('bricks');
+        center.torus().moveX(2).on('near', near).on('far', far);//.setMaterial('grass');
+
+
+        VR.animate(function (delta) {
+            center.rotateY(delta * Math.PI / 4);
+        });
+        </script>
+    </body>
+</html>
