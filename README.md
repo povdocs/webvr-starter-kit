@@ -81,6 +81,50 @@ An empty object, not displayed. Can be used to group other objects.
 
 ##### Options: none
 
+### Object Methods
+
+The following methods are available on all object types for manipulating the shape, size, material, orientation, position and any other aspects of that object.
+
+#### hide()
+
+Make the object invisible. All objects are visible by default.
+
+#### show()
+
+Make the object visible, if it was previously made invisible.
+
+#### moveTo(x, y, z)
+#### moveX(distance)
+#### moveY(distance)
+#### moveZ(distance)
+#### moveUp(distance)
+#### rotateX(radians)
+#### rotateY(radians)
+#### rotateZ(radians)
+#### setMaterial(material)
+#### setScale(x, y, z)
+
+### Child Objects
+
+Objects can be created as "child" of a parent object. This is useful for creating more complex objects out of the simple primitives or for moving groups of objects together. All the object creation methods listed above on the main `VR` object are available on every other object created.
+
+The position, rotation and size of child objects will be re
+
+#### Examples
+
+The "empty" object type is useful as an invisible parent object below which other objects can be grouped.
+
+### Object Properties
+- parent
+- distance
+- visible
+- object
+- position
+- scale
+- rotation
+- quaternion
+- material
+
 ### Utility Methods
 
 #### VR.on(event, callback)
@@ -89,7 +133,7 @@ Certain types of "events" are available to notify your code when interesting thi
 
 Events are listed below. Not all events are available on all devices.
 
-##### Parameters:
+##### Parameters
 
 - `event` - A string representing the name of the event type to listen for
 - `callback` - A function to be run when the event is triggered. The callback function may be given certain parameters, depending on the type of event
@@ -98,9 +142,24 @@ Events are listed below. Not all events are available on all devices.
 
 - `lookat` - The viewer looked directly at an object. There is one parameter, `target`: the THREE.js object in question
 - `lookaway` - The viewer looked away from an object. There is one parameter, `target`: the THREE.js object in question
-- `shake` - The user shook the device. Mostly only works on mobile devices.
+- `shake` - The user shook the device. Mostly only works on mobile devices. Does not work on head-mounted displays.
 - `fullscreenchange` - The view has either entered or exited full screen mode.
 - `devicechange` - The device used to display and track orientation has been detected. There is one parameter, `mode`: a string representing the type of device. "devicemotion" for a mobile phone/tablet, "hmd" for a head-mounted display like the Oculus Rift. If there is no orientation device detected, like on a desktop computer without a head-mounted display, this event will not fire.
+
+##### Examples
+
+When the user shakes the device, make the box invisible. Shake it again to bring it back.
+
+``` Javascript
+var box = VR.box();
+VR.on('shake', function () {
+    if (box.visble) {
+        box.hide();
+    } else {
+        box.show();
+    }
+});
+```
 
 #### VR.off()
 
@@ -157,7 +216,7 @@ VR.on('lookat', function (target) {
         // 1/4 of 1000 milliseconds = 250 milliseconds
         VR.vibrate(250);
     } else if (target === sphere.object) {
-        VR.vibrate([100,30,100,30,100,200,200,30,200,30,200,200,100,30,100,30,100]);
+        VR.vibrate([100, 30, 100, 30, 100, 200, 200, 30, 200, 30, 200, 200, 100, 30, 100, 30, 100]);
     }
 });
 ```
