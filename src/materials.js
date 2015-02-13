@@ -43,7 +43,7 @@ module.exports = (function () {
 			'(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*' +
 
 			// TLD identifier
-			'(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))' +
+			'(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))?' +
 			')' +
 
 			')' +
@@ -234,10 +234,10 @@ module.exports = (function () {
 			scripts;
 
 		if (document.currentScript) {
-			url = document.currentScript.src;
+			url = document.currentScript.getAttribute('src');
 		} else {
 			scripts = document.getElementsByTagName('script');
-			url = scripts[scripts.length - 1].src;
+			url = scripts[scripts.length - 1].getAttribute('src');
 		}
 
 		return !urlRegex.test(url);
@@ -257,7 +257,7 @@ module.exports = (function () {
 		function textureFactory(file, options) {
 			function imagePath(url) {
 				if ((/^[a-z0-9\/\-]+\.(png|jpg)$/i).test(url)) {
-					return (scriptIsRelative ? 'build/' : __ASSET_PATH__) + url;
+					return (scriptIsRelative ? '/build/' : __ASSET_PATH__) + url;
 				}
 
 				return url;
