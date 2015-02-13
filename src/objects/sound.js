@@ -12,7 +12,7 @@ module.exports = (function () {
 			listener,
 			scene = parent;
 
-		if (typeof options === 'string') {
+		if (typeof options === 'string' || Array.isArray(options)) {
 			src = options;
 		} else if (options) {
 			src = options.src;
@@ -24,8 +24,11 @@ module.exports = (function () {
 
 		listener = scene.getObjectByName('audio-listener');
 		obj = new THREE.Audio(listener);
-		obj.setLoop(true);
+		// obj.setLoop(true);
 		obj.load(src);
+
+		this.start = obj.start.bind(obj);
+		this.volume = obj.volume.bind(obj);
 
 		parent.add(obj);
 

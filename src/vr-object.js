@@ -11,7 +11,9 @@ module.exports = (function () {
 		zAxis = new THREE.Vector3(0, 0, 1),
 
 		scratchVector1 = new THREE.Vector3(),
-		scratchVector2 = new THREE.Vector3();
+		scratchVector2 = new THREE.Vector3(),
+
+		allObjects = window.WeakMap ? new WeakMap() : {};
 
 	function distance(object, origin) {
 		var geometry;
@@ -98,6 +100,13 @@ module.exports = (function () {
 			object.name = options.name;
 		}
 		self.name = object.name;
+
+		if (allObjects.set) {
+			allObjects.set(object, this);
+			// allObjects.set(object.id, this);
+		} else {
+			allObjects[object.id] = this;
+		}
 
 		object.position.set(
 			parseFloat(options.x) || 0,
@@ -208,12 +217,12 @@ module.exports = (function () {
 		return this;
 	};
 
-	VRObject.prototype.setMaterial = function (material) {
+	VRObject.prototype.setMaterial = function (material, options) {
 		if (material && this.object instanceof THREE.Mesh) {
 			if (typeof material === 'function') {
 				material = material();
 			} else if (typeof material === 'string' && materials[material]) {
-				material = materials[material]();
+				material = materials[material](options);
 			} else if (material && !material instanceof THREE.Material && typeof material !== 'number') {
 				try {
 					material = materials(material);
@@ -245,6 +254,24 @@ module.exports = (function () {
 		for (i = 0; i < count; i++) {
 
 		}
+	};
+
+	VRObject.findObject = function (object) {
+		if (object instanceof VRObject) {
+			return object;
+		}
+
+		if (object && object instanceof THREE.Object3D) {
+			if (allObjects.get) {
+				return allObjects.get(object);
+			}
+
+			return allObjects[object.id];
+		}
+
+		// if (typeof object === 'number') {
+		// 	return allObjects[object];
+		// }
 	};
 
 	return VRObject;

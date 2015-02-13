@@ -83,7 +83,8 @@
 		var i,
 			intersect,
 			object,
-			intersects;
+			intersects,
+			vrObject;
 
 		raycaster.ray.origin.copy( camera.position );
 		raycaster.ray.direction.set(0, 0, 0.5).unproject(camera).sub(camera.position).normalize();
@@ -97,14 +98,17 @@
 			}
 		}
 
-		//todo: emit VRObject?
 		if (target !== object) {
 			if (target) {
-				VR.emit('lookaway', target);
+				vrObject = VRObject.findObject(target);
+				vrObject.emit('lookaway');
+				VR.emit('lookaway', vrObject);
 			}
 			target = object;
 			if (target) {
-				VR.emit('lookat', target);
+				vrObject = VRObject.findObject(target);
+				vrObject.emit('lookat', intersect);
+				VR.emit('lookat', vrObject, intersect);
 			}
 		}
 	}

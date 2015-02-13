@@ -1,0 +1,56 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>WebVR Starter Kit - Near/Far Example</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    </head>
+    <body>
+        <script type="text/javascript" src="../build/bundle.js" charset="utf-8"></script>
+        <script type="text/javascript">
+        VR.floor().setMaterial('grass', { repeat: 24 }).setScale(2);
+
+        var activeSound;
+
+        var fallenPoster = VR.image('assets/fallen-city-poster.jpg')
+            .setScale(5)
+            .moveTo(-5, 2, 1)
+            .rotateY(0.9 * Math.PI / 2);
+
+        var fallenSound = fallenPoster.sound([
+            'assets/fallencity.mp3',
+            'assets/fallencity.ogg'
+        ]);
+
+        var olympiaPoster = VR.image('assets/olympia.jpg')
+            .setScale(5)
+            .moveTo(5, 2, 1)
+            .rotateY(-0.9 * Math.PI / 2);
+
+        var olympiaSound = olympiaPoster.sound([
+            'assets/olympia.mp3',
+            'assets/olympia.ogg'
+        ]);
+
+        VR.on('lookat', function (target) {
+            var sound;
+            if (target === fallenPoster) {
+                sound = fallenSound;
+            } else if (target === olympiaPoster) {
+                sound = olympiaSound;
+            } else {
+                return;
+            }
+
+            if (sound !== activeSound) {
+                if (activeSound) {
+                    activeSound.volume(0, 2);
+                }
+                activeSound = sound;
+                activeSound.volume(1);
+                activeSound.start();
+            }
+        });
+
+        </script>
+    </body>
+</html>

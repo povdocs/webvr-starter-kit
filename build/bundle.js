@@ -533,7 +533,8 @@
 			var i,
 				intersect,
 				object,
-				intersects;
+				intersects,
+				vrObject;
 	
 			raycaster.ray.origin.copy( camera.position );
 			raycaster.ray.direction.set(0, 0, 0.5).unproject(camera).sub(camera.position).normalize();
@@ -547,14 +548,17 @@
 				}
 			}
 	
-			//todo: emit VRObject?
 			if (target !== object) {
 				if (target) {
-					VR.emit('lookaway', target);
+					vrObject = VRObject.findObject(target);
+					vrObject.emit('lookaway');
+					VR.emit('lookaway', vrObject);
 				}
 				target = object;
 				if (target) {
-					VR.emit('lookat', target);
+					vrObject = VRObject.findObject(target);
+					vrObject.emit('lookat', intersect);
+					VR.emit('lookat', vrObject, intersect);
 				}
 			}
 		}
@@ -1021,7 +1025,7 @@
 				'(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*' +
 	
 				// TLD identifier
-				'(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))' +
+				'(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))?' +
 				')' +
 	
 				')' +
@@ -1212,10 +1216,10 @@
 				scripts;
 	
 			if (document.currentScript) {
-				url = document.currentScript.src;
+				url = document.currentScript.getAttribute('src');
 			} else {
 				scripts = document.getElementsByTagName('script');
-				url = scripts[scripts.length - 1].src;
+				url = scripts[scripts.length - 1].getAttribute('src');
 			}
 	
 			return !urlRegex.test(url);
@@ -1235,7 +1239,7 @@
 			function textureFactory(file, options) {
 				function imagePath(url) {
 					if ((/^[a-z0-9\/\-]+\.(png|jpg)$/i).test(url)) {
-						return (scriptIsRelative ? 'build/' : ("http://pov-tc.pbs.org/pov/flv/2015/webvr-starter-kit/")) + url;
+						return (scriptIsRelative ? '/build/' : ("http://pov-tc.pbs.org/pov/flv/2015/webvr-starter-kit/")) + url;
 					}
 	
 					return url;
@@ -37991,7 +37995,9 @@
 			zAxis = new THREE.Vector3(0, 0, 1),
 	
 			scratchVector1 = new THREE.Vector3(),
-			scratchVector2 = new THREE.Vector3();
+			scratchVector2 = new THREE.Vector3(),
+	
+			allObjects = window.WeakMap ? new WeakMap() : {};
 	
 		function distance(object, origin) {
 			var geometry;
@@ -38078,6 +38084,13 @@
 				object.name = options.name;
 			}
 			self.name = object.name;
+	
+			if (allObjects.set) {
+				allObjects.set(object, this);
+				// allObjects.set(object.id, this);
+			} else {
+				allObjects[object.id] = this;
+			}
 	
 			object.position.set(
 				parseFloat(options.x) || 0,
@@ -38188,12 +38201,12 @@
 			return this;
 		};
 	
-		VRObject.prototype.setMaterial = function (material) {
+		VRObject.prototype.setMaterial = function (material, options) {
 			if (material && this.object instanceof THREE.Mesh) {
 				if (typeof material === 'function') {
 					material = material();
 				} else if (typeof material === 'string' && materials[material]) {
-					material = materials[material]();
+					material = materials[material](options);
 				} else if (material && !material instanceof THREE.Material && typeof material !== 'number') {
 					try {
 						material = materials(material);
@@ -38205,8 +38218,7 @@
 			return this;
 		};
 	
-		VRObject.prototype.update = function () {
-		};
+		VRObject.prototype.update = function () {};
 	
 		VRObject.repeat = function (count, options) {
 			var i,
@@ -38226,6 +38238,24 @@
 			for (i = 0; i < count; i++) {
 	
 			}
+		};
+	
+		VRObject.findObject = function (object) {
+			if (object instanceof VRObject) {
+				return object;
+			}
+	
+			if (object && object instanceof THREE.Object3D) {
+				if (allObjects.get) {
+					return allObjects.get(object);
+				}
+	
+				return allObjects[object.id];
+			}
+	
+			// if (typeof object === 'number') {
+			// 	return allObjects[object];
+			// }
 		};
 	
 		return VRObject;
@@ -40627,7 +40657,7 @@
 				listener,
 				scene = parent;
 	
-			if (typeof options === 'string') {
+			if (typeof options === 'string' || Array.isArray(options)) {
 				src = options;
 			} else if (options) {
 				src = options.src;
@@ -40639,8 +40669,11 @@
 	
 			listener = scene.getObjectByName('audio-listener');
 			obj = new THREE.Audio(listener);
-			obj.setLoop(true);
+			// obj.setLoop(true);
 			obj.load(src);
+	
+			this.start = obj.start.bind(obj);
+			this.volume = obj.volume.bind(obj);
 	
 			parent.add(obj);
 	
@@ -40664,46 +40697,115 @@
 		THREE.Object3D.call( this );
 	
 		this.type = 'Audio';
+		this.started = false;
 	
-		this.context = listener.context;
-		this.source = this.context.createBufferSource();
+		if (listener.context) {
 	
-		this.gain = this.context.createGain();
-		this.gain.connect( listener.input );
+			this.context = listener.context;
+			// this.source = this.context.createBufferSource();
 	
-		this.panner = this.context.createPanner();
-		this.panner.connect( this.gain );
+			this.gain = this.context.createGain();
+			this.gain.connect( listener.input );
 	
+			this.panner = this.context.createPanner();
+			this.panner.connect( this.gain );
+	
+		} else {
+	
+			this.source = new Audio();
+	
+		}
 	};
 	
 	THREE.Audio.prototype = Object.create( THREE.Object3D.prototype );
 	
-	THREE.Audio.prototype.load = function ( file ) {
+	THREE.Audio.prototype.load = function ( sources ) {
+		//todo: support multiple sources for different audio formats
 	
 		var scope = this;
+		var file;
+		var i;
+		var match;
+		var element = this.source instanceof window.HTMLAudioElement ? this.source : new Audio();
 	
-		var request = new XMLHttpRequest();
-		request.open( 'GET', file, true );
-		request.responseType = 'arraybuffer';
-		request.onload = function ( e ) {
-			console.log('audio buffer loaded. decoding...', e );
-			scope.context.decodeAudioData( this.response, function ( buffer ) {
+		if (typeof sources === 'string') {
+			sources = [sources];
+		}
 	
-				scope.source.buffer = buffer;
-				scope.source.connect( scope.panner );
-				scope.source.start( 0 );
+		for (i = 0; i < sources.length; i++) {
+			file = sources[i];
+			match = /\.([a-z0-9]+)$/i.exec(file);
+			if (match && element.canPlayType('audio/' + match[1])) {
+				break;
+			}
+		}
 	
-			}, function onFailure(e) {
-				console.log('Decoding the audio buffer failed', e);
-			} );
+		if (this.context) {
+			var request = new XMLHttpRequest();
+			request.open( 'GET', file, true );
+			request.responseType = 'arraybuffer';
+			request.onload = function ( e ) {
+				console.log('audio buffer loaded. decoding...', e );
+				scope.context.decodeAudioData( this.response, function ( buffer ) {
 	
-		};
-		request.onerror = function ( e ) {
-			console.log('error', e);
-		};
-		request.send();
+					scope.buffer = buffer;
+					if (scope.started) {
+						scope.start();
+					}
+	
+				}, function onFailure(e) {
+					console.log('Decoding the audio buffer failed', e);
+				} );
+	
+			};
+	
+			request.onerror = function ( e ) {
+				console.log('error', e);
+			};
+	
+			request.send();
+	
+		} else {
+	
+			this.source.src = file;
+			this.source.play();
+	
+		}
 	
 		return this;
+	};
+	
+	THREE.Audio.prototype.stop = function ( value ) {
+	
+		if (this.context) {
+			this.source.stop();
+			this.source.disconnect( this.panner );
+			this.source = null;
+		} else {
+			this.source.pause();
+			this.source.currentTime = 0;
+		}
+		this.started = false;
+	};
+	
+	THREE.Audio.prototype.start = function ( value ) {
+	
+		this.started = true;
+		if (this.context) {
+			if (this.source) {
+				this.source.disconnect( this.panner );
+			}
+	
+			if (this.buffer) {
+				this.source = this.context.createBufferSource();
+				this.source.buffer = this.buffer;
+				this.source.connect( this.panner );
+				this.source.start( 0 );
+			}
+		} else {
+			this.source.currentTime = 0;
+			this.source.play();
+		}
 	
 	};
 	
@@ -40715,14 +40817,40 @@
 	
 	THREE.Audio.prototype.setRefDistance = function ( value ) {
 	
-		this.panner.refDistance = value;
+		if ( this.panner ) {
+	
+			this.panner.refDistance = value;
+	
+		}
 	
 	};
 	
 	THREE.Audio.prototype.setRolloffFactor = function ( value ) {
 	
-		this.panner.rolloffFactor = value;
+		if ( this.panner ) {
 	
+			this.panner.rolloffFactor = value;
+	
+		}
+	
+	};
+	
+	THREE.Audio.prototype.volume = function ( volume, time ) {
+	
+		if ( this.gain ) {
+	
+			if ( volume !== undefined ) {
+				this.gain.gain.linearRampToValueAtTime( volume, this.context.currentTime + (time || 0));
+			}
+	
+			return this.gain.gain.value;
+		}
+	
+		if ( volume !== undefined ) {
+			this.source.volume = volume;
+		}
+	
+		return this.source.volume;
 	};
 	
 	THREE.Audio.prototype.updateMatrixWorld = ( function () {
@@ -40735,7 +40863,11 @@
 	
 			position.setFromMatrixPosition( this.matrixWorld );
 	
-			this.panner.setPosition( position.x, position.y, position.z );
+			if (this.panner) {
+	
+				this.panner.setPosition( position.x, position.y, position.z );
+	
+	 		}
 	
 		};
 	
@@ -40754,21 +40886,25 @@
 	
 		this.type = 'AudioListener';
 	
-		this.context = new AudioContext();
-		this.input = this.context.createGain();
+		if (AudioContext) {
+			this.context = new AudioContext();
+			this.input = this.context.createGain();
 	
-		this.input.connect( this.context.destination );
+			this.input.connect( this.context.destination );
+		}
 	};
 	
 	THREE.AudioListener.prototype = Object.create( THREE.Object3D.prototype );
 	
 	THREE.AudioListener.prototype.volume = function (val) {
-		val = val !== undefined && parseFloat(val);
-		if (!isNaN(val)) {
-			this.input.gain.value = val;
-		}
+		if (this.input) {
+			val = val !== undefined && parseFloat(val);
+			if (!isNaN(val)) {
+				this.input.gain.value = val;
+			}
 	
-		return this.input.gain.value;
+			return this.input.gain.value;
+		}
 	};
 	
 	THREE.AudioListener.prototype.updateMatrixWorld = ( function () {
@@ -40783,15 +40919,19 @@
 	
 			THREE.Object3D.prototype.updateMatrixWorld.call( this, force );
 	
-			var listener = this.context.listener;
+			var listener;
 	
-			this.matrixWorld.decompose( position, quaternion, scale );
+			if (this.context) {
+				listener = this.context.listener;
 	
-			orientation.set( 0, 0, -1 ).applyQuaternion( quaternion );
+				this.matrixWorld.decompose( position, quaternion, scale );
 	
-			listener.setPosition( position.x, position.y, position.z );
-			listener.setOrientation( orientation.x, orientation.y, orientation.z, this.up.x, this.up.y, this.up.z );
+				orientation.set( 0, 0, -1 ).applyQuaternion( quaternion );
 	
+				listener.setPosition( position.x, position.y, position.z );
+				listener.setOrientation( orientation.x, orientation.y, orientation.z, this.up.x, this.up.y, this.up.z );
+	
+			}
 		};
 	
 	} ());
