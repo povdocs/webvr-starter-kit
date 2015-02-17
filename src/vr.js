@@ -3,7 +3,7 @@
 
 	//constants
 	var NEAR = 1,
-		FAR = 10000,
+		FAR = 1000000,
 
 	//global-ish declarations
 		THREE,
@@ -55,6 +55,7 @@
 			'sound',
 			'floor',
 			'snow',
+			'sky',
 			'panorama',
 			'image'
 		],

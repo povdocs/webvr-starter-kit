@@ -123,7 +123,7 @@ module.exports = (function () {
 		}
 
 		['position', 'scale', 'rotation', 'quaternion', 'material'].forEach(function (prop) {
-			if (prop in object) {
+			if (prop in object && !self[prop]) {
 				self[prop] = object[prop];
 			}
 		});

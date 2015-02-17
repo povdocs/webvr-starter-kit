@@ -453,7 +453,7 @@
 	
 		//constants
 		var NEAR = 1,
-			FAR = 10000,
+			FAR = 1000000,
 	
 		//global-ish declarations
 			THREE,
@@ -505,6 +505,7 @@
 				'sound',
 				'floor',
 				'snow',
+				'sky',
 				'panorama',
 				'image'
 			],
@@ -694,7 +695,7 @@
 			//need a scene to put all our objects in
 			scene = new THREE.Scene();
 	
-			bodyWrapper = new VRObject(scene, __webpack_require__(28), null, {
+			bodyWrapper = new VRObject(scene, __webpack_require__(43), null, {
 				name: 'body'
 			}).moveTo(0, 1.5, 4);
 			body = bodyWrapper.object;
@@ -805,16 +806,16 @@
 		function initRequirements() {
 			//load external requirements
 			THREE = __webpack_require__(7);
-			__webpack_require__(29);
-			__webpack_require__(30);
+			__webpack_require__(44);
+			__webpack_require__(45);
 	
 			//if (typeof __DEV__ !== 'undefined' && __DEV__) {
-				__webpack_require__(31);
+				__webpack_require__(46);
 			//}
 	
 			THREE.ImageUtils.crossOrigin = '';
 	
-			eventEmitter = __webpack_require__(32);
+			eventEmitter = __webpack_require__(28);
 	
 			//my VR stuff. todo: move these to a separate repo or two for easy packaging
 			__webpack_require__(47);
@@ -37988,7 +37989,7 @@
 		var	NEAR_DISTANCE = 3,
 			materials = __webpack_require__(6),
 			THREE = __webpack_require__(7),
-			eventEmitter = __webpack_require__(32),
+			eventEmitter = __webpack_require__(28),
 	
 			xAxis = new THREE.Vector3(1, 0, 0),
 			yAxis = new THREE.Vector3(0, 1, 0),
@@ -38107,7 +38108,7 @@
 			}
 	
 			['position', 'scale', 'rotation', 'quaternion', 'material'].forEach(function (prop) {
-				if (prop in object) {
+				if (prop in object && !self[prop]) {
 					self[prop] = object[prop];
 				}
 			});
@@ -38266,6 +38267,406 @@
 /* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
+	'use strict';
+	
+	var d        = __webpack_require__(29)
+	  , callable = __webpack_require__(42)
+	
+	  , apply = Function.prototype.apply, call = Function.prototype.call
+	  , create = Object.create, defineProperty = Object.defineProperty
+	  , defineProperties = Object.defineProperties
+	  , hasOwnProperty = Object.prototype.hasOwnProperty
+	  , descriptor = { configurable: true, enumerable: false, writable: true }
+	
+	  , on, once, off, emit, methods, descriptors, base;
+	
+	on = function (type, listener) {
+		var data;
+	
+		callable(listener);
+	
+		if (!hasOwnProperty.call(this, '__ee__')) {
+			data = descriptor.value = create(null);
+			defineProperty(this, '__ee__', descriptor);
+			descriptor.value = null;
+		} else {
+			data = this.__ee__;
+		}
+		if (!data[type]) data[type] = listener;
+		else if (typeof data[type] === 'object') data[type].push(listener);
+		else data[type] = [data[type], listener];
+	
+		return this;
+	};
+	
+	once = function (type, listener) {
+		var once, self;
+	
+		callable(listener);
+		self = this;
+		on.call(this, type, once = function () {
+			off.call(self, type, once);
+			apply.call(listener, this, arguments);
+		});
+	
+		once.__eeOnceListener__ = listener;
+		return this;
+	};
+	
+	off = function (type, listener) {
+		var data, listeners, candidate, i;
+	
+		callable(listener);
+	
+		if (!hasOwnProperty.call(this, '__ee__')) return this;
+		data = this.__ee__;
+		if (!data[type]) return this;
+		listeners = data[type];
+	
+		if (typeof listeners === 'object') {
+			for (i = 0; (candidate = listeners[i]); ++i) {
+				if ((candidate === listener) ||
+						(candidate.__eeOnceListener__ === listener)) {
+					if (listeners.length === 2) data[type] = listeners[i ? 0 : 1];
+					else listeners.splice(i, 1);
+				}
+			}
+		} else {
+			if ((listeners === listener) ||
+					(listeners.__eeOnceListener__ === listener)) {
+				delete data[type];
+			}
+		}
+	
+		return this;
+	};
+	
+	emit = function (type) {
+		var i, l, listener, listeners, args;
+	
+		if (!hasOwnProperty.call(this, '__ee__')) return;
+		listeners = this.__ee__[type];
+		if (!listeners) return;
+	
+		if (typeof listeners === 'object') {
+			l = arguments.length;
+			args = new Array(l - 1);
+			for (i = 1; i < l; ++i) args[i - 1] = arguments[i];
+	
+			listeners = listeners.slice();
+			for (i = 0; (listener = listeners[i]); ++i) {
+				apply.call(listener, this, args);
+			}
+		} else {
+			switch (arguments.length) {
+			case 1:
+				call.call(listeners, this);
+				break;
+			case 2:
+				call.call(listeners, this, arguments[1]);
+				break;
+			case 3:
+				call.call(listeners, this, arguments[1], arguments[2]);
+				break;
+			default:
+				l = arguments.length;
+				args = new Array(l - 1);
+				for (i = 1; i < l; ++i) {
+					args[i - 1] = arguments[i];
+				}
+				apply.call(listeners, this, args);
+			}
+		}
+	};
+	
+	methods = {
+		on: on,
+		once: once,
+		off: off,
+		emit: emit
+	};
+	
+	descriptors = {
+		on: d(on),
+		once: d(once),
+		off: d(off),
+		emit: d(emit)
+	};
+	
+	base = defineProperties({}, descriptors);
+	
+	module.exports = exports = function (o) {
+		return (o == null) ? create(base) : defineProperties(Object(o), descriptors);
+	};
+	exports.methods = methods;
+
+
+/***/ },
+/* 29 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var assign        = __webpack_require__(30)
+	  , normalizeOpts = __webpack_require__(37)
+	  , isCallable    = __webpack_require__(38)
+	  , contains      = __webpack_require__(39)
+	
+	  , d;
+	
+	d = module.exports = function (dscr, value/*, options*/) {
+		var c, e, w, options, desc;
+		if ((arguments.length < 2) || (typeof dscr !== 'string')) {
+			options = value;
+			value = dscr;
+			dscr = null;
+		} else {
+			options = arguments[2];
+		}
+		if (dscr == null) {
+			c = w = true;
+			e = false;
+		} else {
+			c = contains.call(dscr, 'c');
+			e = contains.call(dscr, 'e');
+			w = contains.call(dscr, 'w');
+		}
+	
+		desc = { value: value, configurable: c, enumerable: e, writable: w };
+		return !options ? desc : assign(normalizeOpts(options), desc);
+	};
+	
+	d.gs = function (dscr, get, set/*, options*/) {
+		var c, e, options, desc;
+		if (typeof dscr !== 'string') {
+			options = set;
+			set = get;
+			get = dscr;
+			dscr = null;
+		} else {
+			options = arguments[3];
+		}
+		if (get == null) {
+			get = undefined;
+		} else if (!isCallable(get)) {
+			options = get;
+			get = set = undefined;
+		} else if (set == null) {
+			set = undefined;
+		} else if (!isCallable(set)) {
+			options = set;
+			set = undefined;
+		}
+		if (dscr == null) {
+			c = true;
+			e = false;
+		} else {
+			c = contains.call(dscr, 'c');
+			e = contains.call(dscr, 'e');
+		}
+	
+		desc = { get: get, set: set, configurable: c, enumerable: e };
+		return !options ? desc : assign(normalizeOpts(options), desc);
+	};
+
+
+/***/ },
+/* 30 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = __webpack_require__(31)()
+		? Object.assign
+		: __webpack_require__(32);
+
+
+/***/ },
+/* 31 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = function () {
+		var assign = Object.assign, obj;
+		if (typeof assign !== 'function') return false;
+		obj = { foo: 'raz' };
+		assign(obj, { bar: 'dwa' }, { trzy: 'trzy' });
+		return (obj.foo + obj.bar + obj.trzy) === 'razdwatrzy';
+	};
+
+
+/***/ },
+/* 32 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var keys  = __webpack_require__(33)
+	  , value = __webpack_require__(36)
+	
+	  , max = Math.max;
+	
+	module.exports = function (dest, src/*, …srcn*/) {
+		var error, i, l = max(arguments.length, 2), assign;
+		dest = Object(value(dest));
+		assign = function (key) {
+			try { dest[key] = src[key]; } catch (e) {
+				if (!error) error = e;
+			}
+		};
+		for (i = 1; i < l; ++i) {
+			src = arguments[i];
+			keys(src).forEach(assign);
+		}
+		if (error !== undefined) throw error;
+		return dest;
+	};
+
+
+/***/ },
+/* 33 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = __webpack_require__(34)()
+		? Object.keys
+		: __webpack_require__(35);
+
+
+/***/ },
+/* 34 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = function () {
+		try {
+			Object.keys('primitive');
+			return true;
+		} catch (e) { return false; }
+	};
+
+
+/***/ },
+/* 35 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var keys = Object.keys;
+	
+	module.exports = function (object) {
+		return keys(object == null ? object : Object(object));
+	};
+
+
+/***/ },
+/* 36 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = function (value) {
+		if (value == null) throw new TypeError("Cannot use null or undefined");
+		return value;
+	};
+
+
+/***/ },
+/* 37 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var assign = __webpack_require__(30)
+	
+	  , forEach = Array.prototype.forEach
+	  , create = Object.create, getPrototypeOf = Object.getPrototypeOf
+	
+	  , process;
+	
+	process = function (src, obj) {
+		var proto = getPrototypeOf(src);
+		return assign(proto ? process(proto, obj) : obj, src);
+	};
+	
+	module.exports = function (options/*, …options*/) {
+		var result = create(null);
+		forEach.call(arguments, function (options) {
+			if (options == null) return;
+			process(Object(options), result);
+		});
+		return result;
+	};
+
+
+/***/ },
+/* 38 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// Deprecated
+	
+	'use strict';
+	
+	module.exports = function (obj) { return typeof obj === 'function'; };
+
+
+/***/ },
+/* 39 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = __webpack_require__(40)()
+		? String.prototype.contains
+		: __webpack_require__(41);
+
+
+/***/ },
+/* 40 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var str = 'razdwatrzy';
+	
+	module.exports = function () {
+		if (typeof str.contains !== 'function') return false;
+		return ((str.contains('dwa') === true) && (str.contains('foo') === false));
+	};
+
+
+/***/ },
+/* 41 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var indexOf = String.prototype.indexOf;
+	
+	module.exports = function (searchString/*, position*/) {
+		return indexOf.call(this, searchString, arguments[1]) > -1;
+	};
+
+
+/***/ },
+/* 42 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = function (fn) {
+		if (typeof fn !== 'function') throw new TypeError(fn + " is not a function");
+		return fn;
+	};
+
+
+/***/ },
+/* 43 */
+/***/ function(module, exports, __webpack_require__) {
+
 	module.exports = (function () {
 		'use strict';
 	
@@ -38284,7 +38685,7 @@
 	}());
 
 /***/ },
-/* 29 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
@@ -38386,7 +38787,7 @@
 
 
 /***/ },
-/* 30 */
+/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
@@ -39075,7 +39476,7 @@
 
 
 /***/ },
-/* 31 */
+/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
@@ -39199,406 +39600,6 @@
 		}
 	
 	} )();
-
-/***/ },
-/* 32 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var d        = __webpack_require__(33)
-	  , callable = __webpack_require__(46)
-	
-	  , apply = Function.prototype.apply, call = Function.prototype.call
-	  , create = Object.create, defineProperty = Object.defineProperty
-	  , defineProperties = Object.defineProperties
-	  , hasOwnProperty = Object.prototype.hasOwnProperty
-	  , descriptor = { configurable: true, enumerable: false, writable: true }
-	
-	  , on, once, off, emit, methods, descriptors, base;
-	
-	on = function (type, listener) {
-		var data;
-	
-		callable(listener);
-	
-		if (!hasOwnProperty.call(this, '__ee__')) {
-			data = descriptor.value = create(null);
-			defineProperty(this, '__ee__', descriptor);
-			descriptor.value = null;
-		} else {
-			data = this.__ee__;
-		}
-		if (!data[type]) data[type] = listener;
-		else if (typeof data[type] === 'object') data[type].push(listener);
-		else data[type] = [data[type], listener];
-	
-		return this;
-	};
-	
-	once = function (type, listener) {
-		var once, self;
-	
-		callable(listener);
-		self = this;
-		on.call(this, type, once = function () {
-			off.call(self, type, once);
-			apply.call(listener, this, arguments);
-		});
-	
-		once.__eeOnceListener__ = listener;
-		return this;
-	};
-	
-	off = function (type, listener) {
-		var data, listeners, candidate, i;
-	
-		callable(listener);
-	
-		if (!hasOwnProperty.call(this, '__ee__')) return this;
-		data = this.__ee__;
-		if (!data[type]) return this;
-		listeners = data[type];
-	
-		if (typeof listeners === 'object') {
-			for (i = 0; (candidate = listeners[i]); ++i) {
-				if ((candidate === listener) ||
-						(candidate.__eeOnceListener__ === listener)) {
-					if (listeners.length === 2) data[type] = listeners[i ? 0 : 1];
-					else listeners.splice(i, 1);
-				}
-			}
-		} else {
-			if ((listeners === listener) ||
-					(listeners.__eeOnceListener__ === listener)) {
-				delete data[type];
-			}
-		}
-	
-		return this;
-	};
-	
-	emit = function (type) {
-		var i, l, listener, listeners, args;
-	
-		if (!hasOwnProperty.call(this, '__ee__')) return;
-		listeners = this.__ee__[type];
-		if (!listeners) return;
-	
-		if (typeof listeners === 'object') {
-			l = arguments.length;
-			args = new Array(l - 1);
-			for (i = 1; i < l; ++i) args[i - 1] = arguments[i];
-	
-			listeners = listeners.slice();
-			for (i = 0; (listener = listeners[i]); ++i) {
-				apply.call(listener, this, args);
-			}
-		} else {
-			switch (arguments.length) {
-			case 1:
-				call.call(listeners, this);
-				break;
-			case 2:
-				call.call(listeners, this, arguments[1]);
-				break;
-			case 3:
-				call.call(listeners, this, arguments[1], arguments[2]);
-				break;
-			default:
-				l = arguments.length;
-				args = new Array(l - 1);
-				for (i = 1; i < l; ++i) {
-					args[i - 1] = arguments[i];
-				}
-				apply.call(listeners, this, args);
-			}
-		}
-	};
-	
-	methods = {
-		on: on,
-		once: once,
-		off: off,
-		emit: emit
-	};
-	
-	descriptors = {
-		on: d(on),
-		once: d(once),
-		off: d(off),
-		emit: d(emit)
-	};
-	
-	base = defineProperties({}, descriptors);
-	
-	module.exports = exports = function (o) {
-		return (o == null) ? create(base) : defineProperties(Object(o), descriptors);
-	};
-	exports.methods = methods;
-
-
-/***/ },
-/* 33 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var assign        = __webpack_require__(34)
-	  , normalizeOpts = __webpack_require__(41)
-	  , isCallable    = __webpack_require__(42)
-	  , contains      = __webpack_require__(43)
-	
-	  , d;
-	
-	d = module.exports = function (dscr, value/*, options*/) {
-		var c, e, w, options, desc;
-		if ((arguments.length < 2) || (typeof dscr !== 'string')) {
-			options = value;
-			value = dscr;
-			dscr = null;
-		} else {
-			options = arguments[2];
-		}
-		if (dscr == null) {
-			c = w = true;
-			e = false;
-		} else {
-			c = contains.call(dscr, 'c');
-			e = contains.call(dscr, 'e');
-			w = contains.call(dscr, 'w');
-		}
-	
-		desc = { value: value, configurable: c, enumerable: e, writable: w };
-		return !options ? desc : assign(normalizeOpts(options), desc);
-	};
-	
-	d.gs = function (dscr, get, set/*, options*/) {
-		var c, e, options, desc;
-		if (typeof dscr !== 'string') {
-			options = set;
-			set = get;
-			get = dscr;
-			dscr = null;
-		} else {
-			options = arguments[3];
-		}
-		if (get == null) {
-			get = undefined;
-		} else if (!isCallable(get)) {
-			options = get;
-			get = set = undefined;
-		} else if (set == null) {
-			set = undefined;
-		} else if (!isCallable(set)) {
-			options = set;
-			set = undefined;
-		}
-		if (dscr == null) {
-			c = true;
-			e = false;
-		} else {
-			c = contains.call(dscr, 'c');
-			e = contains.call(dscr, 'e');
-		}
-	
-		desc = { get: get, set: set, configurable: c, enumerable: e };
-		return !options ? desc : assign(normalizeOpts(options), desc);
-	};
-
-
-/***/ },
-/* 34 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = __webpack_require__(35)()
-		? Object.assign
-		: __webpack_require__(36);
-
-
-/***/ },
-/* 35 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = function () {
-		var assign = Object.assign, obj;
-		if (typeof assign !== 'function') return false;
-		obj = { foo: 'raz' };
-		assign(obj, { bar: 'dwa' }, { trzy: 'trzy' });
-		return (obj.foo + obj.bar + obj.trzy) === 'razdwatrzy';
-	};
-
-
-/***/ },
-/* 36 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var keys  = __webpack_require__(37)
-	  , value = __webpack_require__(40)
-	
-	  , max = Math.max;
-	
-	module.exports = function (dest, src/*, …srcn*/) {
-		var error, i, l = max(arguments.length, 2), assign;
-		dest = Object(value(dest));
-		assign = function (key) {
-			try { dest[key] = src[key]; } catch (e) {
-				if (!error) error = e;
-			}
-		};
-		for (i = 1; i < l; ++i) {
-			src = arguments[i];
-			keys(src).forEach(assign);
-		}
-		if (error !== undefined) throw error;
-		return dest;
-	};
-
-
-/***/ },
-/* 37 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = __webpack_require__(38)()
-		? Object.keys
-		: __webpack_require__(39);
-
-
-/***/ },
-/* 38 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = function () {
-		try {
-			Object.keys('primitive');
-			return true;
-		} catch (e) { return false; }
-	};
-
-
-/***/ },
-/* 39 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var keys = Object.keys;
-	
-	module.exports = function (object) {
-		return keys(object == null ? object : Object(object));
-	};
-
-
-/***/ },
-/* 40 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = function (value) {
-		if (value == null) throw new TypeError("Cannot use null or undefined");
-		return value;
-	};
-
-
-/***/ },
-/* 41 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var assign = __webpack_require__(34)
-	
-	  , forEach = Array.prototype.forEach
-	  , create = Object.create, getPrototypeOf = Object.getPrototypeOf
-	
-	  , process;
-	
-	process = function (src, obj) {
-		var proto = getPrototypeOf(src);
-		return assign(proto ? process(proto, obj) : obj, src);
-	};
-	
-	module.exports = function (options/*, …options*/) {
-		var result = create(null);
-		forEach.call(arguments, function (options) {
-			if (options == null) return;
-			process(Object(options), result);
-		});
-		return result;
-	};
-
-
-/***/ },
-/* 42 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// Deprecated
-	
-	'use strict';
-	
-	module.exports = function (obj) { return typeof obj === 'function'; };
-
-
-/***/ },
-/* 43 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = __webpack_require__(44)()
-		? String.prototype.contains
-		: __webpack_require__(45);
-
-
-/***/ },
-/* 44 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var str = 'razdwatrzy';
-	
-	module.exports = function () {
-		if (typeof str.contains !== 'function') return false;
-		return ((str.contains('dwa') === true) && (str.contains('foo') === false));
-	};
-
-
-/***/ },
-/* 45 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var indexOf = String.prototype.indexOf;
-	
-	module.exports = function (searchString/*, position*/) {
-		return indexOf.call(this, searchString, arguments[1]) > -1;
-	};
-
-
-/***/ },
-/* 46 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = function (fn) {
-		if (typeof fn !== 'function') throw new TypeError(fn + " is not a function");
-		return fn;
-	};
-
 
 /***/ },
 /* 47 */
@@ -40155,22 +40156,24 @@
 		"./box.js": 67,
 		"./cylinder": 68,
 		"./cylinder.js": 68,
-		"./empty": 28,
-		"./empty.js": 28,
+		"./empty": 43,
+		"./empty.js": 43,
 		"./floor": 69,
 		"./floor.js": 69,
 		"./image": 70,
 		"./image.js": 70,
 		"./panorama": 71,
 		"./panorama.js": 71,
-		"./snow": 72,
-		"./snow.js": 72,
-		"./sound": 74,
-		"./sound.js": 74,
-		"./sphere": 76,
-		"./sphere.js": 76,
-		"./torus": 77,
-		"./torus.js": 77
+		"./sky": 72,
+		"./sky.js": 72,
+		"./snow": 73,
+		"./snow.js": 73,
+		"./sound": 75,
+		"./sound.js": 75,
+		"./sphere": 77,
+		"./sphere.js": 77,
+		"./torus": 78,
+		"./torus.js": 78
 	};
 	function webpackContext(req) {
 		return __webpack_require__(webpackContextResolve(req));
@@ -40359,12 +40362,14 @@
 			var obj,
 				geometry;
 	
-			geometry = new THREE.PlaneBufferGeometry(10, 10, options.widthSegments, options.heightSegments);
+			geometry = new THREE.CircleGeometry( options.radius || 100, options.segments || 16 );
 			geometry.applyMatrix( new THREE.Matrix4().makeRotationX(-Math.PI / 2));
 	
 			obj = new THREE.Mesh(
 				geometry,
-				materials.checkerboard()
+				materials.checkerboard({
+					repeat: 100
+				})
 			);
 			obj.name = 'floor';
 	
@@ -40484,9 +40489,131 @@
 		'use strict';
 	
 		var materials = __webpack_require__(6),
+			THREE = __webpack_require__(7),
+	
+			distance = 400000,
+			scratchVector = new THREE.Vector3(),
+	
+			params = [
+				'luminance',
+				'turbidity',
+				'reileigh',
+				'mieCoefficient',
+				'mieDirectionalG'
+			];
+	
+		__webpack_require__(79);
+	
+		return function sky(parent, options) {
+			var obj = new THREE.Sky(),
+				self = this;
+	
+			function update(altitude, azimuth) {
+				var sinTheta = Math.sin(altitude),
+					cosTheta = Math.sqrt(1 - sinTheta * sinTheta),
+					sinPhi = Math.sin(-Math.PI / 2 - azimuth),
+					cosPhi = Math.sqrt(1 - sinPhi * sinPhi);
+	
+				self.sunPosition.set(
+					distance * cosPhi * cosTheta,
+					distance * sinTheta,
+					distance * sinPhi * cosTheta
+				);
+			}
+	
+			function getAzimuth() {
+				var x = self.sunPosition.x,
+					y = self.sunPosition.z,
+					angle = Math.atan2(y, x);
+	
+				return Math.PI / 2 + angle;
+			}
+	
+			function getAltitude() {
+				scratchVector.copy(self.sunPosition).normalize();
+				return Math.asin(scratchVector.y);
+			}
+	
+			obj.mesh.name = 'sky';
+	
+			parent.add(obj.mesh);
+	
+			this.setOptions = function (options) {
+				var needUpdate = false,
+					altitude,
+					azimuth;
+	
+				if (options) {
+					params.forEach(function (param) {
+						var val;
+						if (param !== undefined) {
+							val = parseFloat(param);
+							if (!isNaN(val)) {
+								obj.uniforms[param].value = val;
+							}
+						}
+					});
+	
+					if (options.sunPosition instanceof THREE.Vector3) {
+						obj.uniforms.sunPosition.value.copy(options.sunPosition);
+					} else if (Array.isArray(options.sunPosition)) {
+						obj.uniforms.sunPosition.value.set(obj.uniforms.sunPosition.value, options.sunPosition);
+					} else {
+						altitude = parseFloat(options.altitude);
+						if (isNaN(altitude)) {
+							altitude = getAltitude();
+						} else {
+							needUpdate = true;
+						}
+	
+						azimuth = parseFloat(options.azimuth);
+						if (!isNaN(azimuth)) {
+							needUpdate = true;
+						} else if (needUpdate) {
+							azimuth = getAzimuth();
+						}
+	
+						if (needUpdate) {
+							update(altitude, azimuth);
+						}
+					}
+				}
+			};
+	
+			this.sunPosition = obj.uniforms.sunPosition.value;
+			update(Math.PI / 6, Math.PI / 6);
+	
+			this.setOptions(options);
+	
+			Object.defineProperty(this, 'azimuth', {
+				set: function (val) {
+					update(getAltitude(), val);
+				},
+				get: getAzimuth
+			});
+	
+			Object.defineProperty(this, 'altitude', {
+				set: function (val) {
+					update(val, getAzimuth());
+				},
+				get: getAltitude
+			});
+	
+			return obj.mesh;
+		};
+	}());
+
+/***/ },
+/* 73 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(6),
 			THREE = __webpack_require__(7);
 	
-		__webpack_require__(73);
+		__webpack_require__(74);
 	
 		return function snow(parent, options) {
 			var snowObj,
@@ -40512,7 +40639,7 @@
 	}());
 
 /***/ },
-/* 73 */
+/* 74 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
@@ -40640,7 +40767,7 @@
 	THREE.Snow.flake = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyBpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBXaW5kb3dzIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOkU3RTAyNUNGNjU3MDExRTE4RjZFQUQzRTYzNzcxOENCIiB4bXBNTTpEb2N1bWVudElEPSJ4bXAuZGlkOkU3RTAyNUQwNjU3MDExRTE4RjZFQUQzRTYzNzcxOENCIj4gPHhtcE1NOkRlcml2ZWRGcm9tIHN0UmVmOmluc3RhbmNlSUQ9InhtcC5paWQ6RTdFMDI1Q0Q2NTcwMTFFMThGNkVBRDNFNjM3NzE4Q0IiIHN0UmVmOmRvY3VtZW50SUQ9InhtcC5kaWQ6RTdFMDI1Q0U2NTcwMTFFMThGNkVBRDNFNjM3NzE4Q0IiLz4gPC9yZGY6RGVzY3JpcHRpb24+IDwvcmRmOlJERj4gPC94OnhtcG1ldGE+IDw/eHBhY2tldCBlbmQ9InIiPz5CMaWgAAASq0lEQVR42tRd23YbOQ6U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';
 
 /***/ },
-/* 74 */
+/* 75 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = (function () {
@@ -40649,7 +40776,7 @@
 		var materials = __webpack_require__(6),
 			THREE = __webpack_require__(7);
 	
-		__webpack_require__(75);
+		__webpack_require__(76);
 	
 		return function sound(parent, options) {
 			var obj,
@@ -40682,7 +40809,7 @@
 	}());
 
 /***/ },
-/* 75 */
+/* 76 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
@@ -40867,7 +40994,7 @@
 	
 				this.panner.setPosition( position.x, position.y, position.z );
 	
-	 		}
+			}
 	
 		};
 	
@@ -40939,7 +41066,7 @@
 
 
 /***/ },
-/* 76 */
+/* 77 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = (function () {
@@ -40971,7 +41098,7 @@
 	}());
 
 /***/ },
-/* 77 */
+/* 78 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = (function () {
@@ -40999,6 +41126,284 @@
 			return mesh;
 		};
 	}());
+
+/***/ },
+/* 79 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/*** IMPORTS FROM imports-loader ***/
+	var THREE = __webpack_require__(7);
+	
+	/**
+	 * @author zz85 / https://github.com/zz85
+	 * 
+	 * Based on "A Practical Analytic Model for Daylight" 
+	 * aka The Preetham Model, the de facto standard analytic skydome model
+	 * http://www.cs.utah.edu/~shirley/papers/sunsky/sunsky.pdf
+	 * 
+	 * First implemented by Simon Wallner
+	 * http://www.simonwallner.at/projects/atmospheric-scattering
+	 * 
+	 * Improved by Martin Upitis
+	 * http://blenderartists.org/forum/showthread.php?245954-preethams-sky-impementation-HDR
+	 * 
+	 * Three.js integration by zz85 http://twitter.com/blurspline
+	*/
+	
+	THREE.ShaderLib['sky'] = {
+	
+		uniforms: {
+	
+			luminance:	 { type: "f", value:1 },
+			turbidity:	 { type: "f", value:2 },
+			reileigh:	 { type: "f", value:1 },
+			mieCoefficient:	 { type: "f", value:0.005 },
+			mieDirectionalG: { type: "f", value:0.8 },
+			sunPosition: 	 { type: "v3", value: new THREE.Vector3() }
+	
+		},
+	
+		vertexShader: [
+	
+			"varying vec3 vWorldPosition;",
+			"varying vec2 vUv;",
+	
+			"void main() {",
+	
+				"vec4 worldPosition = modelMatrix * vec4( position, 1.0 );",
+				"vWorldPosition = worldPosition.xyz;",
+				"vUv = uv;",
+	
+				"gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+	
+			"}",
+	
+		].join("\n"),
+	
+		fragmentShader: [
+	
+	
+			"uniform sampler2D skySampler;",
+			"uniform vec3 sunPosition;",
+			"varying vec3 vWorldPosition;",
+			"varying vec2 vUv;",
+	
+	
+			"vec3 cameraPos = vec3(0., 0., 0.);",
+			"// uniform sampler2D sDiffuse;",
+			"// const float turbidity = 10.0; //",
+			"// const float reileigh = 2.; //",
+			"// const float luminance = 1.0; //",
+			"// const float mieCoefficient = 0.005;",
+			"// const float mieDirectionalG = 0.8;",
+	
+			"uniform float luminance;",
+			"uniform float turbidity;",
+			"uniform float reileigh;",
+			"uniform float mieCoefficient;",
+			"uniform float mieDirectionalG;",
+	
+	
+			"vec3 sunDirection = normalize(sunPosition);",
+			"float reileighCoefficient = reileigh;",
+	
+			"// constants for atmospheric scattering",
+			"const float e = 2.71828182845904523536028747135266249775724709369995957;",
+			"const float pi = 3.141592653589793238462643383279502884197169;",
+	
+			"const float n = 1.0003; // refractive index of air",
+			"const float N = 2.545E25; // number of molecules per unit volume for air at",
+									"// 288.15K and 1013mb (sea level -45 celsius)",
+			"const float pn = 0.035;	// depolatization factor for standard air",
+	
+			"// wavelength of used primaries, according to preetham",
+			"const vec3 lambda = vec3(680E-9, 550E-9, 450E-9);",
+	
+			"// mie stuff",
+			"// K coefficient for the primaries",
+			"const vec3 K = vec3(0.686, 0.678, 0.666);",
+			"const float v = 4.0;",
+	
+			"// optical length at zenith for molecules",
+			"const float rayleighZenithLength = 8.4E3;",
+			"const float mieZenithLength = 1.25E3;",
+			"const vec3 up = vec3(0.0, 1.0, 0.0);",
+	
+			"const float EE = 1000.0;",
+			"const float sunAngularDiameterCos = 0.999956676946448443553574619906976478926848692873900859324;",
+			"// 66 arc seconds -> degrees, and the cosine of that",
+	
+			"// earth shadow hack",
+			"const float cutoffAngle = pi/1.95;",
+			"const float steepness = 1.5;",
+	
+	
+			"vec3 totalRayleigh(vec3 lambda)",
+			"{",
+				"return (8.0 * pow(pi, 3.0) * pow(pow(n, 2.0) - 1.0, 2.0) * (6.0 + 3.0 * pn)) / (3.0 * N * pow(lambda, vec3(4.0)) * (6.0 - 7.0 * pn));",
+			"}",
+	
+			// see http://blenderartists.org/forum/showthread.php?321110-Shaders-and-Skybox-madness
+			"// A simplied version of the total Reayleigh scattering to works on browsers that use ANGLE",
+			"vec3 simplifiedRayleigh()",
+			"{",
+				"return 0.0005 / vec3(94, 40, 18);",
+				// return 0.00054532832366 / (3.0 * 2.545E25 * pow(vec3(680E-9, 550E-9, 450E-9), vec3(4.0)) * 6.245);
+			"}",
+	
+			"float rayleighPhase(float cosTheta)",
+			"{	 ",
+				"return (3.0 / (16.0*pi)) * (1.0 + pow(cosTheta, 2.0));",
+			"//	return (1.0 / (3.0*pi)) * (1.0 + pow(cosTheta, 2.0));",
+			"//	return (3.0 / 4.0) * (1.0 + pow(cosTheta, 2.0));",
+			"}",
+	
+			"vec3 totalMie(vec3 lambda, vec3 K, float T)",
+			"{",
+				"float c = (0.2 * T ) * 10E-18;",
+				"return 0.434 * c * pi * pow((2.0 * pi) / lambda, vec3(v - 2.0)) * K;",
+			"}",
+	
+			"float hgPhase(float cosTheta, float g)",
+			"{",
+				"return (1.0 / (4.0*pi)) * ((1.0 - pow(g, 2.0)) / pow(1.0 - 2.0*g*cosTheta + pow(g, 2.0), 1.5));",
+			"}",
+	
+			"float sunIntensity(float zenithAngleCos)",
+			"{",
+				"return EE * max(0.0, 1.0 - exp(-((cutoffAngle - acos(zenithAngleCos))/steepness)));",
+			"}",
+	
+			"// float logLuminance(vec3 c)",
+			"// {",
+			"// 	return log(c.r * 0.2126 + c.g * 0.7152 + c.b * 0.0722);",
+			"// }",
+	
+			"// Filmic ToneMapping http://filmicgames.com/archives/75",
+			"float A = 0.15;",
+			"float B = 0.50;",
+			"float C = 0.10;",
+			"float D = 0.20;",
+			"float E = 0.02;",
+			"float F = 0.30;",
+			"float W = 1000.0;",
+	
+			"vec3 Uncharted2Tonemap(vec3 x)",
+			"{",
+			   "return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;",
+			"}",
+	
+	
+			"void main() ",
+			"{",
+				"float sunfade = 1.0-clamp(1.0-exp((sunPosition.y/450000.0)),0.0,1.0);",
+	
+				"// luminance =  1.0 ;// vWorldPosition.y / 450000. + 0.5; //sunPosition.y / 450000. * 1. + 0.5;",
+	
+				 "// gl_FragColor = vec4(sunfade, sunfade, sunfade, 1.0);",
+				
+				"reileighCoefficient = reileighCoefficient - (1.0* (1.0-sunfade));",
+				
+				"float sunE = sunIntensity(dot(sunDirection, up));",
+	
+				"// extinction (absorbtion + out scattering) ",
+				"// rayleigh coefficients",
+	
+				// "vec3 betaR = totalRayleigh(lambda) * reileighCoefficient;",
+				"vec3 betaR = simplifiedRayleigh() * reileighCoefficient;",
+	
+				"// mie coefficients",
+				"vec3 betaM = totalMie(lambda, K, turbidity) * mieCoefficient;",
+	
+				"// optical length",
+				"// cutoff angle at 90 to avoid singularity in next formula.",
+				"float zenithAngle = acos(max(0.0, dot(up, normalize(vWorldPosition - cameraPos))));",
+				"float sR = rayleighZenithLength / (cos(zenithAngle) + 0.15 * pow(93.885 - ((zenithAngle * 180.0) / pi), -1.253));",
+				"float sM = mieZenithLength / (cos(zenithAngle) + 0.15 * pow(93.885 - ((zenithAngle * 180.0) / pi), -1.253));",
+	
+	
+	
+				"// combined extinction factor	",
+				"vec3 Fex = exp(-(betaR * sR + betaM * sM));",
+	
+				"// in scattering",
+				"float cosTheta = dot(normalize(vWorldPosition - cameraPos), sunDirection);",
+	
+				"float rPhase = rayleighPhase(cosTheta*0.5+0.5);",
+				"vec3 betaRTheta = betaR * rPhase;",
+	
+				"float mPhase = hgPhase(cosTheta, mieDirectionalG);",
+				"vec3 betaMTheta = betaM * mPhase;",
+	
+	
+				"vec3 Lin = pow(sunE * ((betaRTheta + betaMTheta) / (betaR + betaM)) * (1.0 - Fex),vec3(1.5));",
+				"Lin *= mix(vec3(1.0),pow(sunE * ((betaRTheta + betaMTheta) / (betaR + betaM)) * Fex,vec3(1.0/2.0)),clamp(pow(1.0-dot(up, sunDirection),5.0),0.0,1.0));",
+	
+				"//nightsky",
+				"vec3 direction = normalize(vWorldPosition - cameraPos);",
+				"float theta = acos(direction.y); // elevation --> y-axis, [-pi/2, pi/2]",
+				"float phi = atan(direction.z, direction.x); // azimuth --> x-axis [-pi/2, pi/2]",
+				"vec2 uv = vec2(phi, theta) / vec2(2.0*pi, pi) + vec2(0.5, 0.0);",
+				"// vec3 L0 = texture2D(skySampler, uv).rgb+0.1 * Fex;",
+				"vec3 L0 = vec3(0.1) * Fex;",
+				
+				"// composition + solar disc",
+				"//if (cosTheta > sunAngularDiameterCos)",
+				"float sundisk = smoothstep(sunAngularDiameterCos,sunAngularDiameterCos+0.00002,cosTheta);",
+				"// if (normalize(vWorldPosition - cameraPos).y>0.0)",
+				"L0 += (sunE * 19000.0 * Fex)*sundisk;",
+	
+	
+				"vec3 whiteScale = 1.0/Uncharted2Tonemap(vec3(W));",
+				
+				"vec3 texColor = (Lin+L0);   ",
+				"texColor *= 0.04 ;",
+				"texColor += vec3(0.0,0.001,0.0025)*0.3;",
+				
+				"float g_fMaxLuminance = 1.0;",
+				"float fLumScaled = 0.1 / luminance;     ",
+				"float fLumCompressed = (fLumScaled * (1.0 + (fLumScaled / (g_fMaxLuminance * g_fMaxLuminance)))) / (1.0 + fLumScaled); ",
+	
+				"float ExposureBias = fLumCompressed;",
+			   
+				"vec3 curr = Uncharted2Tonemap((log2(2.0/pow(luminance,4.0)))*texColor);",
+				"vec3 color = curr*whiteScale;",
+	
+				"vec3 retColor = pow(color,vec3(1.0/(1.2+(1.2*sunfade))));",
+	
+				
+				"gl_FragColor.rgb = retColor;",
+					
+				"gl_FragColor.a = 1.0;",
+			"}",
+	
+		].join("\n")
+	
+	};
+	
+	THREE.Sky = function () {
+	
+		var skyShader = THREE.ShaderLib[ "sky" ];
+		var skyUniforms = THREE.UniformsUtils.clone( skyShader.uniforms );
+	
+		var skyMat = new THREE.ShaderMaterial( { 
+			fragmentShader: skyShader.fragmentShader, 
+			vertexShader: skyShader.vertexShader, 
+			uniforms: skyUniforms,
+			side: THREE.BackSide
+		} );
+	
+		var skyGeo = new THREE.SphereGeometry( 450000, 32, 15 );
+		var skyMesh = new THREE.Mesh( skyGeo, skyMat );
+	
+	
+		// Expose variables
+		this.mesh = skyMesh;
+		this.uniforms = skyUniforms;
+	
+	
+	};
+
 
 /***/ }
 /******/ ])
