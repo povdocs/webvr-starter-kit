@@ -54,8 +54,8 @@ Create a torus (like a donut).
 
 ##### Options:
 
-- `widthSegments` — Default: 1
-- `heightSegments` — Default: 1
+- `radius` — Radius of the circle. Default: 100
+- `segments` — Number of segments. Default: 16
 
 #### VR.image()
 
