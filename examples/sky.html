@@ -1,7 +1,7 @@
 <html>
     <head>
         <meta charset="utf-8">
-        <title>WebVR Starter Kit - Near/Far Example</title>
+        <title>WebVR Starter Kit - Skye Example</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     </head>
     <body>
@@ -10,8 +10,21 @@
         VR.floor().setMaterial('grass', {
             repeat: 300
         });
-        VR.sky();
 
+        //an animated sky
+        var sky = VR.sky().setAzimuth(0);
+        VR.animate(function (delta, time) {
+            sky.altitude = time / 10;
+        });
+
+        //some random stone monoliths
+        var i, obj, height;
+        for (i = 0; i < 10; i++) {
+            obj = i % 3 ? VR.box() : VR.cylinder();
+            height = 2 + Math.random() * 2;
+            obj.moveTo(10 * Math.cos(i / 10 * 2 * Math.PI), height / 2, 10 * Math.sin(i / 10 * 2 * Math.PI));
+            obj.setScale(Math.random() + 1, height, Math.random() + 1);
+        }
         </script>
     </body>
 </html>

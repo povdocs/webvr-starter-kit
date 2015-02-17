@@ -311,7 +311,8 @@
 
 		//todo: remove any default lights once other lights are added
 		var dLight = new THREE.DirectionalLight(0xffffff, 0.8);
-		dLight.position.set(2, 10, 10);
+		dLight.name = 'directional-light';
+		dLight.position.set(20, 100, 100);
 
 		dLight.castShadow = true;
 		dLight.shadowCameraVisible = true;
@@ -324,8 +325,8 @@
 		dLight.shadowCameraTop = 10;
 		dLight.shadowCameraBottom = -10;
 
-		dLight.shadowCameraFar = 50;
-		dLight.shadowCameraNear = 3;
+		dLight.shadowCameraFar = 150;
+		dLight.shadowCameraNear = 100;
 		dLight.shadowDarkness = 1;
 
 		scene.add(dLight);

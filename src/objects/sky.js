@@ -3,6 +3,8 @@ module.exports = (function () {
 
 	var materials = require('../materials'),
 		THREE = require('three'),
+		TAU = Math.PI * 2,
+		HALF_PI = Math.PI / 2,
 
 		distance = 400000,
 		scratchVector = new THREE.Vector3(),
@@ -19,19 +21,37 @@ module.exports = (function () {
 
 	return function sky(parent, options) {
 		var obj = new THREE.Sky(),
-			self = this;
+			self = this,
+			scene = parent,
+			light;
 
 		function update(altitude, azimuth) {
-			var sinTheta = Math.sin(altitude),
-				cosTheta = Math.sqrt(1 - sinTheta * sinTheta),
-				sinPhi = Math.sin(-Math.PI / 2 - azimuth),
-				cosPhi = Math.sqrt(1 - sinPhi * sinPhi);
+			var sinTheta,
+				cosTheta,
+				phi,
+				sinPhi,
+				cosPhi;
+
+			altitude = altitude - TAU * Math.floor(altitude / TAU);
+			azimuth = azimuth - TAU * Math.floor(azimuth / TAU);
+
+			sinTheta = Math.sin(altitude);
+			cosTheta = Math.cos(altitude);
+			phi = -HALF_PI - azimuth;
+			sinPhi = Math.sin(phi);
+			cosPhi = Math.cos(phi);
 
 			self.sunPosition.set(
 				distance * cosPhi * cosTheta,
 				distance * sinTheta,
 				distance * sinPhi * cosTheta
 			);
+
+			if (light) {
+
+				light.intensity = 1.5 * Math.max(0.0, 1.0 - Math.exp(-((Math.PI / 1.95 - Math.abs(HALF_PI - altitude)) / 1.5)));
+				light.position.copy(self.sunPosition).normalize().multiplyScalar(100);
+			}
 		}
 
 		function getAzimuth() {
@@ -50,6 +70,11 @@ module.exports = (function () {
 		obj.mesh.name = 'sky';
 
 		parent.add(obj.mesh);
+
+		while (!(scene instanceof THREE.Scene) && scene.parent) {
+			scene = scene.parent;
+		}
+		light = scene.getObjectByName('directional-light');
 
 		this.setOptions = function (options) {
 			var needUpdate = false,
@@ -111,6 +136,16 @@ module.exports = (function () {
 			},
 			get: getAltitude
 		});
+
+		this.setAltitude = function (val) {
+			update(val, getAzimuth());
+			return this;
+		};
+
+		this.setAzimuth = function (val) {
+			update(getAltitude(), val);
+			return this;
+		};
 
 		return obj.mesh;
 	};

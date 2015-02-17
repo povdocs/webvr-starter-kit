@@ -19,7 +19,7 @@ Create a cylinder. You can also create a cone by change the radius at one end to
 ##### Options:
 - `radiusTop` — Radius of the cylinder at the top. Default: 0.5
 - `radiusBottom` — Radius of the cylinder at the bottom. Default: 0.5
-- `height` — Height of the cylinder. Default: 0.5
+- `height` — Height of the cylinder. Default: 1
 - `radiusSegments` — Number of segmented faces around the circumference of the cylinder. Default: 16
 - `heightSegments` — Number of rows of faces along the height of the cylinder. Default: 1
 - `openEnded` — A Boolean indicating whether the ends of the cylinder are open or capped. Default: false (capped)
