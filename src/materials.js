@@ -57,7 +57,7 @@ module.exports = (function () {
 		),
 
 		dataUri = /^data:image\/(?:png|jpe?g|gif);/,
-		scriptIsRelative = false,
+		assetPath = __ASSET_PATH__,
 
 		images = {},
 
@@ -229,7 +229,7 @@ module.exports = (function () {
 	}
 
 	//figure out if script is loaded relative so we know where to find the images
-	scriptIsRelative = (function () {
+	assetPath = (function () {
 		var url,
 			scripts;
 
@@ -240,7 +240,11 @@ module.exports = (function () {
 			url = scripts[scripts.length - 1].getAttribute('src');
 		}
 
-		return !urlRegex.test(url);
+		if (!urlRegex.test(url)) {
+			return url.replace(/[a-z\-]+\.js$/i, '');
+		}
+
+		return __ASSET_PATH__;
 	}());
 
 	materials = {
@@ -257,7 +261,7 @@ module.exports = (function () {
 		function textureFactory(file, options) {
 			function imagePath(url) {
 				if ((/^[a-z0-9\/\-]+\.(png|jpg)$/i).test(url)) {
-					return (scriptIsRelative ? '/build/' : __ASSET_PATH__) + url;
+					return assetPath + url;
 				}
 
 				return url;
