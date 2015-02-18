@@ -23,7 +23,7 @@
             // https://dl.dropboxusercontent.com/u/8165395/AlsoSprachZarathustra.mp3
             soundSource.sound('https://dl.dropboxusercontent.com/u/8165395/breakbeat.wav').moveTo(-10, 0, 0);
 
-            VR.image('http://i.imgur.com/dmLnKki.png')
+            VR.image('http://i.imgur.com/1xYmW1N.jpg')
                 .moveTo(-4, 2, 0)
                 .setScale(3)
                 .rotateY(Math.PI / 4);
@@ -37,28 +37,6 @@
             VR.cylinder().moveTo(2, 1, 1);
 
             var torus = VR.torus().moveTo(3, 2, 4);
-
-            var portal = VR.empty().moveUp(2);
-            VR.times(8, function (i) {
-                var torus = portal.torus({
-                    color: 'purple',
-                    tube: 0.05,
-                    tubularSegments: 32
-                })
-                    .moveZ(i * -10)
-                    .setScale(4)
-                    .rotateZ(i * Math.PI / 6);
-
-                VR.times(4, function (n) {
-                    var angle = n * Math.PI * 2 / 4,
-                        cos = Math.cos(angle),
-                        sin = Math.sin(angle);
-
-                    torus.box({
-                        color: 'rgb(180, 180, 40)'
-                    }).setScale(1 / 12).moveTo(cos / 3, sin / 3, 0);
-                });
-            });
 
             var oldColor = new THREE.Color();
             VR.on('lookat', function () {
@@ -78,12 +56,6 @@
                 torus.rotateY(delta / 10);
 
                 soundSource.moveTo(10 * Math.cos(time / 1), 4, 0);
-
-                portal.rotateZ(delta * Math.PI);
-                portal.moveZ(delta * 5);
-                if (portal.position.z > 140) {
-                    portal.moveTo(0, 2, -140);
-                }
             });
 
             VR.on('shake', function () {
