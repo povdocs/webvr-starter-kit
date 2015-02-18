@@ -14,7 +14,7 @@ Web VR Starter Kit is a Javascript library for easily creating virtual reality c
 ### Set up
 
 ```html
-&lt;script src="//povdocs.github.io/webvr-starter-kit/build/vr.js">&lt;/script>
+<script src="//povdocs.github.io/webvr-starter-kit/build/vr.js"></script>
 ```
 
 ### Creating Objects
@@ -264,12 +264,36 @@ Reset the rotation of the viewer so that whichever direction they are looking at
 
 ### Properties
 
-- VR.body
-- VR.camera
-- VR.canvas
-- VR.materials
-- VR.scene
-- VR.target
+The following properties are available on the global `VR` object.
+
+#### VR.body
+
+A `VRObject` representing the viewer. This object can be manipulated like any other object, and child objects can be attached to it, like a vehicle or tools. The body object can be moved around the scene to give the viewer different perspectives.
+
+The body starts out 1.5 meters high and 4 meters back from the center point (0, 0, 0) of the scene.
+
+**Warning**: Be careful about animating movement of the body, as it may cause motion sickness. It's best to constrain movement to the direction the viewer is looking. Any movement backwards or to the side should be slow. Starting and stopping of movement should be abrupt and the speed should remain constant, as acceleration in any direction is known to cause motion sickness.
+
+#### VR.camera
+
+A `VRObject` representing the camera. The camera is a child object of the body. It's best not to move, rotate or scale the camera. Instead, move the body.
+
+Images or objects can be scaled down and attached to the front of the camera to act as a "heads up display."
+
+#### VR.canvas
+
+The HTML `canvas` element to which the scene is being rendered.
+
+#### VR.materials
+
+An object on which all material-related functions and properties are attached:
+
+- `VR.materials.library` - an array of strings representing the names of built-in material presets
+- `VR.materials.textures` - an array of `THREE.Texture` objects used by built-in materials
+
+#### VR.scene
+
+The `THREE.Scene` object that is the parent of all other three.js objects.
 
 ### Materials
 
