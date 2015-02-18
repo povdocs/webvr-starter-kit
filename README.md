@@ -1,22 +1,50 @@
 # Web VR Starter Kit
 
-## Commands
+Web VR Starter Kit is a Javascript library for easily creating virtual reality content and making it available in web browsers on a range of devices. The library includes a simplified API for creating an manipulating 3D objects.
+
+## Examples
+
+- [Panorama](examples/panorama.html) - Loading a spherical panoramic photo
+- [Sky](examples/sky.html) - A realistic daytime sky with movable sun and lighting
+- [Sound](examples/sound.html) - Audio sources in 3D space, triggered by looking at objects
+- [Near and Far](examples/near.html) - Fire events when an object moves close to or far away from the viewer
+
+## Getting Started
+
+### Set up
+
+```html
+&lt;script src="//povdocs.github.io/webvr-starter-kit/build/vr.js">&lt;/script>
+```
+
+### Creating Objects
+
+### Loading media
+
+## API Reference
 
 ### Objects
 
 todo: describe common options and methods for all objects
 
+##### Options
+- `name`
+- `material`
+- `color`
+
 #### VR.box()
 
 Create a cube.
 
-##### Options: none
+##### Options
+
+No options.
 
 #### VR.cylinder()
 
 Create a cylinder. You can also create a cone by change the radius at one end to zero.
 
-##### Options:
+##### Options
 - `radiusTop` — Radius of the cylinder at the top. Default: 0.5
 - `radiusBottom` — Radius of the cylinder at the bottom. Default: 0.5
 - `height` — Height of the cylinder. Default: 1
@@ -28,7 +56,7 @@ Create a cylinder. You can also create a cone by change the radius at one end to
 
 Create a sphere. Parts of spheres or slices can be created by specifying different values for `phiStart`, `phiLength`, `thetaStart` or `thetaLength`.
 
-##### Options:
+##### Options
 
 - `radius` — sphere radius. Default: 0.5
 - `widthSegments` — number of horizontal segments. (Minimum value is 3). Default: 16
@@ -42,7 +70,7 @@ Create a sphere. Parts of spheres or slices can be created by specifying differe
 
 Create a torus (like a donut).
 
-##### Options:
+##### Options
 
 - `radius` — Default: 0.5
 - `tube` — Diameter of the tube. Default: 0.125 (i.e. 1/8th)
@@ -52,7 +80,7 @@ Create a torus (like a donut).
 
 #### VR.floor()
 
-##### Options:
+##### Options
 
 - `radius` — Radius of the circle. Default: 100
 - `segments` — Number of segments. Default: 16
@@ -61,7 +89,7 @@ Create a torus (like a donut).
 
 A plane displaying an image.
 
-##### Options:
+##### Options
 
 - `src` - A url pointing to the image file
 
@@ -71,7 +99,7 @@ A very large sphere with an image displayed on the inside. This is useful for lo
 
 Spherical photos can be taken with the [Android Camera](https://www.youtube.com/watch?v=NPs3eIiWRaw) or a [similar app](https://itunes.apple.com/us/app/photo-sphere-camera/id904418768?mt=8) on an iPhone. They can also be made [manually](https://photographylife.com/panoramic-photography-howto).
 
-##### Options:
+##### Options
 
 - `src` - A url pointing to the image file
 
@@ -79,7 +107,9 @@ Spherical photos can be taken with the [Android Camera](https://www.youtube.com/
 
 An empty object, not displayed. Can be used to group other objects.
 
-##### Options: none
+##### Options
+
+No options.
 
 ### Object Methods
 
@@ -117,7 +147,7 @@ Objects can be created as "child" of a parent object. This is useful for creatin
 
 The position, rotation and size of child objects will be re
 
-#### Examples
+#### Example
 
 The "empty" object type is useful as an invisible parent object below which other objects can be grouped.
 
@@ -153,7 +183,7 @@ Events are listed below. Not all events are available on all devices.
 - `fullscreenchange` - The view has either entered or exited full screen mode.
 - `devicechange` - The device used to display and track orientation has been detected. There is one parameter, `mode`: a string representing the type of device. "devicemotion" for a mobile phone/tablet, "hmd" for a head-mounted display like the Oculus Rift. If there is no orientation device detected, like on a desktop computer without a head-mounted display, this event will not fire.
 
-##### Examples
+##### Example
 
 When the user shakes the device, make the box invisible. Shake it again to bring it back.
 
@@ -172,7 +202,7 @@ VR.on('shake', function () {
 
 Prevent any previously registered event callbacks from running in the future.
 
-##### Parameters:
+##### Parameters
 
 - `event` - A string representing the name of the event type.
 - `callback` - A callback function previously registered with `VR.on()` with the same callback type. This callback will no longer be run for this method.
@@ -181,11 +211,11 @@ Prevent any previously registered event callbacks from running in the future.
 
 This method can be passed a callback function, which is run every time a new frame is rendered. Objects in the scene can be animated by changing their position, scale or rotation according to how much time has passed since the last update.
 
-##### Parameters:
+##### Parameters
 
 - `callback` - A function to be run on every frame. Receives two arguments: `delta`, the number of seconds since the last frame, and `time`, the current time in seconds
 
-##### Examples:
+##### Example
 
 Create a box and make it rotate, one full rotation per second.
 
@@ -200,7 +230,7 @@ VR.animate(function (delta) {
 
 Stop any or all animation callbacks from running.
 
-##### Parameters:
+##### Parameters
 
 - `callback` - The same function passed to `VR.animate` that you want to stop from running. This parameter is optional. If no function is passed, all animations will be stopped.
 
@@ -208,10 +238,10 @@ Stop any or all animation callbacks from running.
 
 Cause the device to vibrate, if the browser and hardware support it. This is most likely to be available on mobile devices running Android with Chrome or Firefox. If vibration is not supported, nothing will happen.
 
-##### Parameters:
+##### Parameters
 - `pattern` - A pattern of [vibration and pause intervals](https://developer.mozilla.org/en-US/docs/Web/API/Navigator.vibrate). This can either be a number, representing the duration of a single vibration in milliseconds, or an array of numbers representing alternating vibrations and pauses in milliseconds.
 
-##### Examples:
+##### Example
 
 When the user looks at the box, vibrate once for one quarter of a second. When the user looks at the sphere, vibrate 'SOS' in Morse code.
 
