@@ -308,3 +308,10 @@ The `THREE.Scene` object that is the parent of all other three.js objects.
 - tiles
 - weathered-wood
 - wood
+
+## License
+- Original code is made avalable under [MIT License](http://www.opensource.org/licenses/mit-license.php), Copyright (c) 2015 American Documentary Inc.
+- Texture images are made available under their respective [licenses](LICENSE.md).
+
+## Author
+Code, concept and design by [Brian Chirls](https://github.com/brianchirls), [POV](http://www.pbs.org/pov/) Digital Technology Fellow
