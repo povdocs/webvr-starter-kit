@@ -31,6 +31,12 @@
 		raycaster,
 		target,
 
+	//post-processing
+		depthTarget,
+		sceneTarget,
+		depthMaterial,
+		ssaoEffect,
+
 		bodyWrapper,
 		cameraWrapper,
 
@@ -132,7 +138,18 @@
 
 		raycast();
 
-		vrEffect.render(scene, camera);
+		//multiple render passes for SSAO
+
+		//scene depth pass
+		scene.overrideMaterial = depthMaterial;
+		vrEffect.render(scene, camera, depthTarget, true);
+
+		//scene color pass
+		scene.overrideMaterial = null;
+		vrEffect.render(scene, camera, sceneTarget, true);
+
+		//combine color and depth for SSAO
+		ssaoEffect.render(renderer, null, sceneTarget);
 
 		lastTick = now;
 	}
@@ -173,6 +190,12 @@
 		camera.aspect = width / height;
 		camera.updateProjectionMatrix();
 		renderer.setSize(width, height);
+
+		depthTarget = new THREE.WebGLRenderTarget( width, height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
+		sceneTarget = new THREE.WebGLRenderTarget( width, height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
+		ssaoEffect.uniforms.tDiffuse.value = sceneTarget;
+		ssaoEffect.uniforms.tDepth.value = depthTarget;
+		ssaoEffect.uniforms.size.value.set( width / 2, height );
 	}
 
 	function initShake() {
@@ -333,6 +356,14 @@
 
 		scene.add(new THREE.AmbientLight(0x444444));
 
+		// postprocessing
+		ssaoEffect = new THREE.ShaderPass( THREE.SSAOShader );
+		ssaoEffect.uniforms.lumInfluence.value = 0.8;
+		ssaoEffect.uniforms.cameraNear.value = NEAR;
+		ssaoEffect.uniforms.cameraFar.value = FAR;
+		ssaoEffect.renderToScreen = true;
+		ssaoEffect.clear = true;
+
 		if (VR) {
 			VR.camera = cameraWrapper;
 			VR.body = bodyWrapper;
@@ -359,6 +390,8 @@
 		THREE = require('three');
 		require('imports?THREE=three!DeviceOrientationControls');
 		require('imports?THREE=three!OrbitControls');
+		require('imports?THREE=three!ShaderPass');
+		require('imports?THREE=three!SSAOShader');
 
 		//if (typeof __DEV__ !== 'undefined' && __DEV__) {
 			require('imports?THREE=three!AugmentedConsole');

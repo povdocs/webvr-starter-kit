@@ -52,9 +52,9 @@
 	
 		function initRequirements() {
 			//load styles
-			__webpack_require__(1);
+			__webpack_require__(2);
 	
-			VR = __webpack_require__(5);
+			VR = __webpack_require__(1);
 		}
 	
 		function initUI() {
@@ -123,11 +123,11 @@
 	
 			//todo: use icons instead of text
 			if (requestFullscreen && fullscreenEnabled) {
-				enableFullscreen = svgButton(__webpack_require__(50), 'fs-enable');
+				enableFullscreen = svgButton(__webpack_require__(6), 'fs-enable');
 				enableFullscreen.setAttribute('title', 'Enable Full Screen');
 				enableFullscreen.addEventListener('click', requestFullscreen.bind(fullScreenElement), false);
 	
-				disableFullscreen = svgButton(__webpack_require__(51), 'fs-disable');
+				disableFullscreen = svgButton(__webpack_require__(7), 'fs-disable');
 				disableFullscreen.setAttribute('title', 'Exit Full Screen');
 				disableFullscreen.addEventListener('click', VR.exitFullscreen, false);
 			}
@@ -142,12 +142,12 @@
 				}
 			});
 	
-			vrButton = svgButton(__webpack_require__(52), 'vr');
+			vrButton = svgButton(__webpack_require__(8), 'vr');
 			vrButton.setAttribute('title', 'Toggle Virtual Reality');
 			vrButton.className = 'unsupported';
 			vrButton.addEventListener('click', VR.requestVR, false);
 	
-			orientationButton = svgButton(__webpack_require__(53), 'orientation');
+			orientationButton = svgButton(__webpack_require__(9), 'orientation');
 			orientationButton.setAttribute('title', 'Toggle Orientation');
 			orientationButton.className = 'unsupported';
 			orientationButton.addEventListener('click', toggleOrientation, false);
@@ -201,10 +201,577 @@
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
 
+	(function () {
+		'use strict';
+	
+		//constants
+		var NEAR = 1,
+			FAR = 1000000,
+	
+		//global-ish declarations
+			THREE,
+			eventEmitter,
+			materials = __webpack_require__(10),
+			nop = function () {},
+			requestFullscreen = nop,
+			exitFullscreen = (
+				document.exitFullscreen ||
+				document.mozCancelFullScreen ||
+				document.webkitExitFullscreen ||
+				document.msExitFullscreen ||
+				nop
+			).bind(document),
+	
+		//scene assets
+			camera,
+			scene,
+			body,
+			renderer,
+			audioListener,
+			vrControls,
+			vrEffect,
+			mouseControls,
+			raycaster,
+			target,
+	
+		//post-processing
+			depthTarget,
+			sceneTarget,
+			depthMaterial,
+			ssaoEffect,
+	
+			bodyWrapper,
+			cameraWrapper,
+	
+			floor,
+	
+		//state
+			going = false,
+			vrMode = false,
+			orientationEnabled,
+			orientationPossible = false,
+	
+		//exported object
+			VR,
+	
+			VRObject = __webpack_require__(5),
+			objectMethods = [
+				'box',
+				'cylinder',
+				'torus',
+				'sphere',
+				'empty',
+				'sound',
+				'floor',
+				'snow',
+				'sky',
+				'panorama',
+				'image'
+			],
+	
+			//todo: use a weak map or set instead
+			vrObjects = [],
+	
+			lastTick = 0,
+			animationCallbacks = [];
+	
+		function isFullscreen() {
+			return !!(document.fullscreenElement ||
+				document.mozFullScreenElement ||
+				document.webkitFullscreenElement ||
+				document.msFullscreenElement);
+		}
+	
+		function fullScreenError() {
+			vrMode = false;
+			if (vrEffect) {
+				vrEffect.exit();
+			}
+		}
+	
+		function raycast() {
+			var i,
+				intersect,
+				object,
+				intersects,
+				vrObject;
+	
+			raycaster.ray.origin.copy( camera.position );
+			raycaster.ray.direction.set(0, 0, 0.5).unproject(camera).sub(camera.position).normalize();
+	
+			intersects = raycaster.intersectObjects( scene.children );
+			for (i = 0; i < intersects.length; i++) {
+				intersect = intersects[i];
+				if (intersect.object instanceof THREE.Mesh) {
+					object = intersect.object;
+					break;
+				}
+			}
+	
+			if (target !== object) {
+				if (target) {
+					vrObject = VRObject.findObject(target);
+					vrObject.emit('lookaway');
+					VR.emit('lookaway', vrObject);
+				}
+				target = object;
+				if (target) {
+					vrObject = VRObject.findObject(target);
+					vrObject.emit('lookat', intersect);
+					VR.emit('lookat', vrObject, intersect);
+				}
+			}
+		}
+	
+		function render() {
+			var now = Date.now() / 1000,
+				delta = Math.min(1, now - lastTick);
+	
+			vrControls.update();
+	
+			animationCallbacks.forEach(function (cb) {
+				cb(delta, now);
+			});
+	
+			scene.updateMatrixWorld();
+	
+			vrObjects.forEach(function (object) {
+				object.update(now);
+			});
+	
+			raycast();
+	
+			//multiple render passes for SSAO
+	
+			//scene depth pass
+			scene.overrideMaterial = depthMaterial;
+			vrEffect.render(scene, camera, depthTarget, true);
+	
+			//scene color pass
+			scene.overrideMaterial = null;
+			vrEffect.render(scene, camera, sceneTarget, true);
+	
+			//combine color and depth for SSAO
+			ssaoEffect.render(renderer, null, sceneTarget);
+	
+			lastTick = now;
+		}
+	
+		function renderLoop() {
+			if (going) {
+				render();
+				requestAnimationFrame(renderLoop);
+			}
+		}
+	
+		function stop() {
+			going = false;
+		}
+	
+		function start() {
+			if (!going) {
+				going = true;
+				renderLoop();
+			}
+		}
+	
+		/*
+		Mute any sounds when this browser tab is in the background or minimized.
+		*/
+		function visibilityChange() {
+			if (document.hidden || document.mozHidden || document.msHidden || document.webkitHidden) {
+				audioListener.volume(0);
+			} else {
+				audioListener.volume(1);
+			}
+		}
+	
+		function resize(width, height) {
+			width = typeof width === 'number' && width || window.innerWidth;
+			height = typeof height === 'number' && height || window.innerHeight;
+	
+			camera.aspect = width / height;
+			camera.updateProjectionMatrix();
+			renderer.setSize(width, height);
+	
+			depthTarget = new THREE.WebGLRenderTarget( width, height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
+			sceneTarget = new THREE.WebGLRenderTarget( width, height, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat } );
+			ssaoEffect.uniforms.tDiffuse.value = sceneTarget;
+			ssaoEffect.uniforms.tDepth.value = depthTarget;
+			ssaoEffect.uniforms.size.value.set( width / 2, height );
+		}
+	
+		function initShake() {
+			var lastTime = 0,
+				lastX,
+				lastY,
+				lastZ,
+				threshold = 15;
+	
+			window.addEventListener('devicemotion', function (evt) {
+				var current = evt.accelerationIncludingGravity,
+					time,
+					diff,
+					deltaX = 0,
+					deltaY = 0,
+					deltaZ = 0,
+					dist;
+	
+				if (lastX !== undefined) {
+					deltaX = Math.abs(lastX - current.x);
+					deltaY = Math.abs(lastY - current.y);
+					deltaZ = Math.abs(lastZ - current.z);
+	
+					// if (deltaX > threshold &&
+					// 		(deltaY > threshold || deltaZ > threshold)
+					// 	) {
+					dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
+					if (dist > threshold) {
+	
+						time = Date.now();
+						diff = time - lastTime;
+						if (diff > 1000) {
+							if (navigator.vibrate) {
+								navigator.vibrate(100);
+							}
+	
+							lastTime = Date.now();
+	
+							VR.emit('shake');
+						}
+					}
+				}
+	
+				lastX = current.x;
+				lastY = current.y;
+				lastZ = current.z;
+	
+				orientationPossible = true;
+			}, false);
+		}
+	
+		function initScene() {
+			function attachCanvas() {
+				document.body.insertBefore(renderer.domElement, document.body.firstChild || null);
+				resize();
+			}
+	
+			if (renderer) {
+				return;
+			}
+	
+			//create renderer and place in document
+			renderer = new THREE.WebGLRenderer();
+			renderer.domElement.addEventListener('webglcontextlost', function contextLost(event) {
+				console.log('lost context', event);
+			});
+			// renderer.shadowMapEnabled = true;
+			// renderer.shadowMapSoft = true;
+	
+			//need a scene to put all our objects in
+			scene = new THREE.Scene();
+	
+			bodyWrapper = new VRObject(scene, __webpack_require__(12), null, {
+				name: 'body'
+			}).moveTo(0, 1.5, 4);
+			body = bodyWrapper.object;
+	
+			cameraWrapper = new VRObject(body, function (parent) {
+				//need a camera with which to look at stuff
+				camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, NEAR, FAR);
+				parent.add(camera);
+	
+				return camera;
+			})
+			// set camera position so that OrbitControls works properly.
+				.moveTo(0, 0.0001, 0.0001);
+	
+			audioListener = new THREE.AudioListener();
+			audioListener.name = 'audio-listener';
+			camera.add(audioListener);
+	
+			//VRControls point the camera wherever we're looking
+			vrControls = new THREE.VRControls(camera);
+			vrControls.freeze = !orientationEnabled;
+	
+			//render left and right eye
+			vrEffect = new THREE.VRStereoEffect(renderer);
+			vrEffect.near = NEAR;
+			vrEffect.far = FAR;
+			vrEffect.addEventListener('fullscreenchange', function (evt) {
+				if (isFullscreen()) {
+					if (vrMode) {
+						//no mouse control
+						mouseControls.enabled = false;
+	
+						vrControls.freeze = false;
+						vrControls.reset();
+					}
+				} else {
+					VR.exitVR();
+				}
+	
+				camera.position.set(0, 0.0001, 0.0001);
+				camera.rotation.set(0, 0, 0);
+	
+				VR.emit('fullscreenchange', evt);
+			});
+	
+			//report on HMD
+			vrControls.addEventListener('devicechange', function () {
+				orientationPossible = true;
+				if (orientationEnabled === undefined) {
+					orientationEnabled = vrControls.mode() === 'deviceorientation';
+				}
+	
+				vrControls.freeze = !orientationEnabled && !vrMode;
+	
+				VR.emit('devicechange', vrControls.mode(), vrEffect.hmd());
+			});
+	
+			//mouse control in case got no orientation device
+			mouseControls = new THREE.OrbitControls(camera);
+			mouseControls.target0.set(0, 0.0001, 0.000);
+			mouseControls.target.copy(mouseControls.target0);
+			mouseControls.update();
+	
+			//todo: remove any default lights once other lights are added
+			var dLight = new THREE.DirectionalLight(0xffffff, 0.8);
+			dLight.name = 'directional-light';
+			dLight.position.set(20, 100, 100);
+	
+			dLight.castShadow = true;
+			dLight.shadowCameraVisible = true;
+	
+			dLight.shadowMapWidth = 2048;
+			dLight.shadowMapHeight = 2048;
+	
+			dLight.shadowCameraLeft = -10;
+			dLight.shadowCameraRight = 10;
+			dLight.shadowCameraTop = 10;
+			dLight.shadowCameraBottom = -10;
+	
+			dLight.shadowCameraFar = 150;
+			dLight.shadowCameraNear = 100;
+			dLight.shadowDarkness = 1;
+	
+			scene.add(dLight);
+	
+			scene.add(new THREE.AmbientLight(0x444444));
+	
+			// postprocessing
+			ssaoEffect = new THREE.ShaderPass( THREE.SSAOShader );
+			ssaoEffect.uniforms.lumInfluence.value = 0.8;
+			ssaoEffect.uniforms.cameraNear.value = NEAR;
+			ssaoEffect.uniforms.cameraFar.value = FAR;
+			ssaoEffect.renderToScreen = true;
+			ssaoEffect.clear = true;
+	
+			if (VR) {
+				VR.camera = cameraWrapper;
+				VR.body = bodyWrapper;
+				VR.scene = scene;
+				VR.canvas = renderer.domElement;
+				VR.zeroSensor = vrControls.zeroSensor;
+			}
+	
+			raycaster = new THREE.Raycaster();
+	
+			if (document.body) {
+				attachCanvas();
+			} else {
+				window.addEventListener('load', attachCanvas, false);
+			}
+	
+			VR.canvas.addEventListener('mozfullscreenerror', fullScreenError, false);
+			VR.canvas.addEventListener('webkitfullscreenerror', fullScreenError, false);
+			VR.canvas.addEventListener('fullscreenerror', fullScreenError, false);
+		}
+	
+		function initRequirements() {
+			//load external requirements
+			THREE = __webpack_require__(32);
+			__webpack_require__(13);
+			__webpack_require__(14);
+			__webpack_require__(15);
+			__webpack_require__(16);
+	
+			//if (typeof __DEV__ !== 'undefined' && __DEV__) {
+				__webpack_require__(17);
+			//}
+	
+			THREE.ImageUtils.crossOrigin = '';
+	
+			eventEmitter = __webpack_require__(21);
+	
+			//my VR stuff. todo: move these to a separate repo or two for easy packaging
+			__webpack_require__(18);
+			__webpack_require__(19);
+		}
+	
+		function initialize() {
+			//todo: set up button/info elements
+	
+			initScene();
+	
+			initShake();
+	
+			resize();
+	
+			document.addEventListener('visibilitychange', visibilityChange);
+			document.addEventListener('mozvisibilitychange', visibilityChange);
+			document.addEventListener('msvisibilitychange', visibilityChange);
+			document.addEventListener('webkitvisibilitychange', visibilityChange);
+		}
+	
+		initRequirements();
+	
+		module.exports = VR = {
+			init: initialize,
+			render: render,
+			start: start,
+			stop: stop,
+			resize: resize,
+	
+			THREE: THREE,
+	
+			materials: materials,
+	
+			animate: function (callback) {
+				var i;
+				if (typeof callback === 'function') {
+					i = animationCallbacks.indexOf(callback);
+					if (i < 0) {
+						animationCallbacks.push(callback);
+					}
+				}
+			},
+	
+			end: function (callback) {
+				var i;
+	
+				if (!callback) {
+					animationCallbacks.length = 0;
+					return;
+				}
+	
+				if (typeof callback === 'function') {
+					i = animationCallbacks.indexOf(callback);
+					if (i >= 0) {
+						animationCallbacks.splice(i, 1);
+					}
+				}
+			},
+	
+			requestVR: function () {
+				//todo: check if it's possible
+				if (vrMode || !vrEffect) {
+					return;
+				}
+	
+				vrMode = true;
+	
+				//full screen and render two eyes
+				//always full screen
+				vrEffect.requestFullScreen();
+			},
+	
+			exitVR: function () {
+				vrMode = false;
+				if (isFullscreen()) {
+					exitFullscreen();
+					return;
+				}
+	
+				mouseControls.enabled = true;
+				vrControls.freeze = !orientationEnabled;
+				camera.rotation.set(0, 0, 0);
+			},
+	
+			vrMode: function () {
+				return vrMode && isFullscreen();
+			},
+	
+			orientationEnabled: function () {
+				return !!orientationEnabled;
+			},
+			enableOrientation: function () {
+				orientationEnabled = true;
+				if (!vrMode) {
+					vrControls.freeze = false;
+				}
+			},
+			disableOrientation: function () {
+				orientationEnabled = false;
+				camera.rotation.set(0, 0, 0);
+				vrControls.freeze = !vrMode;
+			},
+	
+			isFullscreen: isFullscreen,
+			requestFullscreen: requestFullscreen,
+			exitFullscreen: function () {
+				if (isFullscreen()) {
+					exitFullscreen();
+				}
+			},
+	
+			controlMode: function () {
+				return vrControls && vrControls.mode();
+			},
+	
+			zeroSensor: nop,
+	
+			vibrate: navigator.vibrate ? navigator.vibrate.bind(navigator) : nop,
+	
+			// Utility
+			times: function (n, callback) {
+				var i;
+	
+				for (i = 0; i < n; i++) {
+					callback(i);
+				}
+			},
+	
+			camera: cameraWrapper,
+			body: bodyWrapper,
+			scene: scene,
+			canvas: renderer && renderer.domElement || null
+		};
+	
+		objectMethods.forEach(function (method) {
+			var creator = __webpack_require__(11)("./" + method);
+	
+			VR[method] = function (options) {
+				var obj = new VRObject(scene, creator, body, options);
+				vrObjects.push(obj);
+				return obj;
+			};
+	
+			VRObject.prototype[method] = function (options) {
+				var obj = new VRObject(this.object, creator, body, options);
+				vrObjects.push(obj);
+				return obj;
+			};
+		});
+	
+		eventEmitter(VR);
+	
+		Object.defineProperty(VR, 'target', {
+			get: function () {
+				return target;
+			}
+		});
+	}());
+
+
+/***/ },
+/* 2 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 	
 	// load the styles
-	var content = __webpack_require__(2);
+	var content = __webpack_require__(3);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
 	var update = __webpack_require__(4)(content, {});
@@ -221,32 +788,11 @@
 	}
 
 /***/ },
-/* 2 */
-/***/ function(module, exports, __webpack_require__) {
-
-	exports = module.exports = __webpack_require__(3)();
-	exports.push([module.id, "body {\n\tfont-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;\n\tcolor: #eee;\n\toverflow: hidden;\n\tbackground: rgb(40, 40, 40);\n\n\theight: 100%;\n\twidth: 100%;\n\tmargin: 0px;\n\tpadding: 0px;\n}\n\ncanvas {\n\twidth: 100% !important;\n\theight: 100% !important;\n\t/*position: absolute;*/\n\ttop: 0;\n\tleft: 0;\n}\n\n#buttons {\n\tposition: absolute;\n\tbottom: 0;\n\tleft: 0;\n\tpadding: 12px;\n\tmargin: 8px;\n\tborder-radius: 8px;\n\tbackground-color: rgba(128, 128, 128, 0.6);\n}\n\n#buttons > * {\n\tmargin: 0 10px;\n\tdisplay: inline-block;\n\twidth: 18px;\n\theight: 18px;\n\tcursor: pointer;\n}\n\n#buttons > *:first-child {\n\tmargin-left: 0;\n}\n\n#buttons > .unsupported {\n\tdisplay: none;\n}\n\n#fs-disable {\n\tdisplay: none;\n}", ""]);
-
-/***/ },
 /* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = function() {
-		var list = [];
-		list.toString = function toString() {
-			var result = [];
-			for(var i = 0; i < this.length; i++) {
-				var item = this[i];
-				if(item[2]) {
-					result.push("@media " + item[2] + "{" + item[1] + "}");
-				} else {
-					result.push(item[1]);
-				}
-			}
-			return result.join("");
-		};
-		return list;
-	}
+	exports = module.exports = __webpack_require__(20)();
+	exports.push([module.id, "body {\n\tfont-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;\n\tcolor: #eee;\n\toverflow: hidden;\n\tbackground: rgb(40, 40, 40);\n\n\theight: 100%;\n\twidth: 100%;\n\tmargin: 0px;\n\tpadding: 0px;\n}\n\ncanvas {\n\twidth: 100% !important;\n\theight: 100% !important;\n\t/*position: absolute;*/\n\ttop: 0;\n\tleft: 0;\n}\n\n#buttons {\n\tposition: absolute;\n\tbottom: 0;\n\tleft: 0;\n\tpadding: 12px;\n\tmargin: 8px;\n\tborder-radius: 8px;\n\tbackground-color: rgba(128, 128, 128, 0.6);\n}\n\n#buttons > * {\n\tmargin: 0 10px;\n\tdisplay: inline-block;\n\twidth: 18px;\n\theight: 18px;\n\tcursor: pointer;\n}\n\n#buttons > *:first-child {\n\tmargin-left: 0;\n}\n\n#buttons > .unsupported {\n\tdisplay: none;\n}\n\n#fs-disable {\n\tdisplay: none;\n}", ""]);
 
 /***/ },
 /* 4 */
@@ -448,546 +994,320 @@
 /* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
-	(function () {
+	module.exports = (function () {
 		'use strict';
 	
-		//constants
-		var NEAR = 1,
-			FAR = 1000000,
+		var	NEAR_DISTANCE = 3,
+			materials = __webpack_require__(10),
+			THREE = __webpack_require__(32),
+			eventEmitter = __webpack_require__(21),
 	
-		//global-ish declarations
-			THREE,
-			eventEmitter,
-			materials = __webpack_require__(6),
-			nop = function () {},
-			requestFullscreen = nop,
-			exitFullscreen = (
-				document.exitFullscreen ||
-				document.mozCancelFullScreen ||
-				document.webkitExitFullscreen ||
-				document.msExitFullscreen ||
-				nop
-			).bind(document),
+			xAxis = new THREE.Vector3(1, 0, 0),
+			yAxis = new THREE.Vector3(0, 1, 0),
+			zAxis = new THREE.Vector3(0, 0, 1),
 	
-		//scene assets
-			camera,
-			scene,
-			body,
-			renderer,
-			audioListener,
-			vrControls,
-			vrEffect,
-			mouseControls,
-			raycaster,
-			target,
+			scratchVector1 = new THREE.Vector3(),
+			scratchVector2 = new THREE.Vector3(),
 	
-			bodyWrapper,
-			cameraWrapper,
+			allObjects = window.WeakMap ? new WeakMap() : {};
 	
-			floor,
+		function distance(object, origin) {
+			var geometry;
 	
-		//state
-			going = false,
-			vrMode = false,
-			orientationEnabled,
-			orientationPossible = false,
+			geometry = object.geometry;
 	
-		//exported object
-			VR,
+			//assumes object world matrix has been updated
+			scratchVector1.setFromMatrixPosition(origin.matrixWorld);
 	
-			VRObject = __webpack_require__(27),
-			objectMethods = [
-				'box',
-				'cylinder',
-				'torus',
-				'sphere',
-				'empty',
-				'sound',
-				'floor',
-				'snow',
-				'sky',
-				'panorama',
-				'image'
-			],
-	
-			//todo: use a weak map or set instead
-			vrObjects = [],
-	
-			lastTick = 0,
-			animationCallbacks = [];
-	
-		function isFullscreen() {
-			return !!(document.fullscreenElement ||
-				document.mozFullScreenElement ||
-				document.webkitFullscreenElement ||
-				document.msFullscreenElement);
-		}
-	
-		function fullScreenError() {
-			vrMode = false;
-			if (vrEffect) {
-				vrEffect.exit();
+			if (!geometry) {
+				//first convert to world coordinate
+				scratchVector2.setFromMatrixPosition(object.matrixWorld);
+				return scratchVector2.distanceTo(scratchVector1);
 			}
+	
+			geometry.computeBoundingBox();
+			object.worldToLocal(scratchVector1);
+			return object.geometry.boundingBox.distanceToPoint(scratchVector1);
 		}
 	
-		function raycast() {
-			var i,
-				intersect,
+		function VRObject(parent, creator, camera, options) {
+			var material,
 				object,
-				intersects,
-				vrObject;
+				self = this,
 	
-			raycaster.ray.origin.copy( camera.position );
-			raycaster.ray.direction.set(0, 0, 0.5).unproject(camera).sub(camera.position).normalize();
+				isNear = false,
+				isTarget = false,
+				raycaster;
 	
-			intersects = raycaster.intersectObjects( scene.children );
-			for (i = 0; i < intersects.length; i++) {
-				intersect = intersects[i];
-				if (intersect.object instanceof THREE.Mesh) {
-					object = intersect.object;
-					break;
-				}
-			}
+			options = options || {};
 	
-			if (target !== object) {
-				if (target) {
-					vrObject = VRObject.findObject(target);
-					vrObject.emit('lookaway');
-					VR.emit('lookaway', vrObject);
-				}
-				target = object;
-				if (target) {
-					vrObject = VRObject.findObject(target);
-					vrObject.emit('lookat', intersect);
-					VR.emit('lookat', vrObject, intersect);
-				}
-			}
-		}
+			eventEmitter(this);
 	
-		function render() {
-			var now = Date.now() / 1000,
-				delta = Math.min(1, now - lastTick);
+			if (camera) {
+				// raycaster = new THREE.Raycaster();
 	
-			vrControls.update();
+				this.update = function () {
+					var wasNear = isNear,
+						wasTarget = isTarget,
 	
-			animationCallbacks.forEach(function (cb) {
-				cb(delta, now);
-			});
+						intersects, intersect, i;
 	
-			scene.updateMatrixWorld();
-	
-			vrObjects.forEach(function (object) {
-				object.update(now);
-			});
-	
-			raycast();
-	
-			vrEffect.render(scene, camera);
-	
-			lastTick = now;
-		}
-	
-		function renderLoop() {
-			if (going) {
-				render();
-				requestAnimationFrame(renderLoop);
-			}
-		}
-	
-		function stop() {
-			going = false;
-		}
-	
-		function start() {
-			if (!going) {
-				going = true;
-				renderLoop();
-			}
-		}
-	
-		/*
-		Mute any sounds when this browser tab is in the background or minimized.
-		*/
-		function visibilityChange() {
-			if (document.hidden || document.mozHidden || document.msHidden || document.webkitHidden) {
-				audioListener.volume(0);
-			} else {
-				audioListener.volume(1);
-			}
-		}
-	
-		function resize(width, height) {
-			width = typeof width === 'number' && width || window.innerWidth;
-			height = typeof height === 'number' && height || window.innerHeight;
-	
-			camera.aspect = width / height;
-			camera.updateProjectionMatrix();
-			renderer.setSize(width, height);
-		}
-	
-		function initShake() {
-			var lastTime = 0,
-				lastX,
-				lastY,
-				lastZ,
-				threshold = 15;
-	
-			window.addEventListener('devicemotion', function (evt) {
-				var current = evt.accelerationIncludingGravity,
-					time,
-					diff,
-					deltaX = 0,
-					deltaY = 0,
-					deltaZ = 0,
-					dist;
-	
-				if (lastX !== undefined) {
-					deltaX = Math.abs(lastX - current.x);
-					deltaY = Math.abs(lastY - current.y);
-					deltaZ = Math.abs(lastZ - current.z);
-	
-					// if (deltaX > threshold &&
-					// 		(deltaY > threshold || deltaZ > threshold)
-					// 	) {
-					dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
-					if (dist > threshold) {
-	
-						time = Date.now();
-						diff = time - lastTime;
-						if (diff > 1000) {
-							if (navigator.vibrate) {
-								navigator.vibrate(100);
-							}
-	
-							lastTime = Date.now();
-	
-							VR.emit('shake');
+					isNear = self.distance < NEAR_DISTANCE;
+					if (isNear !== wasNear) {
+						if (isNear) {
+							self.emit('near', self);
+						} else {
+							self.emit('far', self);
 						}
 					}
-				}
 	
-				lastX = current.x;
-				lastY = current.y;
-				lastZ = current.z;
+					/*
+					raycaster.ray.origin.copy(origin);
+					raycaster.ray.direction.set(0, 0, 0.5).unproject(camera).sub(origin).normalize();
 	
-				orientationPossible = true;
-			}, false);
-		}
-	
-		function initScene() {
-			function attachCanvas() {
-				document.body.insertBefore(renderer.domElement, document.body.firstChild || null);
-				resize();
+					//todo: consider whether this needs to be recursive. maybe a different event
+					intersects = raycaster.intersectObject(object);
+					if (intersects.length) {
+						isTarget = true;
+						if (!wasTarget) {
+							self.emit('target-on', intersects[0]);
+						}
+					} else if (wasTarget) {
+						self.emit('target-off');
+					}
+					*/
+				};
 			}
 	
-			if (renderer) {
+			//todo: get material from options
+			this.object = object = creator.call(this, parent, options);
+			this.parent = this.object.parent || parent;
+	
+			if (object instanceof THREE.Mesh) {
+				if (options.castShadow !== false) {
+					object.castShadow = true;
+				}
+				if (options.receiveShadow !== false) {
+					object.receiveShadow = true;
+				}
+			}
+	
+			if (options.name !== undefined) {
+				object.name = options.name;
+			}
+			self.name = object.name;
+	
+			if (allObjects.set) {
+				allObjects.set(object, this);
+				// allObjects.set(object.id, this);
+			} else {
+				allObjects[object.id] = this;
+			}
+	
+			object.position.set(
+				parseFloat(options.x) || 0,
+				parseFloat(options.y) || 0,
+				parseFloat(options.z) || 0
+			);
+	
+			this.setMaterial(options.material);
+	
+			if (options.color) {
+				material = object.material;
+				material.color = new THREE.Color(options.color);
+				material.ambient = material.color;
+			}
+	
+			['position', 'scale', 'rotation', 'quaternion', 'material'].forEach(function (prop) {
+				if (prop in object && !self[prop]) {
+					self[prop] = object[prop];
+				}
+			});
+	
+			Object.defineProperty(this, 'visible', {
+				set: function (val) {
+					self.object.visible = !!val;
+				},
+				get: function () {
+					return self.object.visible;
+				}
+			});
+	
+			Object.defineProperty(this, 'distance', {
+				get: function () {
+					return distance(self.object, camera || parent);
+				}
+			});
+		}
+	
+		VRObject.prototype.hide = function () {
+			this.object.visible = false;
+			return this;
+		};
+	
+		VRObject.prototype.show = function () {
+			this.object.visible = true;
+			return this;
+		};
+	
+		VRObject.prototype.moveTo = function (x, y, z) {
+			var position = this.object.position;
+	
+			x = !isNaN(x) ? x : position.x;
+			y = !isNaN(y) ? y : position.y;
+			z = !isNaN(z) ? z : position.z;
+	
+			position.set(x, y, z);
+	
+			return this;
+		};
+	
+		VRObject.prototype.moveX = function (distance) {
+			this.object.translateX(distance);
+			return this;
+		};
+	
+		VRObject.prototype.moveY = function (distance) {
+			this.object.translateY(distance);
+			return this;
+		};
+		VRObject.prototype.moveUp = VRObject.prototype.moveY;
+	
+		VRObject.prototype.moveZ = function (distance) {
+			this.object.translateZ(distance);
+			return this;
+		};
+	
+		VRObject.prototype.rotateX = function (angle) {
+			this.object.rotateOnAxis(xAxis, angle);
+			return this;
+		};
+	
+		VRObject.prototype.rotateY = function (angle) {
+			this.object.rotateOnAxis(yAxis, angle);
+			return this;
+		};
+	
+		VRObject.prototype.rotateZ = function (angle) {
+			this.object.rotateOnAxis(zAxis, angle);
+			return this;
+		};
+	
+		VRObject.prototype.setScale = function (x, y, z) {
+			var scale = this.object.scale;
+	
+			if (x !== undefined && !isNaN(x)) {
+				if (y === undefined && z === undefined) {
+					y = z = x;
+				} else {
+					x = scale.x;
+				}
+			}
+	
+			x = !isNaN(x) ? x : scale.x;
+			y = !isNaN(y) ? y : scale.y;
+			z = !isNaN(z) ? z : scale.z;
+	
+			scale.set(x, y, z);
+	
+			return this;
+		};
+	
+		VRObject.prototype.setMaterial = function (material, options) {
+			if (material && this.object instanceof THREE.Mesh) {
+				if (typeof material === 'function') {
+					material = material();
+				} else if (typeof material === 'string' && materials[material]) {
+					material = materials[material](options);
+				} else if (material && !material instanceof THREE.Material && typeof material !== 'number') {
+					try {
+						material = materials(material);
+					} catch (e) {}
+				}
+				this.object.material = material || this.object.material;
+			}
+	
+			return this;
+		};
+	
+		VRObject.prototype.update = function () {};
+	
+		VRObject.repeat = function (count, options) {
+			var i,
+				change = false,
+				lastObject = this,
+				currentPosition = new THREE.Vector3(),
+				deltaPosition = new THREE.Vector3(),
+				currentQuaternion = new THREE.Quaternion(),
+				deltaQuaternion = new THREE.Quaternion();
+	
+			if (!options) {
 				return;
 			}
 	
-			//create renderer and place in document
-			renderer = new THREE.WebGLRenderer();
-			renderer.domElement.addEventListener('webglcontextlost', function contextLost(event) {
-				console.log('lost context', event);
-			});
-			// renderer.shadowMapEnabled = true;
-			// renderer.shadowMapSoft = true;
+			if (options.offset) {}
 	
-			//need a scene to put all our objects in
-			scene = new THREE.Scene();
+			for (i = 0; i < count; i++) {
 	
-			bodyWrapper = new VRObject(scene, __webpack_require__(43), null, {
-				name: 'body'
-			}).moveTo(0, 1.5, 4);
-			body = bodyWrapper.object;
-	
-			cameraWrapper = new VRObject(body, function (parent) {
-				//need a camera with which to look at stuff
-				camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, NEAR, FAR);
-				parent.add(camera);
-	
-				return camera;
-			})
-			// set camera position so that OrbitControls works properly.
-				.moveTo(0, 0.0001, 0.0001);
-	
-			audioListener = new THREE.AudioListener();
-			audioListener.name = 'audio-listener';
-			camera.add(audioListener);
-	
-			//VRControls point the camera wherever we're looking
-			vrControls = new THREE.VRControls(camera);
-			vrControls.freeze = !orientationEnabled;
-	
-			//render left and right eye
-			vrEffect = new THREE.VRStereoEffect(renderer);
-			vrEffect.near = NEAR;
-			vrEffect.far = FAR;
-			vrEffect.addEventListener('fullscreenchange', function (evt) {
-				if (isFullscreen()) {
-					if (vrMode) {
-						//no mouse control
-						mouseControls.enabled = false;
-	
-						vrControls.freeze = false;
-						vrControls.reset();
-					}
-				} else {
-					VR.exitVR();
-				}
-	
-				camera.position.set(0, 0.0001, 0.0001);
-				camera.rotation.set(0, 0, 0);
-	
-				VR.emit('fullscreenchange', evt);
-			});
-	
-			//report on HMD
-			vrControls.addEventListener('devicechange', function () {
-				orientationPossible = true;
-				if (orientationEnabled === undefined) {
-					orientationEnabled = vrControls.mode() === 'deviceorientation';
-				}
-	
-				vrControls.freeze = !orientationEnabled && !vrMode;
-	
-				VR.emit('devicechange', vrControls.mode(), vrEffect.hmd());
-			});
-	
-			//mouse control in case got no orientation device
-			mouseControls = new THREE.OrbitControls(camera);
-			mouseControls.target0.set(0, 0.0001, 0.000);
-			mouseControls.target.copy(mouseControls.target0);
-			mouseControls.update();
-	
-			//todo: remove any default lights once other lights are added
-			var dLight = new THREE.DirectionalLight(0xffffff, 0.8);
-			dLight.name = 'directional-light';
-			dLight.position.set(20, 100, 100);
-	
-			dLight.castShadow = true;
-			dLight.shadowCameraVisible = true;
-	
-			dLight.shadowMapWidth = 2048;
-			dLight.shadowMapHeight = 2048;
-	
-			dLight.shadowCameraLeft = -10;
-			dLight.shadowCameraRight = 10;
-			dLight.shadowCameraTop = 10;
-			dLight.shadowCameraBottom = -10;
-	
-			dLight.shadowCameraFar = 150;
-			dLight.shadowCameraNear = 100;
-			dLight.shadowDarkness = 1;
-	
-			scene.add(dLight);
-	
-			scene.add(new THREE.AmbientLight(0x444444));
-	
-			if (VR) {
-				VR.camera = cameraWrapper;
-				VR.body = bodyWrapper;
-				VR.scene = scene;
-				VR.canvas = renderer.domElement;
-				VR.zeroSensor = vrControls.zeroSensor;
 			}
-	
-			raycaster = new THREE.Raycaster();
-	
-			if (document.body) {
-				attachCanvas();
-			} else {
-				window.addEventListener('load', attachCanvas, false);
-			}
-	
-			VR.canvas.addEventListener('mozfullscreenerror', fullScreenError, false);
-			VR.canvas.addEventListener('webkitfullscreenerror', fullScreenError, false);
-			VR.canvas.addEventListener('fullscreenerror', fullScreenError, false);
-		}
-	
-		function initRequirements() {
-			//load external requirements
-			THREE = __webpack_require__(7);
-			__webpack_require__(44);
-			__webpack_require__(45);
-	
-			//if (typeof __DEV__ !== 'undefined' && __DEV__) {
-				__webpack_require__(46);
-			//}
-	
-			THREE.ImageUtils.crossOrigin = '';
-	
-			eventEmitter = __webpack_require__(28);
-	
-			//my VR stuff. todo: move these to a separate repo or two for easy packaging
-			__webpack_require__(47);
-			__webpack_require__(48);
-		}
-	
-		function initialize() {
-			//todo: set up button/info elements
-	
-			initScene();
-	
-			initShake();
-	
-			resize();
-	
-			document.addEventListener('visibilitychange', visibilityChange);
-			document.addEventListener('mozvisibilitychange', visibilityChange);
-			document.addEventListener('msvisibilitychange', visibilityChange);
-			document.addEventListener('webkitvisibilitychange', visibilityChange);
-		}
-	
-		initRequirements();
-	
-		module.exports = VR = {
-			init: initialize,
-			render: render,
-			start: start,
-			stop: stop,
-			resize: resize,
-	
-			THREE: THREE,
-	
-			materials: materials,
-	
-			animate: function (callback) {
-				var i;
-				if (typeof callback === 'function') {
-					i = animationCallbacks.indexOf(callback);
-					if (i < 0) {
-						animationCallbacks.push(callback);
-					}
-				}
-			},
-	
-			end: function (callback) {
-				var i;
-	
-				if (!callback) {
-					animationCallbacks.length = 0;
-					return;
-				}
-	
-				if (typeof callback === 'function') {
-					i = animationCallbacks.indexOf(callback);
-					if (i >= 0) {
-						animationCallbacks.splice(i, 1);
-					}
-				}
-			},
-	
-			requestVR: function () {
-				//todo: check if it's possible
-				if (vrMode || !vrEffect) {
-					return;
-				}
-	
-				vrMode = true;
-	
-				//full screen and render two eyes
-				//always full screen
-				vrEffect.requestFullScreen();
-			},
-	
-			exitVR: function () {
-				vrMode = false;
-				if (isFullscreen()) {
-					exitFullscreen();
-					return;
-				}
-	
-				mouseControls.enabled = true;
-				vrControls.freeze = !orientationEnabled;
-				camera.rotation.set(0, 0, 0);
-			},
-	
-			vrMode: function () {
-				return vrMode && isFullscreen();
-			},
-	
-			orientationEnabled: function () {
-				return !!orientationEnabled;
-			},
-			enableOrientation: function () {
-				orientationEnabled = true;
-				if (!vrMode) {
-					vrControls.freeze = false;
-				}
-			},
-			disableOrientation: function () {
-				orientationEnabled = false;
-				camera.rotation.set(0, 0, 0);
-				vrControls.freeze = !vrMode;
-			},
-	
-			isFullscreen: isFullscreen,
-			requestFullscreen: requestFullscreen,
-			exitFullscreen: function () {
-				if (isFullscreen()) {
-					exitFullscreen();
-				}
-			},
-	
-			controlMode: function () {
-				return vrControls && vrControls.mode();
-			},
-	
-			zeroSensor: nop,
-	
-			vibrate: navigator.vibrate ? navigator.vibrate.bind(navigator) : nop,
-	
-			// Utility
-			times: function (n, callback) {
-				var i;
-	
-				for (i = 0; i < n; i++) {
-					callback(i);
-				}
-			},
-	
-			camera: cameraWrapper,
-			body: bodyWrapper,
-			scene: scene,
-			canvas: renderer && renderer.domElement || null
 		};
 	
-		objectMethods.forEach(function (method) {
-			var creator = __webpack_require__(49)("./" + method);
-	
-			VR[method] = function (options) {
-				var obj = new VRObject(scene, creator, body, options);
-				vrObjects.push(obj);
-				return obj;
-			};
-	
-			VRObject.prototype[method] = function (options) {
-				var obj = new VRObject(this.object, creator, body, options);
-				vrObjects.push(obj);
-				return obj;
-			};
-		});
-	
-		eventEmitter(VR);
-	
-		Object.defineProperty(VR, 'target', {
-			get: function () {
-				return target;
+		VRObject.findObject = function (object) {
+			if (object instanceof VRObject) {
+				return object;
 			}
-		});
+	
+			if (object && object instanceof THREE.Object3D) {
+				if (allObjects.get) {
+					return allObjects.get(object);
+				}
+	
+				return allObjects[object.id];
+			}
+	
+			// if (typeof object === 'number') {
+			// 	return allObjects[object];
+			// }
+		};
+	
+		return VRObject;
+	
 	}());
-
 
 /***/ },
 /* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
+	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M0 0v4l1.5-1.5 1.5 1.5 1-1-1.5-1.5 1.5-1.5h-4zm5 4l-1 1 1.5 1.5-1.5 1.5h4v-4l-1.5 1.5-1.5-1.5z\" />\n</svg>"
+
+/***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M1 0l-1 1 1.5 1.5-1.5 1.5h4v-4l-1.5 1.5-1.5-1.5zm3 4v4l1.5-1.5 1.5 1.5 1-1-1.5-1.5 1.5-1.5h-4z\" />\n</svg>"
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M4.03 0c-2.53 0-4.03 3-4.03 3s1.5 3 4.03 3c2.47 0 3.97-3 3.97-3s-1.5-3-3.97-3zm-.03 1c1.11 0 2 .9 2 2 0 1.11-.89 2-2 2-1.1 0-2-.89-2-2 0-1.1.9-2 2-2zm0 1c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1c0-.1-.04-.19-.06-.28-.08.16-.24.28-.44.28-.28 0-.5-.22-.5-.5 0-.2.12-.36.28-.44-.09-.03-.18-.06-.28-.06z\"\n  transform=\"translate(0 1)\" />\n</svg>"
+
+/***/ },
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M4 0c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 1c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm2 1l-3 1-1 3 3-1 1-3zm-2 1.5c.28 0 .5.22.5.5s-.22.5-.5.5-.5-.22-.5-.5.22-.5.5-.5z\" />\n</svg>"
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
 	module.exports = (function () {
 		'use strict';
 	
-		var THREE = __webpack_require__(7),
-			forEach = __webpack_require__(8),
-			assign = __webpack_require__(16),
+		var THREE = __webpack_require__(32),
+			forEach = __webpack_require__(34),
+			assign = __webpack_require__(35),
 	
 			iOS = navigator.userAgent.match(/(iPad|iPhone|iPod)/g),
 	
@@ -1250,7 +1570,7 @@
 				options = options || {};
 	
 				return function (opts) {
-					var texture = imageTexture(imagePath(__webpack_require__(26)("./" + file)));
+					var texture = imageTexture(imagePath(__webpack_require__(33)("./" + file)));
 	
 					opts = assign({}, options, opts);
 	
@@ -1296,7 +1616,2472 @@
 	}());
 
 /***/ },
-/* 7 */
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var map = {
+		"./box": 22,
+		"./box.js": 22,
+		"./cylinder": 23,
+		"./cylinder.js": 23,
+		"./empty": 12,
+		"./empty.js": 12,
+		"./floor": 24,
+		"./floor.js": 24,
+		"./image": 25,
+		"./image.js": 25,
+		"./panorama": 26,
+		"./panorama.js": 26,
+		"./sky": 27,
+		"./sky.js": 27,
+		"./snow": 28,
+		"./snow.js": 28,
+		"./sound": 29,
+		"./sound.js": 29,
+		"./sphere": 30,
+		"./sphere.js": 30,
+		"./torus": 31,
+		"./torus.js": 31
+	};
+	function webpackContext(req) {
+		return __webpack_require__(webpackContextResolve(req));
+	};
+	function webpackContextResolve(req) {
+		return map[req] || (function() { throw new Error("Cannot find module '" + req + "'.") }());
+	};
+	webpackContext.keys = function webpackContextKeys() {
+		return Object.keys(map);
+	};
+	webpackContext.resolve = webpackContextResolve;
+	module.exports = webpackContext;
+	webpackContext.id = 11;
+
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(32);
+	
+		return function empty(parent, options) {
+			var obj = new THREE.Object3D();
+	
+			obj.name = 'empty';
+	
+			parent.add(obj);
+	
+			return obj;
+		};
+	}());
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/*** IMPORTS FROM imports-loader ***/
+	var THREE = __webpack_require__(32);
+	
+	/**
+	 * @author richt / http://richt.me
+	 * @author WestLangley / http://github.com/WestLangley
+	 *
+	 * W3C Device Orientation control (http://w3c.github.io/deviceorientation/spec-source-orientation.html)
+	 */
+	
+	THREE.DeviceOrientationControls = function ( object ) {
+	
+		var scope = this;
+	
+		this.object = object;
+		this.object.rotation.reorder( "YXZ" );
+	
+		this.enabled = true;
+	
+		this.deviceOrientation = {};
+		this.screenOrientation = 0;
+	
+		var onDeviceOrientationChangeEvent = function ( event ) {
+	
+			scope.deviceOrientation = event;
+	
+		};
+	
+		var onScreenOrientationChangeEvent = function () {
+	
+			scope.screenOrientation = window.orientation || 0;
+	
+		};
+	
+		// The angles alpha, beta and gamma form a set of intrinsic Tait-Bryan angles of type Z-X'-Y''
+	
+		var setObjectQuaternion = function () {
+	
+			var zee = new THREE.Vector3( 0, 0, 1 );
+	
+			var euler = new THREE.Euler();
+	
+			var q0 = new THREE.Quaternion();
+	
+			var q1 = new THREE.Quaternion( - Math.sqrt( 0.5 ), 0, 0, Math.sqrt( 0.5 ) ); // - PI/2 around the x-axis
+	
+			return function ( quaternion, alpha, beta, gamma, orient ) {
+	
+				euler.set( beta, alpha, - gamma, 'YXZ' );                       // 'ZXY' for the device, but 'YXZ' for us
+	
+				quaternion.setFromEuler( euler );                               // orient the device
+	
+				quaternion.multiply( q1 );                                      // camera looks out the back of the device, not the top
+	
+				quaternion.multiply( q0.setFromAxisAngle( zee, - orient ) );    // adjust for screen orientation
+	
+			}
+	
+		}();
+	
+		this.connect = function() {
+	
+			onScreenOrientationChangeEvent(); // run once on load
+	
+			window.addEventListener( 'orientationchange', onScreenOrientationChangeEvent, false );
+			window.addEventListener( 'deviceorientation', onDeviceOrientationChangeEvent, false );
+	
+			scope.enabled = true;
+	
+		};
+	
+		this.disconnect = function() {
+	
+			window.removeEventListener( 'orientationchange', onScreenOrientationChangeEvent, false );
+			window.removeEventListener( 'deviceorientation', onDeviceOrientationChangeEvent, false );
+	
+			scope.enabled = false;
+	
+		};
+	
+		this.update = function () {
+	
+			if ( scope.enabled === false ) return;
+	
+			var alpha  = scope.deviceOrientation.alpha ? THREE.Math.degToRad( scope.deviceOrientation.alpha ) : 0; // Z
+			var beta   = scope.deviceOrientation.beta  ? THREE.Math.degToRad( scope.deviceOrientation.beta  ) : 0; // X'
+			var gamma  = scope.deviceOrientation.gamma ? THREE.Math.degToRad( scope.deviceOrientation.gamma ) : 0; // Y''
+			var orient = scope.screenOrientation       ? THREE.Math.degToRad( scope.screenOrientation       ) : 0; // O
+	
+			setObjectQuaternion( scope.object.quaternion, alpha, beta, gamma, orient );
+	
+		};
+	
+		this.connect();
+	
+	};
+
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/*** IMPORTS FROM imports-loader ***/
+	var THREE = __webpack_require__(32);
+	
+	/**
+	 * @author qiao / https://github.com/qiao
+	 * @author mrdoob / http://mrdoob.com
+	 * @author alteredq / http://alteredqualia.com/
+	 * @author WestLangley / http://github.com/WestLangley
+	 * @author erich666 / http://erichaines.com
+	 */
+	/*global THREE, console */
+	
+	// This set of controls performs orbiting, dollying (zooming), and panning. It maintains
+	// the "up" direction as +Y, unlike the TrackballControls. Touch on tablet and phones is
+	// supported.
+	//
+	//    Orbit - left mouse / touch: one finger move
+	//    Zoom - middle mouse, or mousewheel / touch: two finger spread or squish
+	//    Pan - right mouse, or arrow keys / touch: three finter swipe
+	//
+	// This is a drop-in replacement for (most) TrackballControls used in examples.
+	// That is, include this js file and wherever you see:
+	//    	controls = new THREE.TrackballControls( camera );
+	//      controls.target.z = 150;
+	// Simple substitute "OrbitControls" and the control should work as-is.
+	
+	THREE.OrbitControls = function ( object, domElement ) {
+	
+		this.object = object;
+		this.domElement = ( domElement !== undefined ) ? domElement : document;
+	
+		// API
+	
+		// Set to false to disable this control
+		this.enabled = true;
+	
+		// "target" sets the location of focus, where the control orbits around
+		// and where it pans with respect to.
+		this.target = new THREE.Vector3();
+	
+		// center is old, deprecated; use "target" instead
+		this.center = this.target;
+	
+		// This option actually enables dollying in and out; left as "zoom" for
+		// backwards compatibility
+		this.noZoom = false;
+		this.zoomSpeed = 1.0;
+	
+		// Limits to how far you can dolly in and out
+		this.minDistance = 0;
+		this.maxDistance = Infinity;
+	
+		// Set to true to disable this control
+		this.noRotate = false;
+		this.rotateSpeed = 1.0;
+	
+		// Set to true to disable this control
+		this.noPan = false;
+		this.keyPanSpeed = 7.0;	// pixels moved per arrow key push
+	
+		// Set to true to automatically rotate around the target
+		this.autoRotate = false;
+		this.autoRotateSpeed = 2.0; // 30 seconds per round when fps is 60
+	
+		// How far you can orbit vertically, upper and lower limits.
+		// Range is 0 to Math.PI radians.
+		this.minPolarAngle = 0; // radians
+		this.maxPolarAngle = Math.PI; // radians
+	
+		// How far you can orbit horizontally, upper and lower limits.
+		// If set, must be a sub-interval of the interval [ - Math.PI, Math.PI ].
+		this.minAzimuthAngle = - Infinity; // radians
+		this.maxAzimuthAngle = Infinity; // radians
+	
+		// Set to true to disable use of the keys
+		this.noKeys = false;
+	
+		// The four arrow keys
+		this.keys = { LEFT: 37, UP: 38, RIGHT: 39, BOTTOM: 40 };
+	
+		// Mouse buttons
+		this.mouseButtons = { ORBIT: THREE.MOUSE.LEFT, ZOOM: THREE.MOUSE.MIDDLE, PAN: THREE.MOUSE.RIGHT };
+	
+		////////////
+		// internals
+	
+		var scope = this;
+	
+		var EPS = 0.000001;
+	
+		var rotateStart = new THREE.Vector2();
+		var rotateEnd = new THREE.Vector2();
+		var rotateDelta = new THREE.Vector2();
+	
+		var panStart = new THREE.Vector2();
+		var panEnd = new THREE.Vector2();
+		var panDelta = new THREE.Vector2();
+		var panOffset = new THREE.Vector3();
+	
+		var offset = new THREE.Vector3();
+	
+		var dollyStart = new THREE.Vector2();
+		var dollyEnd = new THREE.Vector2();
+		var dollyDelta = new THREE.Vector2();
+	
+		var theta;
+		var phi;
+		var phiDelta = 0;
+		var thetaDelta = 0;
+		var scale = 1;
+		var pan = new THREE.Vector3();
+	
+		var lastPosition = new THREE.Vector3();
+		var lastQuaternion = new THREE.Quaternion();
+	
+		var STATE = { NONE : -1, ROTATE : 0, DOLLY : 1, PAN : 2, TOUCH_ROTATE : 3, TOUCH_DOLLY : 4, TOUCH_PAN : 5 };
+	
+		var state = STATE.NONE;
+	
+		// for reset
+	
+		this.target0 = this.target.clone();
+		this.position0 = this.object.position.clone();
+	
+		// so camera.up is the orbit axis
+	
+		var quat = new THREE.Quaternion().setFromUnitVectors( object.up, new THREE.Vector3( 0, 1, 0 ) );
+		var quatInverse = quat.clone().inverse();
+	
+		// events
+	
+		var changeEvent = { type: 'change' };
+		var startEvent = { type: 'start'};
+		var endEvent = { type: 'end'};
+	
+		this.rotateLeft = function ( angle ) {
+	
+			if ( angle === undefined ) {
+	
+				angle = getAutoRotationAngle();
+	
+			}
+	
+			thetaDelta -= angle;
+	
+		};
+	
+		this.rotateUp = function ( angle ) {
+	
+			if ( angle === undefined ) {
+	
+				angle = getAutoRotationAngle();
+	
+			}
+	
+			phiDelta -= angle;
+	
+		};
+	
+		// pass in distance in world space to move left
+		this.panLeft = function ( distance ) {
+	
+			var te = this.object.matrix.elements;
+	
+			// get X column of matrix
+			panOffset.set( te[ 0 ], te[ 1 ], te[ 2 ] );
+			panOffset.multiplyScalar( - distance );
+	
+			pan.add( panOffset );
+	
+		};
+	
+		// pass in distance in world space to move up
+		this.panUp = function ( distance ) {
+	
+			var te = this.object.matrix.elements;
+	
+			// get Y column of matrix
+			panOffset.set( te[ 4 ], te[ 5 ], te[ 6 ] );
+			panOffset.multiplyScalar( distance );
+	
+			pan.add( panOffset );
+	
+		};
+	
+		// pass in x,y of change desired in pixel space,
+		// right and down are positive
+		this.pan = function ( deltaX, deltaY ) {
+	
+			var element = scope.domElement === document ? scope.domElement.body : scope.domElement;
+	
+			if ( scope.object.fov !== undefined ) {
+	
+				// perspective
+				var position = scope.object.position;
+				var offset = position.clone().sub( scope.target );
+				var targetDistance = offset.length();
+	
+				// half of the fov is center to top of screen
+				targetDistance *= Math.tan( ( scope.object.fov / 2 ) * Math.PI / 180.0 );
+	
+				// we actually don't use screenWidth, since perspective camera is fixed to screen height
+				scope.panLeft( 2 * deltaX * targetDistance / element.clientHeight );
+				scope.panUp( 2 * deltaY * targetDistance / element.clientHeight );
+	
+			} else if ( scope.object.top !== undefined ) {
+	
+				// orthographic
+				scope.panLeft( deltaX * (scope.object.right - scope.object.left) / element.clientWidth );
+				scope.panUp( deltaY * (scope.object.top - scope.object.bottom) / element.clientHeight );
+	
+			} else {
+	
+				// camera neither orthographic or perspective
+				console.warn( 'WARNING: OrbitControls.js encountered an unknown camera type - pan disabled.' );
+	
+			}
+	
+		};
+	
+		this.dollyIn = function ( dollyScale ) {
+	
+			if ( dollyScale === undefined ) {
+	
+				dollyScale = getZoomScale();
+	
+			}
+	
+			scale /= dollyScale;
+	
+		};
+	
+		this.dollyOut = function ( dollyScale ) {
+	
+			if ( dollyScale === undefined ) {
+	
+				dollyScale = getZoomScale();
+	
+			}
+	
+			scale *= dollyScale;
+	
+		};
+	
+		this.update = function () {
+	
+			var position = this.object.position;
+	
+			offset.copy( position ).sub( this.target );
+	
+			// rotate offset to "y-axis-is-up" space
+			offset.applyQuaternion( quat );
+	
+			// angle from z-axis around y-axis
+	
+			theta = Math.atan2( offset.x, offset.z );
+	
+			// angle from y-axis
+	
+			phi = Math.atan2( Math.sqrt( offset.x * offset.x + offset.z * offset.z ), offset.y );
+	
+			if ( this.autoRotate && state === STATE.NONE ) {
+	
+				this.rotateLeft( getAutoRotationAngle() );
+	
+			}
+	
+			theta += thetaDelta;
+			phi += phiDelta;
+	
+			// restrict theta to be between desired limits
+			theta = Math.max( this.minAzimuthAngle, Math.min( this.maxAzimuthAngle, theta ) );
+	
+			// restrict phi to be between desired limits
+			phi = Math.max( this.minPolarAngle, Math.min( this.maxPolarAngle, phi ) );
+	
+			// restrict phi to be betwee EPS and PI-EPS
+			phi = Math.max( EPS, Math.min( Math.PI - EPS, phi ) );
+	
+			var radius = offset.length() * scale;
+	
+			// restrict radius to be between desired limits
+			radius = Math.max( this.minDistance, Math.min( this.maxDistance, radius ) );
+	
+			// move target to panned location
+			this.target.add( pan );
+	
+			offset.x = radius * Math.sin( phi ) * Math.sin( theta );
+			offset.y = radius * Math.cos( phi );
+			offset.z = radius * Math.sin( phi ) * Math.cos( theta );
+	
+			// rotate offset back to "camera-up-vector-is-up" space
+			offset.applyQuaternion( quatInverse );
+	
+			position.copy( this.target ).add( offset );
+	
+			this.object.lookAt( this.target );
+	
+			thetaDelta = 0;
+			phiDelta = 0;
+			scale = 1;
+			pan.set( 0, 0, 0 );
+	
+			// update condition is:
+			// min(camera displacement, camera rotation in radians)^2 > EPS
+			// using small-angle approximation cos(x/2) = 1 - x^2 / 8
+	
+			if ( lastPosition.distanceToSquared( this.object.position ) > EPS
+			    || 8 * (1 - lastQuaternion.dot(this.object.quaternion)) > EPS ) {
+	
+				this.dispatchEvent( changeEvent );
+	
+				lastPosition.copy( this.object.position );
+				lastQuaternion.copy (this.object.quaternion );
+	
+			}
+	
+		};
+	
+	
+		this.reset = function () {
+	
+			state = STATE.NONE;
+	
+			this.target.copy( this.target0 );
+			this.object.position.copy( this.position0 );
+	
+			this.update();
+	
+		};
+	
+		this.getPolarAngle = function () {
+	
+			return phi;
+	
+		};
+	
+		this.getAzimuthalAngle = function () {
+	
+			return theta
+	
+		};
+	
+		function getAutoRotationAngle() {
+	
+			return 2 * Math.PI / 60 / 60 * scope.autoRotateSpeed;
+	
+		}
+	
+		function getZoomScale() {
+	
+			return Math.pow( 0.95, scope.zoomSpeed );
+	
+		}
+	
+		function onMouseDown( event ) {
+	
+			if (event.button !== THREE.MOUSE.LEFT) {
+				return;
+			}
+	
+			if ( scope.enabled === false ) return;
+			event.preventDefault();
+	
+			if ( event.button === scope.mouseButtons.ORBIT ) {
+				if ( scope.noRotate === true ) return;
+	
+				state = STATE.ROTATE;
+	
+				rotateStart.set( event.clientX, event.clientY );
+	
+			} else if ( event.button === scope.mouseButtons.ZOOM ) {
+				if ( scope.noZoom === true ) return;
+	
+				state = STATE.DOLLY;
+	
+				dollyStart.set( event.clientX, event.clientY );
+	
+			} else if ( event.button === scope.mouseButtons.PAN ) {
+				if ( scope.noPan === true ) return;
+	
+				state = STATE.PAN;
+	
+				panStart.set( event.clientX, event.clientY );
+	
+			}
+	
+			if ( state !== STATE.NONE ) {
+				window.addEventListener( 'mousemove', onMouseMove, false );
+				window.addEventListener( 'mouseup', onMouseUp, false );
+				scope.dispatchEvent( startEvent );
+			}
+	
+		}
+	
+		function onMouseMove( event ) {
+	
+			if ( scope.enabled === false ) return;
+	
+			event.preventDefault();
+	
+			var element = scope.domElement === document ? scope.domElement.body : scope.domElement;
+	
+			if ( state === STATE.ROTATE ) {
+	
+				if ( scope.noRotate === true ) return;
+	
+				rotateEnd.set( event.clientX, event.clientY );
+				rotateDelta.subVectors( rotateEnd, rotateStart );
+	
+				// rotating across whole screen goes 360 degrees around
+				scope.rotateLeft( 2 * Math.PI * rotateDelta.x / element.clientWidth * scope.rotateSpeed );
+	
+				// rotating up and down along whole screen attempts to go 360, but limited to 180
+				scope.rotateUp( 2 * Math.PI * rotateDelta.y / element.clientHeight * scope.rotateSpeed );
+	
+				rotateStart.copy( rotateEnd );
+	
+			} else if ( state === STATE.DOLLY ) {
+	
+				if ( scope.noZoom === true ) return;
+	
+				dollyEnd.set( event.clientX, event.clientY );
+				dollyDelta.subVectors( dollyEnd, dollyStart );
+	
+				if ( dollyDelta.y > 0 ) {
+	
+					scope.dollyIn();
+	
+				} else {
+	
+					scope.dollyOut();
+	
+				}
+	
+				dollyStart.copy( dollyEnd );
+	
+			} else if ( state === STATE.PAN ) {
+	
+				if ( scope.noPan === true ) return;
+	
+				panEnd.set( event.clientX, event.clientY );
+				panDelta.subVectors( panEnd, panStart );
+	
+				scope.pan( panDelta.x, panDelta.y );
+	
+				panStart.copy( panEnd );
+	
+			}
+	
+			if ( state !== STATE.NONE ) scope.update();
+	
+		}
+	
+		function onMouseUp( /* event */ ) {
+	
+			if ( scope.enabled === false ) return;
+	
+			//window.removeEventListener( 'mousemove', onMouseMove, false );
+			window.removeEventListener( 'mouseup', onMouseUp, false );
+			scope.dispatchEvent( endEvent );
+			state = STATE.NONE;
+	
+		}
+	
+		function onMouseWheel( event ) {
+	
+			if ( scope.enabled === false || scope.noZoom === true || state !== STATE.NONE ) return;
+	
+			event.preventDefault();
+			event.stopPropagation();
+	
+			var delta = 0;
+	
+			if ( event.wheelDelta !== undefined ) { // WebKit / Opera / Explorer 9
+	
+				delta = event.wheelDelta;
+	
+			} else if ( event.detail !== undefined ) { // Firefox
+	
+				delta = - event.detail;
+	
+			}
+	
+			if ( delta > 0 ) {
+	
+				scope.dollyOut();
+	
+			} else {
+	
+				scope.dollyIn();
+	
+			}
+	
+			scope.update();
+			scope.dispatchEvent( startEvent );
+			scope.dispatchEvent( endEvent );
+	
+		}
+	
+		function onKeyDown( event ) {
+	
+			if ( scope.enabled === false || scope.noKeys === true || scope.noPan === true ) return;
+	
+			switch ( event.keyCode ) {
+	
+				case scope.keys.UP:
+					scope.pan( 0, scope.keyPanSpeed );
+					scope.update();
+					break;
+	
+				case scope.keys.BOTTOM:
+					scope.pan( 0, - scope.keyPanSpeed );
+					scope.update();
+					break;
+	
+				case scope.keys.LEFT:
+					scope.pan( scope.keyPanSpeed, 0 );
+					scope.update();
+					break;
+	
+				case scope.keys.RIGHT:
+					scope.pan( - scope.keyPanSpeed, 0 );
+					scope.update();
+					break;
+	
+			}
+	
+		}
+	
+		function touchstart( event ) {
+	
+			if ( scope.enabled === false ) return;
+	
+			switch ( event.touches.length ) {
+	
+				case 1:	// one-fingered touch: rotate
+	
+					if ( scope.noRotate === true ) return;
+	
+					state = STATE.TOUCH_ROTATE;
+	
+					rotateStart.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+					break;
+	
+				case 2:	// two-fingered touch: dolly
+	
+					if ( scope.noZoom === true ) return;
+	
+					state = STATE.TOUCH_DOLLY;
+	
+					var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
+					var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
+					var distance = Math.sqrt( dx * dx + dy * dy );
+					dollyStart.set( 0, distance );
+					break;
+	
+				case 3: // three-fingered touch: pan
+	
+					if ( scope.noPan === true ) return;
+	
+					state = STATE.TOUCH_PAN;
+	
+					panStart.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+					break;
+	
+				default:
+	
+					state = STATE.NONE;
+	
+			}
+	
+			if ( state !== STATE.NONE ) scope.dispatchEvent( startEvent );
+	
+		}
+	
+		function touchmove( event ) {
+	
+			if ( scope.enabled === false ) return;
+	
+			event.preventDefault();
+			event.stopPropagation();
+	
+			var element = scope.domElement === document ? scope.domElement.body : scope.domElement;
+	
+			switch ( event.touches.length ) {
+	
+				case 1: // one-fingered touch: rotate
+	
+					if ( scope.noRotate === true ) return;
+					if ( state !== STATE.TOUCH_ROTATE ) return;
+	
+					rotateEnd.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+					rotateDelta.subVectors( rotateEnd, rotateStart );
+	
+					// rotating across whole screen goes 360 degrees around
+					scope.rotateLeft( 2 * Math.PI * rotateDelta.x / element.clientWidth * scope.rotateSpeed );
+					// rotating up and down along whole screen attempts to go 360, but limited to 180
+					scope.rotateUp( 2 * Math.PI * rotateDelta.y / element.clientHeight * scope.rotateSpeed );
+	
+					rotateStart.copy( rotateEnd );
+	
+					scope.update();
+					break;
+	
+				case 2: // two-fingered touch: dolly
+	
+					if ( scope.noZoom === true ) return;
+					if ( state !== STATE.TOUCH_DOLLY ) return;
+	
+					var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
+					var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
+					var distance = Math.sqrt( dx * dx + dy * dy );
+	
+					dollyEnd.set( 0, distance );
+					dollyDelta.subVectors( dollyEnd, dollyStart );
+	
+					if ( dollyDelta.y > 0 ) {
+	
+						scope.dollyOut();
+	
+					} else {
+	
+						scope.dollyIn();
+	
+					}
+	
+					dollyStart.copy( dollyEnd );
+	
+					scope.update();
+					break;
+	
+				case 3: // three-fingered touch: pan
+	
+					if ( scope.noPan === true ) return;
+					if ( state !== STATE.TOUCH_PAN ) return;
+	
+					panEnd.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+					panDelta.subVectors( panEnd, panStart );
+	
+					scope.pan( panDelta.x, panDelta.y );
+	
+					panStart.copy( panEnd );
+	
+					scope.update();
+					break;
+	
+				default:
+	
+					state = STATE.NONE;
+	
+			}
+	
+		}
+	
+		function touchend( /* event */ ) {
+	
+			if ( scope.enabled === false ) return;
+	
+			scope.dispatchEvent( endEvent );
+			state = STATE.NONE;
+	
+		}
+	
+		//this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
+		this.domElement.addEventListener( 'mousedown', onMouseDown, false );
+		this.domElement.addEventListener( 'mousewheel', onMouseWheel, false );
+		this.domElement.addEventListener( 'DOMMouseScroll', onMouseWheel, false ); // firefox
+	
+		this.domElement.addEventListener( 'touchstart', touchstart, false );
+		this.domElement.addEventListener( 'touchend', touchend, false );
+		this.domElement.addEventListener( 'touchmove', touchmove, false );
+	
+		window.addEventListener( 'keydown', onKeyDown, false );
+	
+	//window.addEventListener( 'mousemove', onMouseMove, true );
+		// force an update at start
+		this.update();
+	
+	};
+	
+	THREE.OrbitControls.prototype = Object.create( THREE.EventDispatcher.prototype );
+	THREE.OrbitControls.prototype.constructor = THREE.OrbitControls;
+
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/*** IMPORTS FROM imports-loader ***/
+	var THREE = __webpack_require__(32);
+	
+	/**
+	 * @author alteredq / http://alteredqualia.com/
+	 */
+	
+	THREE.ShaderPass = function ( shader, textureID ) {
+	
+		this.textureID = ( textureID !== undefined ) ? textureID : "tDiffuse";
+	
+		this.uniforms = THREE.UniformsUtils.clone( shader.uniforms );
+	
+		this.material = new THREE.ShaderMaterial( {
+	
+	        	defines: shader.defines || {},
+			uniforms: this.uniforms,
+			vertexShader: shader.vertexShader,
+			fragmentShader: shader.fragmentShader
+	
+		} );
+	
+		this.renderToScreen = false;
+	
+		this.enabled = true;
+		this.needsSwap = true;
+		this.clear = false;
+	
+	
+		this.camera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
+		this.scene  = new THREE.Scene();
+	
+		this.quad = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2, 2 ), null );
+		this.scene.add( this.quad );
+	
+	};
+	
+	THREE.ShaderPass.prototype = {
+	
+		render: function ( renderer, writeBuffer, readBuffer, delta ) {
+	
+			if ( this.uniforms[ this.textureID ] ) {
+	
+				this.uniforms[ this.textureID ].value = readBuffer;
+	
+			}
+	
+			this.quad.material = this.material;
+	
+			if ( this.renderToScreen ) {
+	
+				renderer.render( this.scene, this.camera );
+	
+			} else {
+	
+				renderer.render( this.scene, this.camera, writeBuffer, this.clear );
+	
+			}
+	
+		}
+	
+	};
+
+
+/***/ },
+/* 16 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/*** IMPORTS FROM imports-loader ***/
+	var THREE = __webpack_require__(32);
+	
+	/**
+	 * @author alteredq / http://alteredqualia.com/
+	 *
+	 * Screen-space ambient occlusion shader
+	 * - ported from
+	 *   SSAO GLSL shader v1.2
+	 *   assembled by Martins Upitis (martinsh) (http://devlog-martinsh.blogspot.com)
+	 *   original technique is made by ArKano22 (http://www.gamedev.net/topic/550699-ssao-no-halo-artifacts/)
+	 * - modifications
+	 * - modified to use RGBA packed depth texture (use clear color 1,1,1,1 for depth pass)
+	 * - refactoring and optimizations
+	 */
+	
+	THREE.SSAOShader = {
+	
+		uniforms: {
+	
+			"tDiffuse":     { type: "t", value: null },
+			"tDepth":       { type: "t", value: null },
+			"size":         { type: "v2", value: new THREE.Vector2( 512, 512 ) },
+			"cameraNear":   { type: "f", value: 1 },
+			"cameraFar":    { type: "f", value: 100 },
+			"onlyAO":       { type: "i", value: 0 },
+			"aoClamp":      { type: "f", value: 0.5 },
+			"lumInfluence": { type: "f", value: 0.5 }
+	
+		},
+	
+		vertexShader: [
+	
+			"varying vec2 vUv;",
+	
+			"void main() {",
+	
+				"vUv = uv;",
+	
+				"gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+	
+			"}"
+	
+		].join("\n"),
+	
+		fragmentShader: [
+	
+			"uniform float cameraNear;",
+			"uniform float cameraFar;",
+	
+			"uniform bool onlyAO;",      // use only ambient occlusion pass?
+	
+			"uniform vec2 size;",        // texture width, height
+			"uniform float aoClamp;",    // depth clamp - reduces haloing at screen edges
+	
+			"uniform float lumInfluence;",  // how much luminance affects occlusion
+	
+			"uniform sampler2D tDiffuse;",
+			"uniform sampler2D tDepth;",
+	
+			"varying vec2 vUv;",
+	
+			// "#define PI 3.14159265",
+			"#define DL 2.399963229728653",  // PI * ( 3.0 - sqrt( 5.0 ) )
+			"#define EULER 2.718281828459045",
+	
+			// helpers
+	
+			"float width = size.x;",   // texture width
+			"float height = size.y;",  // texture height
+	
+			"float cameraFarPlusNear = cameraFar + cameraNear;",
+			"float cameraFarMinusNear = cameraFar - cameraNear;",
+			"float cameraCoef = 2.0 * cameraNear;",
+	
+			// user variables
+	
+			"const int samples = 8;",     // ao sample count
+			"const float radius = 5.0;",  // ao radius
+	
+			"const bool useNoise = false;",      // use noise instead of pattern for sample dithering
+			"const float noiseAmount = 0.0003;", // dithering amount
+	
+			"const float diffArea = 0.4;",   // self-shadowing reduction
+			"const float gDisplace = 0.4;",  // gauss bell center
+	
+	
+			// RGBA depth
+	
+			"float unpackDepth( const in vec4 rgba_depth ) {",
+	
+				"const vec4 bit_shift = vec4( 1.0 / ( 256.0 * 256.0 * 256.0 ), 1.0 / ( 256.0 * 256.0 ), 1.0 / 256.0, 1.0 );",
+				"float depth = dot( rgba_depth, bit_shift );",
+				"return depth;",
+	
+			"}",
+	
+			// generating noise / pattern texture for dithering
+	
+			"vec2 rand( const vec2 coord ) {",
+	
+				"vec2 noise;",
+	
+				"if ( useNoise ) {",
+	
+					"float nx = dot ( coord, vec2( 12.9898, 78.233 ) );",
+					"float ny = dot ( coord, vec2( 12.9898, 78.233 ) * 2.0 );",
+	
+					"noise = clamp( fract ( 43758.5453 * sin( vec2( nx, ny ) ) ), 0.0, 1.0 );",
+	
+				"} else {",
+	
+					"float ff = fract( 1.0 - coord.s * ( width / 2.0 ) );",
+					"float gg = fract( coord.t * ( height / 2.0 ) );",
+	
+					"noise = vec2( 0.25, 0.75 ) * vec2( ff ) + vec2( 0.75, 0.25 ) * gg;",
+	
+				"}",
+	
+				"return ( noise * 2.0  - 1.0 ) * noiseAmount;",
+	
+			"}",
+	
+			"float readDepth( const in vec2 coord ) {",
+	
+				// "return ( 2.0 * cameraNear ) / ( cameraFar + cameraNear - unpackDepth( texture2D( tDepth, coord ) ) * ( cameraFar - cameraNear ) );",
+				"return cameraCoef / ( cameraFarPlusNear - unpackDepth( texture2D( tDepth, coord ) ) * cameraFarMinusNear );",
+	
+	
+			"}",
+	
+			"float compareDepths( const in float depth1, const in float depth2, inout int far ) {",
+	
+				"float garea = 2.0;",                         // gauss bell width
+				"float diff = ( depth1 - depth2 ) * 100.0;",  // depth difference (0-100)
+	
+				// reduce left bell width to avoid self-shadowing
+	
+				"if ( diff < gDisplace ) {",
+	
+					"garea = diffArea;",
+	
+				"} else {",
+	
+					"far = 1;",
+	
+				"}",
+	
+				"float dd = diff - gDisplace;",
+				"float gauss = pow( EULER, -2.0 * dd * dd / ( garea * garea ) );",
+				"return gauss;",
+	
+			"}",
+	
+			"float calcAO( float depth, float dw, float dh ) {",
+	
+				"float dd = radius - depth * radius;",
+				"vec2 vv = vec2( dw, dh );",
+	
+				"vec2 coord1 = vUv + dd * vv;",
+				"vec2 coord2 = vUv - dd * vv;",
+	
+				"float temp1 = 0.0;",
+				"float temp2 = 0.0;",
+	
+				"int far = 0;",
+				"temp1 = compareDepths( depth, readDepth( coord1 ), far );",
+	
+				// DEPTH EXTRAPOLATION
+	
+				"if ( far > 0 ) {",
+	
+					"temp2 = compareDepths( readDepth( coord2 ), depth, far );",
+					"temp1 += ( 1.0 - temp1 ) * temp2;",
+	
+				"}",
+	
+				"return temp1;",
+	
+			"}",
+	
+			"void main() {",
+	
+				"vec2 noise = rand( vUv );",
+				"float depth = readDepth( vUv );",
+	
+				"float tt = clamp( depth, aoClamp, 1.0 );",
+	
+				"float w = ( 1.0 / width )  / tt + ( noise.x * ( 1.0 - noise.x ) );",
+				"float h = ( 1.0 / height ) / tt + ( noise.y * ( 1.0 - noise.y ) );",
+	
+				"float ao = 0.0;",
+	
+				"float dz = 1.0 / float( samples );",
+				"float z = 1.0 - dz / 2.0;",
+				"float l = 0.0;",
+	
+				"for ( int i = 0; i <= samples; i ++ ) {",
+	
+					"float r = sqrt( 1.0 - z );",
+	
+					"float pw = cos( l ) * r;",
+					"float ph = sin( l ) * r;",
+					"ao += calcAO( depth, pw * w, ph * h );",
+					"z = z - dz;",
+					"l = l + DL;",
+	
+				"}",
+	
+				"ao /= float( samples );",
+				"ao = 1.0 - ao;",
+	
+				"vec3 color = texture2D( tDiffuse, vUv ).rgb;",
+	
+				"vec3 lumcoeff = vec3( 0.299, 0.587, 0.114 );",
+				"float lum = dot( color.rgb, lumcoeff );",
+				"vec3 luminance = vec3( lum );",
+	
+				"vec3 final = vec3( color * mix( vec3( ao ), vec3( 1.0 ), luminance * lumInfluence ) );",  // mix( color * ao, white, luminance )
+	
+				"if ( onlyAO ) {",
+	
+					"final = vec3( mix( vec3( ao ), vec3( 1.0 ), luminance * lumInfluence ) );",  // ambient occlusion only
+	
+				"}",
+	
+				"gl_FragColor = vec4( final, 1.0 );",
+	
+			"}"
+	
+		].join("\n")
+	
+	};
+
+
+/***/ },
+/* 17 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/*** IMPORTS FROM imports-loader ***/
+	var THREE = __webpack_require__(32);
+	
+	( function() {
+	
+		var _oldConsole = console.log;
+	
+		var supportedTypes = [];
+	
+		function addSupportedType( type, format ) {
+	
+			supportedTypes.push( {
+				type: type,
+				format: format
+			} );
+	
+		}
+	
+		addSupportedType( THREE.Matrix4, function( v ) {
+	
+			var e = v.elements;
+					
+			return [
+				[ e[ 0 ], e[ 1 ], e[ 2 ], e[ 3 ] ],
+				[ e[ 4 ], e[ 5 ], e[ 6 ], e[ 7 ] ],
+				[ e[ 8 ], e[ 9 ], e[ 10 ], e[ 11 ] ],
+				[ e[ 12 ], e[ 13 ], e[ 14 ], e[ 15 ] ]
+			];
+	
+		} );
+	
+		addSupportedType( THREE.Matrix3, function( v ) {
+	
+			var e = v.elements;
+					
+			return [
+				[ e[ 0 ], e[ 1 ], e[ 2 ] ],
+				[ e[ 3 ], e[ 4 ], e[ 5 ] ],
+				[ e[ 6 ], e[ 7 ], e[ 8 ] ]
+			];
+	
+		} );
+	
+		addSupportedType( THREE.Vector2, function( v ) {
+	
+			return {
+				Vector2: { x: v.x, y: v.y }
+			};
+	
+		} );
+	
+		addSupportedType( THREE.Vector3, function( v ) {
+	
+			return {
+				Vector3: { x: v.x, y: v.y, z: v.z }
+			};
+	
+		} );
+	
+		addSupportedType( THREE.Vector4, function( v ) {
+	
+			return {
+				Vector4: { x: v.x, y: v.y, z: v.z, w: v.w }
+			};
+	
+		} );
+	
+		addSupportedType( THREE.Euler, function( v ) {
+	
+			return {
+				Vector4: { x: v.x, y: v.y, z: v.z, order: v.order }
+			};
+	
+		} );
+	
+		addSupportedType( THREE.Ray, function( v ) {
+	
+			return { 
+				'Ray origin': { x: v.origin.x, y: v.origin.y, z: v.origin.z },
+				'Ray direction': { x: v.direction.x, y: v.direction.y, z: v.direction.z }
+			};
+	
+		} );
+	
+		console.log = function() {
+	
+			var special = false;
+	
+			[].forEach.call( arguments, function( a ) { 
+				supportedTypes.forEach( function( t ) {
+					if( a instanceof t.type ) special = true;;
+				} );
+			} );
+	
+			if( special ) {
+	
+				[].forEach.call( arguments, function( a ) { 
+				
+					_oldConsole.apply( console, [ a ] );
+	
+					supportedTypes.forEach( function( t ) {
+	
+						if( a instanceof t.type ) {
+	
+							console.table( t.format( a ) );
+	
+						}
+						
+					} );
+	
+				} );
+	
+			} else {
+	
+				_oldConsole.apply( console, arguments );
+	
+			}
+	
+		}
+	
+	} )();
+
+/***/ },
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/*** IMPORTS FROM imports-loader ***/
+	var THREE = __webpack_require__(32);
+	
+	/**
+	 * @author bchirls / http://bchirls.com/
+	 */
+	
+	THREE.VRStereoEffect = function ( renderer, fullScreenElement, options ) {
+	
+		// internals
+		var self = this;
+		var width = 0, height = 0;
+		var hmdWidth, hmdHeight;
+	
+		var hmdDevice;
+		var vrMode;
+		var vrPreview = false;
+		var eyeOffsetLeft, eyeOffsetRight;
+	
+		var position = new THREE.Vector3();
+		var quaternion = new THREE.Quaternion();
+		var scale = new THREE.Vector3();
+	
+		var cameraLeft = new THREE.PerspectiveCamera();
+		var cameraRight = new THREE.PerspectiveCamera();
+	
+		var near = 2;
+		var far = 40000;
+	
+		var requestFullscreen;
+		var fullScreenParam = {
+			vrDisplay: null
+		};
+		var fovScale;
+	
+		var RADIANS = Math.PI / 180;
+	
+		var poll = options && options.poll || 1000;
+		var pollTimeout;
+	
+		function perspectiveMatrixFromVRFieldOfView(fov, zNear, zFar) {
+			var outMat = new THREE.Matrix4(),
+				out = outMat.elements,
+				upTan = Math.tan(fov.upDegrees * RADIANS),
+				downTan = Math.tan(fov.downDegrees * RADIANS),
+				leftTan = Math.tan(fov.leftDegrees * RADIANS),
+				rightTan = Math.tan(fov.rightDegrees * RADIANS),
+	
+				xScale = 2 / (leftTan + rightTan),
+				yScale = 2 / (upTan + downTan);
+	
+			out[0] = xScale;
+			out[4] = 0;
+			out[8] = -((leftTan - rightTan) * xScale * 0.5);
+			out[12] = 0;
+	
+			out[1] = 0;
+			out[5] = yScale;
+			out[9] = ((upTan - downTan) * yScale * 0.5);
+			out[13] = 0;
+	
+			out[2] = 0;
+			out[6] = 0;
+			out[10] = zFar / (zNear - zFar);
+			out[14] = (zFar * zNear) / (zNear - zFar);
+	
+			out[3] = 0;
+			out[7] = 0;
+			out[11] = -1;
+			out[15] = 0;
+	
+			return outMat;
+		}
+	
+		function resize() {
+			var w, h;
+	
+			if (hmdDevice && vrMode) {
+				w = hmdWidth;// / Math.pow(window.devicePixelRatio || 1, 2);
+				h = hmdHeight;// / Math.pow(window.devicePixelRatio || 1, 2);
+			} else {
+				w = width || renderer.domElement.offsetWidth || window.innerWidth;
+				h = height || renderer.domElement.offsetHeight || window.innerHeight;
+			}
+	
+			renderer.setSize(w, h);
+		}
+	
+		function resizeFOV(amount) {
+			var fovLeft,
+				fovRight,
+				leftEyeViewport,
+				rightEyeViewport;
+	
+			if (!hmdDevice) {
+				return;
+			}
+	
+			if (amount && hmdDevice.setFieldOfView) {
+				fovScale += amount;
+				fovScale = Math.max(0.1, fovScale);
+	
+				fovLeft = hmdDevice.getRecommendedEyeFieldOfView('left');
+	
+				fovLeft.upDegrees *= fovScale;
+				fovLeft.downDegrees *= fovScale;
+				fovLeft.leftDegrees *= fovScale;
+				fovLeft.rightDegrees *= fovScale;
+	
+				fovRight = hmdDevice.getRecommendedEyeFieldOfView('right');
+				fovRight.upDegrees *= fovScale;
+				fovRight.downDegrees *= fovScale;
+				fovRight.leftDegrees *= fovScale;
+				fovRight.rightDegrees *= fovScale;
+	
+				hmdDevice.setFieldOfView(fovLeft, fovRight);
+			}
+	
+			if (hmdDevice.getRecommendedEyeRenderRect) {
+				leftEyeViewport = hmdDevice.getRecommendedEyeRenderRect('left');
+				rightEyeViewport = hmdDevice.getRecommendedEyeRenderRect('right');
+				hmdWidth = leftEyeViewport.width + rightEyeViewport.width;
+				hmdHeight = Math.max(leftEyeViewport.height, rightEyeViewport.height);
+			}
+	
+			resize();
+	
+			if (hmdDevice.getCurrentEyeFieldOfView) {
+				fovLeft = hmdDevice.getCurrentEyeFieldOfView('left');
+				fovRight = hmdDevice.getCurrentEyeFieldOfView('right');
+			} else {
+				fovLeft = hmdDevice.getRecommendedEyeFieldOfView('left');
+				fovRight = hmdDevice.getRecommendedEyeFieldOfView('right');
+			}
+	
+			cameraLeft.projectionMatrix = perspectiveMatrixFromVRFieldOfView(fovLeft, near, far);
+			cameraRight.projectionMatrix = perspectiveMatrixFromVRFieldOfView(fovRight, near, far);
+		}
+	
+		function gotVRDevices(devices) {
+			var i,
+				device;
+	
+			for (i = 0; i < devices.length; i++) {
+				device = devices[i];
+				if (device instanceof HMDVRDevice &&
+						(!hmdDevice || device.hardwareUnitId !== hmdDevice.hardwareUnitId)) {
+	
+					hmdDevice = device;
+					console.log('Using HMD Device:', hmdDevice.deviceName);
+	
+					if (hmdDevice.setTimewarp) {
+						hmdDevice.setTimewarp(false);
+					}
+	
+					eyeOffsetLeft = hmdDevice.getEyeTranslation('left');
+					//cameraLeft.position.add(eyeOffsetLeft);
+	
+					eyeOffsetRight = hmdDevice.getEyeTranslation('right');
+					//cameraRight.position.add(eyeOffsetRight);
+	
+					resizeFOV(0);
+	
+					fullScreenParam.vrDisplay = hmdDevice;
+	
+					self.dispatchEvent( {
+						type: "devicechange"
+					} );
+	
+					break;
+				}
+			}
+	
+			if (poll) {
+				clearTimeout(pollTimeout);
+				setTimeout(self.scan, poll);
+			}
+		}
+	
+		function onFullscreenChange() {
+			if (!document.webkitFullscreenElement &&
+					!document.mozFullScreenElement &&
+					!document.msFullscreenElement) {
+				vrMode = false;
+			}
+	
+			resize();
+	
+			self.dispatchEvent( {
+				type: "fullscreenchange"
+			} );
+		}
+	
+		// API
+	
+		this.separation = 0.01;
+	
+		// initialization
+	
+		renderer.autoClear = false;
+	
+		if (!fullScreenElement) {
+			fullScreenElement = renderer.domElement;
+		}
+		requestFullscreen = fullScreenElement.webkitRequestFullscreen ||
+			fullScreenElement.mozRequestFullScreen ||
+			fullScreenElement.msRequestFullscreen;
+		if (requestFullscreen) {
+			requestFullscreen = requestFullscreen.bind(fullScreenElement, fullScreenParam);
+		}
+	
+		document.addEventListener('fullscreenchange', onFullscreenChange, false);
+		document.addEventListener('webkitfullscreenchange', onFullscreenChange, false);
+		document.addEventListener('mozfullscreenchange', onFullscreenChange, false);
+		document.addEventListener('MSFullscreenChange', onFullscreenChange, false);
+	
+		//todo: method for adjusting HMD FOV
+	
+		this.scan = function () {
+			if (navigator.getVRDevices) {
+				navigator.getVRDevices().then(gotVRDevices);
+			} else if (navigator.mozGetVRDevices) {
+				navigator.mozGetVRDevices(gotVRDevices);
+			}
+		};
+	
+		this.requestFullScreen = function () {
+			vrMode = true;
+			requestFullscreen();
+		};
+	
+		this.exit = function () {
+			vrMode = false;
+			vrPreview = false;
+		};
+	
+		this.setSize = function ( w, h ) {
+			width = w;
+			height = h;
+	
+			resize();
+		};
+	
+		this.vrPreview = function (val) {
+			if (val !== undefined) {
+				vrPreview = !!val;
+			}
+			return vrPreview;
+		};
+	
+		this.isFullscreen = function () {
+			return vrMode;
+		};
+	
+		this.hmd = function () {
+			return hmdDevice;
+		};
+	
+		this.render = function ( leftScene, rightScene, camera, renderTarget, forceClear ) {
+			var w, h;
+	
+			if ( rightScene && rightScene instanceof THREE.Scene ) {
+				//rightScene.updateMatrixWorld();
+			} else {
+				if ( (!camera || camera instanceof THREE.WebGLRenderTarget) && rightScene instanceof THREE.Camera ) {
+					forceClear = renderTarget;
+					renderTarget = camera;
+					camera = rightScene;
+				}
+				rightScene = leftScene;
+			}
+	
+			//leftScene.updateMatrixWorld();
+	
+			if ( camera.parent === undefined ) {
+				camera.updateMatrixWorld();
+			}
+	
+			w = width || renderer.domElement.width;
+			h = height || renderer.domElement.height;
+			// w /= window.devicePixelRatio || 1;
+			// h /= window.devicePixelRatio || 1;
+	
+			/*
+			todo: make this work when CSS VR Rendering is fixed
+			http://blog.bitops.com/blog/2014/08/20/updated-firefox-vr-builds/
+			if (renderer instanceof THREE.CSS3DRenderer) {
+				renderer.render( leftScene, camera );
+				return;
+			}
+			*/
+	
+			if (!vrMode && !vrPreview) {
+				renderer.enableScissorTest( false );
+				renderer.setViewport( 0, 0, w, h );
+				renderer.render( leftScene, camera, renderTarget, true );
+				return;
+			}
+	
+			camera.matrixWorld.decompose( position, quaternion, scale );
+	
+			if (!hmdDevice) {
+				// left
+				cameraLeft.fov = camera.fov;
+				cameraLeft.aspect = 0.5 * camera.aspect;
+				cameraLeft.near = camera.near;
+				cameraLeft.far = camera.far;
+				cameraLeft.updateProjectionMatrix();
+	
+				// right
+	
+				cameraRight.fov = camera.fov;
+				cameraRight.aspect = 0.5 * camera.aspect;
+				cameraRight.near = camera.near;
+				cameraRight.far = camera.far;
+				cameraRight.updateProjectionMatrix();
+			}
+	
+			cameraLeft.position.copy( position );
+			cameraLeft.quaternion.copy( quaternion );
+	
+			cameraRight.position.copy( position );
+			cameraRight.quaternion.copy( quaternion );
+	
+			if (hmdDevice) {
+				cameraLeft.position.add( eyeOffsetLeft ) ;
+				cameraRight.position.add( eyeOffsetRight );
+			} else {
+				cameraLeft.translateX( - this.separation );
+				cameraRight.translateX( this.separation );
+			}
+	
+			cameraLeft.updateMatrixWorld();
+			cameraRight.updateMatrixWorld();
+	
+			//
+	
+			renderer.enableScissorTest(true);
+	
+			w /= 2;
+	
+			if (renderTarget) {
+				renderer.setRenderTarget(renderTarget);
+			}
+			renderer.setScissor( 0, 0, w, h );
+			renderer.setViewport( 0, 0, w, h );
+			renderer.render( leftScene, cameraLeft, renderTarget, forceClear );
+	
+			renderer.setScissor( w, 0, w, h );
+			renderer.setViewport( w, 0, w, h );
+			renderer.render( rightScene, cameraRight, renderTarget, forceClear );
+	
+			//reset viewport, scissor
+			w *= 2;
+			renderer.setViewport( 0, 0, w, h );
+			renderer.setScissor( 0, 0, w, h );
+			renderer.enableScissorTest( false );
+		};
+	
+		Object.defineProperty(this, 'near', {
+			get: function () {
+				return near;
+			},
+			set: function (val) {
+				val = parseFloat(val);
+				if (val && !isNaN(val)) {
+					near = Math.max(0, val);
+					resizeFOV(0);
+				}
+			}
+		});
+	
+		Object.defineProperty(this, 'far', {
+			get: function () {
+				return far;
+			},
+			set: function (val) {
+				val = parseFloat(val);
+				if (val && !isNaN(val)) {
+					far = Math.max(0, val);
+					resizeFOV(0);
+				}
+			}
+		});
+	
+		this.scan();
+		resize();
+	};
+	
+	THREE.VRStereoEffect.prototype = Object.create( THREE.EventDispatcher.prototype );
+
+
+/***/ },
+/* 19 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/*** IMPORTS FROM imports-loader ***/
+	var THREE = __webpack_require__(32);
+	
+	THREE.VRControls = function ( object, options ) {
+	
+		var self = this;
+	
+		//HMD sensor stuff
+		var sensorDevice;
+		var vrState;
+	
+		//device orientation stuff
+		var deviceControls;
+		var zeroAngle = 0;
+	
+		var mode = '';
+	
+		var vrBrowser = navigator.getVRDevices || navigator.mozGetVRDevices;
+	
+		var poll = options && options.poll || 1000;
+		var pollTimeout;
+	
+		function gotVRDevices( devices ) {
+			var i,
+				device;
+	
+			for ( i = 0; i < devices.length; ++i ) {
+				device = devices[i];
+				if ( device instanceof PositionSensorVRDevice &&
+						( !sensorDevice || device.hardwareUnitId !== sensorDevice.hardwareUnitId ) ) {
+	
+					sensorDevice = device;
+					console.log('Using Sensor Device:', sensorDevice.deviceName);
+	
+					if ( sensorDevice.zeroSensor ) {
+						self.zeroSensor = sensorDevice.zeroSensor.bind(sensorDevice);
+					} else if ( sensorDevice.resetSensor ) {
+						self.zeroSensor = sensorDevice.resetSensor.bind(sensorDevice);
+					}
+					self.zeroSensor();
+	
+					mode = 'hmd';
+	
+					self.dispatchEvent( {
+						type: "devicechange"
+					} );
+	
+					break; // We keep the first we encounter
+				}
+			}
+	
+			if (poll) {
+				clearTimeout(pollTimeout);
+				setTimeout(self.scan, poll);
+			}
+		}
+	
+		function deviceOrientationChange( event ) {
+			if ( typeof event.gamma === 'number' ) {
+				mode = 'deviceorientation';
+				window.removeEventListener( 'deviceorientation', deviceOrientationChange, false );
+				deviceControls = new THREE.DeviceOrientationControls( object );
+				deviceControls.connect();
+				if (!this.freeze) {
+					deviceControls.update();
+				}
+	
+				self.dispatchEvent( {
+					type: "devicechange"
+				} );
+			}
+		}
+	
+		this.update = function() {
+			// Applies head rotation from sensor data.
+			if (self.freeze) {
+				return;
+			}
+	
+			if ( sensorDevice ) {
+				vrState = sensorDevice.getState();
+				if ( vrState && vrState.orientation ) {
+					object.quaternion.copy( vrState.orientation );
+	
+					if ( vrState.position ) {
+						// vrState.position is null if using DK1 or if DK2 camera is not plugged in
+						object.position.copy( vrState.position );
+					}
+	
+					object.updateMatrixWorld();
+				}
+			} else if (deviceControls && deviceControls.deviceOrientation.gamma !== undefined) {
+				deviceControls.update();
+				object.rotateY(-zeroAngle);
+				object.updateMatrixWorld();
+			}
+		};
+	
+		//only useful when frozen
+		this.reset = function () {
+			if ( object ) {
+				object.quaternion.set( 0, 0, 0, 1 );
+				object.position.set( 0, 0, 0 );
+			}
+		};
+	
+		//zeros only rotation on Y axis
+		//todo: find out if it zeros out position. need a DK2 to test
+		this.zeroSensor = function () {
+			if (sensorDevice && sensorDevice.zeroSensor) {
+				sensorDevice.zeroSensor();
+			}
+			zeroAngle = object.rotation.y;
+			self.update();
+		};
+	
+		this.freeze = false;
+	
+		//method to query which tech we're using
+		this.mode = function () {
+			return mode;
+		};
+	
+		this.scan = function () {
+			if ( navigator.getVRDevices ) {
+				navigator.getVRDevices().then( gotVRDevices );
+			} else if ( navigator.mozGetVRDevices ) {
+				navigator.mozGetVRDevices( gotVRDevices );
+			}
+		};
+	
+		//todo: connect/disconnect methods
+		//todo: method to query orientation/position without changing object
+		//todo: work without an object
+	
+		if ( vrBrowser ) {
+			this.scan();
+		} else if ( "DeviceOrientationEvent" in window && THREE.DeviceOrientationControls) {
+			//device orientation
+			window.addEventListener( "deviceorientation", deviceOrientationChange, false );
+		}
+	};
+	
+	THREE.VRControls.prototype = Object.create( THREE.EventDispatcher.prototype );
+
+
+/***/ },
+/* 20 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = function() {
+		var list = [];
+		list.toString = function toString() {
+			var result = [];
+			for(var i = 0; i < this.length; i++) {
+				var item = this[i];
+				if(item[2]) {
+					result.push("@media " + item[2] + "{" + item[1] + "}");
+				} else {
+					result.push(item[1]);
+				}
+			}
+			return result.join("");
+		};
+		return list;
+	}
+
+/***/ },
+/* 21 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var d        = __webpack_require__(39)
+	  , callable = __webpack_require__(53)
+	
+	  , apply = Function.prototype.apply, call = Function.prototype.call
+	  , create = Object.create, defineProperty = Object.defineProperty
+	  , defineProperties = Object.defineProperties
+	  , hasOwnProperty = Object.prototype.hasOwnProperty
+	  , descriptor = { configurable: true, enumerable: false, writable: true }
+	
+	  , on, once, off, emit, methods, descriptors, base;
+	
+	on = function (type, listener) {
+		var data;
+	
+		callable(listener);
+	
+		if (!hasOwnProperty.call(this, '__ee__')) {
+			data = descriptor.value = create(null);
+			defineProperty(this, '__ee__', descriptor);
+			descriptor.value = null;
+		} else {
+			data = this.__ee__;
+		}
+		if (!data[type]) data[type] = listener;
+		else if (typeof data[type] === 'object') data[type].push(listener);
+		else data[type] = [data[type], listener];
+	
+		return this;
+	};
+	
+	once = function (type, listener) {
+		var once, self;
+	
+		callable(listener);
+		self = this;
+		on.call(this, type, once = function () {
+			off.call(self, type, once);
+			apply.call(listener, this, arguments);
+		});
+	
+		once.__eeOnceListener__ = listener;
+		return this;
+	};
+	
+	off = function (type, listener) {
+		var data, listeners, candidate, i;
+	
+		callable(listener);
+	
+		if (!hasOwnProperty.call(this, '__ee__')) return this;
+		data = this.__ee__;
+		if (!data[type]) return this;
+		listeners = data[type];
+	
+		if (typeof listeners === 'object') {
+			for (i = 0; (candidate = listeners[i]); ++i) {
+				if ((candidate === listener) ||
+						(candidate.__eeOnceListener__ === listener)) {
+					if (listeners.length === 2) data[type] = listeners[i ? 0 : 1];
+					else listeners.splice(i, 1);
+				}
+			}
+		} else {
+			if ((listeners === listener) ||
+					(listeners.__eeOnceListener__ === listener)) {
+				delete data[type];
+			}
+		}
+	
+		return this;
+	};
+	
+	emit = function (type) {
+		var i, l, listener, listeners, args;
+	
+		if (!hasOwnProperty.call(this, '__ee__')) return;
+		listeners = this.__ee__[type];
+		if (!listeners) return;
+	
+		if (typeof listeners === 'object') {
+			l = arguments.length;
+			args = new Array(l - 1);
+			for (i = 1; i < l; ++i) args[i - 1] = arguments[i];
+	
+			listeners = listeners.slice();
+			for (i = 0; (listener = listeners[i]); ++i) {
+				apply.call(listener, this, args);
+			}
+		} else {
+			switch (arguments.length) {
+			case 1:
+				call.call(listeners, this);
+				break;
+			case 2:
+				call.call(listeners, this, arguments[1]);
+				break;
+			case 3:
+				call.call(listeners, this, arguments[1], arguments[2]);
+				break;
+			default:
+				l = arguments.length;
+				args = new Array(l - 1);
+				for (i = 1; i < l; ++i) {
+					args[i - 1] = arguments[i];
+				}
+				apply.call(listeners, this, args);
+			}
+		}
+	};
+	
+	methods = {
+		on: on,
+		once: once,
+		off: off,
+		emit: emit
+	};
+	
+	descriptors = {
+		on: d(on),
+		once: d(once),
+		off: d(off),
+		emit: d(emit)
+	};
+	
+	base = defineProperties({}, descriptors);
+	
+	module.exports = exports = function (o) {
+		return (o == null) ? create(base) : defineProperties(Object(o), descriptors);
+	};
+	exports.methods = methods;
+
+
+/***/ },
+/* 22 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(32);
+	
+		return function box(parent, options) {
+			var geometry,
+				mesh;
+	
+			geometry = new THREE.BoxGeometry( 1, 1, 1 );
+			mesh = new THREE.Mesh(geometry, materials.standard());
+			mesh.name = 'box';
+	
+			parent.add(mesh);
+	
+			return mesh;
+		};
+	}());
+
+/***/ },
+/* 23 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(32);
+	
+		function cylinder(parent, options) {
+			var geometry,
+				mesh;
+	
+			geometry = new THREE.CylinderGeometry(
+				options.radiusTop === undefined ? 0.5 : options.radiusTop,
+				options.radiusBottom === undefined ? 0.5 : options.radiusBottom,
+				options.height === undefined ? 1 : options.height,
+				options.radiusSegments === undefined ? 16 : options.radiusSegments,
+				options.heightSegments,
+				options.openEnded
+			);
+			mesh = new THREE.Mesh(geometry, materials.standard());
+			mesh.name = 'cylinder';
+	
+			parent.add(mesh);
+	
+			return mesh;
+		}
+	
+		return cylinder;
+	}());
+
+/***/ },
+/* 24 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(32);
+	
+		function floor(parent, options) {
+			var obj,
+				geometry;
+	
+			geometry = new THREE.CircleGeometry( options.radius || 100, options.segments || 16 );
+			geometry.applyMatrix( new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+	
+			obj = new THREE.Mesh(
+				geometry,
+				materials.checkerboard({
+					repeat: 100
+				})
+			);
+			obj.name = 'floor';
+	
+			obj.receiveShadow = true;
+	
+			parent.add(obj);
+	
+			return obj;
+		}
+	
+		return floor;
+	}());
+
+/***/ },
+/* 25 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(32);
+	
+		return function image(parent, options) {
+			var geometry,
+				material,
+				mesh,
+				src,
+				tex;
+	
+			if (typeof options === 'string') {
+				src = options;
+			} else if (options) {
+				src = options.src;
+			}
+	
+			if (src) {
+				tex = materials.imageTexture(src, THREE.UVMapping, function (t, image) {
+					geometry.applyMatrix(new THREE.Matrix4().makeScale(1, image.naturalHeight / image.naturalWidth, 1));
+					material.map = tex;
+					material.visible = true;
+					mesh.visible = true;
+					parent.add(mesh);
+				});
+			}
+	
+			geometry = new THREE.PlaneBufferGeometry(1, 1, 8);
+	
+			material = new THREE.MeshBasicMaterial({
+				side: THREE.DoubleSide,
+				transparent: true,
+				map: tex
+			});
+	
+			mesh = new THREE.Mesh( geometry, material );
+	
+			mesh.visible = false;
+	
+			parent.add(mesh);
+	
+			return mesh;
+		};
+	}());
+
+/***/ },
+/* 26 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(32);
+	
+		return function panorama(parent, options) {
+			var geometry,
+				material,
+				mesh,
+				src,
+				tex;
+	
+			if (typeof options === 'string') {
+				src = options;
+			} else if (options) {
+				src = options.src;
+			}
+	
+			if (src) {
+				tex = materials.imageTexture(src, THREE.UVMapping);
+			}
+	
+			geometry = new THREE.SphereGeometry( 1000, 60, 60 );
+			geometry.applyMatrix( new THREE.Matrix4().makeScale( -1, 1, 1 ) );
+	
+			material = new THREE.MeshBasicMaterial({
+				side: THREE.DoubleSide,
+				transparent: true,
+				map: tex
+			});
+	
+			mesh = new THREE.Mesh( geometry, material );
+			mesh.rotation.set( 0, -90 * Math.PI / 180, 0 );
+	
+			mesh.name = 'panorama';
+	
+			parent.add(mesh);
+	
+			return mesh;
+		};
+	}());
+
+/***/ },
+/* 27 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(32),
+			TAU = Math.PI * 2,
+			HALF_PI = Math.PI / 2,
+	
+			distance = 400000,
+			scratchVector = new THREE.Vector3(),
+	
+			params = [
+				'luminance',
+				'turbidity',
+				'reileigh',
+				'mieCoefficient',
+				'mieDirectionalG'
+			];
+	
+		__webpack_require__(37);
+	
+		return function sky(parent, options) {
+			var obj = new THREE.Sky(),
+				self = this,
+				scene = parent,
+				light,
+				sunPosition,
+				azimuth = Math.PI / 6,
+				altitude = Math.PI / 6;
+	
+			function mod(x, y) {
+				return x - y * Math.floor(x / y);
+			}
+	
+			function update() {
+				var sinTheta,
+					cosTheta,
+					phi,
+					sinPhi,
+					cosPhi;
+	
+				sinTheta = Math.sin(altitude);
+				cosTheta = Math.cos(altitude);
+				phi = -HALF_PI - azimuth;
+				sinPhi = Math.sin(phi);
+				cosPhi = Math.cos(phi);
+	
+				sunPosition.set(
+					distance * cosPhi * cosTheta,
+					distance * sinTheta,
+					distance * sinPhi * cosTheta
+				);
+	
+				if (light) {
+					light.intensity = 1.5 * Math.max(0.0, 1.0 - Math.exp(-((Math.PI / 1.95 - Math.abs(HALF_PI - altitude)) / 1.5)));
+					light.position.copy(sunPosition).normalize().multiplyScalar(100);
+				}
+			}
+	
+			obj.mesh.name = 'sky';
+	
+			parent.add(obj.mesh);
+	
+			while (!(scene instanceof THREE.Scene) && scene.parent) {
+				scene = scene.parent;
+			}
+			light = scene.getObjectByName('directional-light');
+	
+			this.setOptions = function (options) {
+				var needUpdate = false,
+					altitude,
+					azimuth;
+	
+				if (options) {
+					params.forEach(function (param) {
+						var val;
+						if (param !== undefined) {
+							val = parseFloat(param);
+							if (!isNaN(val)) {
+								obj.uniforms[param].value = val;
+							}
+						}
+					});
+	
+					if (options.sunPosition instanceof THREE.Vector3) {
+						obj.uniforms.sunPosition.value.copy(options.sunPosition);
+					} else if (Array.isArray(options.sunPosition)) {
+						obj.uniforms.sunPosition.value.set(obj.uniforms.sunPosition.value, options.sunPosition);
+					} else {
+						self.altitude = options.altitude;
+						self.azimuth = options.azimuth;
+					}
+				}
+			};
+	
+			Object.defineProperty(this, 'azimuth', {
+				set: function (val) {
+					val = mod(parseFloat(val), TAU);
+					if (!isNaN(val) && val !== azimuth) {
+						azimuth = val;
+						update();
+					}
+				},
+				get: function () {
+					return azimuth;
+				}
+			});
+	
+			Object.defineProperty(this, 'altitude', {
+				set: function (val) {
+					val = mod(parseFloat(val), TAU);
+					if (!isNaN(val) && val !== altitude) {
+						altitude = val;
+						update();
+					}
+				},
+				get: function() {
+					return altitude;
+				}
+			});
+	
+			this.setAltitude = function (val) {
+				self.altitude = val;
+				return this;
+			};
+	
+			this.setAzimuth = function (val) {
+				self.azimuth = val;
+				return this;
+			};
+	
+			sunPosition = obj.uniforms.sunPosition.value;
+			update();
+	
+			this.setOptions(options);
+	
+			return obj.mesh;
+		};
+	}());
+
+/***/ },
+/* 28 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(32);
+	
+		__webpack_require__(38);
+	
+		return function snow(parent, options) {
+			var snowObj,
+				empty,
+				update;
+	
+			snowObj = new THREE.Snow();
+			empty = new THREE.Object3D();
+			empty.name = 'snow';
+	
+			empty.add(snowObj.particles);
+	
+			parent.add(empty);
+	
+			update = this.update;
+			this.update = function (time) {
+				snowObj.time(time * 0.04);
+				update();
+			};
+	
+			return empty;
+		};
+	}());
+
+/***/ },
+/* 29 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(32);
+	
+		__webpack_require__(36);
+	
+		return function sound(parent, options) {
+			var obj,
+				src,
+				listener,
+				scene = parent;
+	
+			if (typeof options === 'string' || Array.isArray(options)) {
+				src = options;
+			} else if (options) {
+				src = options.src;
+			}
+	
+			while (!(scene instanceof THREE.Scene) && scene.parent) {
+				scene = scene.parent;
+			}
+	
+			listener = scene.getObjectByName('audio-listener');
+			obj = new THREE.Audio(listener);
+			// obj.setLoop(true);
+			obj.load(src);
+	
+			this.start = obj.start.bind(obj);
+			this.volume = obj.volume.bind(obj);
+	
+			parent.add(obj);
+	
+			return obj;
+		};
+	}());
+
+/***/ },
+/* 30 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(32);
+	
+		return function box(parent, options) {
+			var geometry,
+				mesh;
+	
+			geometry = new THREE.SphereGeometry(
+				options.radius === undefined ? 0.5 : options.radius,
+				options.widthSegments === undefined ? 16 : options.widthSegments,
+				options.heightSegments === undefined ? 12 : options.heightSegments,
+				options.phiStart,
+				options.phiLength,
+				options.thetaStart,
+				options.thetaLength
+			);
+			mesh = new THREE.Mesh(geometry, materials.standard());
+			mesh.name = 'sphere';
+	
+			parent.add(mesh);
+	
+			return mesh;
+		};
+	}());
+
+/***/ },
+/* 31 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(32);
+	
+		return function torus(parent, options) {
+			var geometry,
+				mesh;
+	
+			geometry = new THREE.TorusGeometry(
+				options.radius === undefined ? 0.5 : options.radius,
+				options.tube === undefined ? 0.125 : options.tube,
+				options.radialSegments === undefined ? 12 : options.radialSegments,
+				options.tubularSegments === undefined ? 16 : options.tubularSegments,
+				options.arc
+			);
+			mesh = new THREE.Mesh(geometry, materials.standard());
+			mesh.name = 'torus';
+	
+			parent.add(mesh);
+	
+			return mesh;
+		};
+	}());
+
+/***/ },
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var self = self || {};// File:src/Three.js
@@ -36045,7 +38830,40 @@
 
 
 /***/ },
-/* 8 */
+/* 33 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var map = {
+		"./asphalt.jpg": 40,
+		"./brick-tiles.jpg": 41,
+		"./bricks-normal.jpg": 42,
+		"./bricks-specular.jpg": 43,
+		"./bricks.jpg": 44,
+		"./checkerboard.png": 45,
+		"./grass.jpg": 46,
+		"./metal-floor.jpg": 47,
+		"./metal.jpg": 48,
+		"./stone.jpg": 49,
+		"./tiles.jpg": 50,
+		"./weathered-wood.jpg": 51,
+		"./wood.jpg": 52
+	};
+	function webpackContext(req) {
+		return __webpack_require__(webpackContextResolve(req));
+	};
+	function webpackContextResolve(req) {
+		return map[req] || (function() { throw new Error("Cannot find module '" + req + "'.") }());
+	};
+	webpackContext.keys = function webpackContextKeys() {
+		return Object.keys(map);
+	};
+	webpackContext.resolve = webpackContextResolve;
+	module.exports = webpackContext;
+	webpackContext.id = 33;
+
+
+/***/ },
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -36056,10 +38874,10 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var arrayEach = __webpack_require__(9),
-	    baseEach = __webpack_require__(10),
-	    bindCallback = __webpack_require__(15),
-	    isArray = __webpack_require__(13);
+	var arrayEach = __webpack_require__(54),
+	    baseEach = __webpack_require__(55),
+	    bindCallback = __webpack_require__(56),
+	    isArray = __webpack_require__(57);
 	
 	/**
 	 * Iterates over elements of `collection` invoking `iteratee` for each element.
@@ -36097,7 +38915,7 @@
 
 
 /***/ },
-/* 9 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -36108,876 +38926,8 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	
-	/**
-	 * A specialized version of `_.forEach` for arrays without support for callback
-	 * shorthands or `this` binding.
-	 *
-	 * @private
-	 * @param {Array} array The array to iterate over.
-	 * @param {Function} iteratee The function invoked per iteration.
-	 * @returns {Array} Returns `array`.
-	 */
-	function arrayEach(array, iteratee) {
-	  var index = -1,
-	      length = array.length;
-	
-	  while (++index < length) {
-	    if (iteratee(array[index], index, array) === false) {
-	      break;
-	    }
-	  }
-	  return array;
-	}
-	
-	module.exports = arrayEach;
-
-
-/***/ },
-/* 10 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var keys = __webpack_require__(11);
-	
-	/**
-	 * Used as the maximum length of an array-like value.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
-	 * for more details.
-	 */
-	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
-	
-	/**
-	 * The base implementation of `_.forEach` without support for callback
-	 * shorthands and `this` binding.
-	 *
-	 * @private
-	 * @param {Array|Object|string} collection The collection to iterate over.
-	 * @param {Function} iteratee The function invoked per iteration.
-	 * @returns {Array|Object|string} Returns `collection`.
-	 */
-	function baseEach(collection, iteratee) {
-	  var length = collection ? collection.length : 0;
-	  if (!isLength(length)) {
-	    return baseForOwn(collection, iteratee);
-	  }
-	  var index = -1,
-	      iterable = toObject(collection);
-	
-	  while (++index < length) {
-	    if (iteratee(iterable[index], index, iterable) === false) {
-	      break;
-	    }
-	  }
-	  return collection;
-	}
-	
-	/**
-	 * The base implementation of `baseForIn` and `baseForOwn` which iterates
-	 * over `object` properties returned by `keysFunc` invoking `iteratee` for
-	 * each property. Iterator functions may exit iteration early by explicitly
-	 * returning `false`.
-	 *
-	 * @private
-	 * @param {Object} object The object to iterate over.
-	 * @param {Function} iteratee The function invoked per iteration.
-	 * @param {Function} keysFunc The function to get the keys of `object`.
-	 * @returns {Object} Returns `object`.
-	 */
-	function baseFor(object, iteratee, keysFunc) {
-	  var index = -1,
-	      iterable = toObject(object),
-	      props = keysFunc(object),
-	      length = props.length;
-	
-	  while (++index < length) {
-	    var key = props[index];
-	    if (iteratee(iterable[key], key, iterable) === false) {
-	      break;
-	    }
-	  }
-	  return object;
-	}
-	
-	/**
-	 * The base implementation of `_.forOwn` without support for callback
-	 * shorthands and `this` binding.
-	 *
-	 * @private
-	 * @param {Object} object The object to iterate over.
-	 * @param {Function} iteratee The function invoked per iteration.
-	 * @returns {Object} Returns `object`.
-	 */
-	function baseForOwn(object, iteratee) {
-	  return baseFor(object, iteratee, keys);
-	}
-	
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * Converts `value` to an object if it is not one.
-	 *
-	 * @private
-	 * @param {*} value The value to process.
-	 * @returns {Object} Returns the object.
-	 */
-	function toObject(value) {
-	  return isObject(value) ? value : Object(value);
-	}
-	
-	/**
-	 * Checks if `value` is the language type of `Object`.
-	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
-	 *
-	 * **Note:** See the [ES5 spec](https://es5.github.io/#x8) for more details.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
-	 * @example
-	 *
-	 * _.isObject({});
-	 * // => true
-	 *
-	 * _.isObject([1, 2, 3]);
-	 * // => true
-	 *
-	 * _.isObject(1);
-	 * // => false
-	 */
-	function isObject(value) {
-	  // Avoid a V8 JIT bug in Chrome 19-20.
-	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
-	  var type = typeof value;
-	  return type == 'function' || (value && type == 'object') || false;
-	}
-	
-	module.exports = baseEach;
-
-
-/***/ },
-/* 11 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(global) {/**
-	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var isArguments = __webpack_require__(12),
-	    isArray = __webpack_require__(13),
-	    isNative = __webpack_require__(14);
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/** Used to detect DOM support. */
-	var document = (document = global.window) && document.document;
-	
-	/** Used to check objects for own properties. */
-	var hasOwnProperty = objectProto.hasOwnProperty;
-	
-	/** Native method references. */
-	var propertyIsEnumerable = objectProto.propertyIsEnumerable;
-	
-	/* Native method references for those with the same name as other `lodash` methods. */
-	var nativeKeys = isNative(nativeKeys = Object.keys) && nativeKeys;
-	
-	/**
-	 * Used as the maximum length of an array-like value.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
-	 * for more details.
-	 */
-	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
-	
-	/**
-	 * An object environment feature flags.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @type Object
-	 */
-	var support = {};
-	
-	(function(x) {
-	
-	  /**
-	   * Detect if the DOM is supported.
-	   *
-	   * @memberOf _.support
-	   * @type boolean
-	   */
-	  try {
-	    support.dom = document.createDocumentFragment().nodeType === 11;
-	  } catch(e) {
-	    support.dom = false;
-	  }
-	
-	  /**
-	   * Detect if `arguments` object indexes are non-enumerable.
-	   *
-	   * In Firefox < 4, IE < 9, PhantomJS, and Safari < 5.1 `arguments` object
-	   * indexes are non-enumerable. Chrome < 25 and Node.js < 0.11.0 treat
-	   * `arguments` object indexes as non-enumerable and fail `hasOwnProperty`
-	   * checks for indexes that exceed their function's formal parameters with
-	   * associated values of `0`.
-	   *
-	   * @memberOf _.support
-	   * @type boolean
-	   */
-	  try {
-	    support.nonEnumArgs = !propertyIsEnumerable.call(arguments, 1);
-	  } catch(e) {
-	    support.nonEnumArgs = true;
-	  }
-	}(0, 0));
-	
-	/**
-	 * Checks if `value` is a valid array-like index.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
-	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
-	 */
-	function isIndex(value, length) {
-	  value = +value;
-	  length = length == null ? MAX_SAFE_INTEGER : length;
-	  return value > -1 && value % 1 == 0 && value < length;
-	}
-	
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * A fallback implementation of `Object.keys` which creates an array of the
-	 * own enumerable property names of `object`.
-	 *
-	 * @private
-	 * @param {Object} object The object to inspect.
-	 * @returns {Array} Returns the array of property names.
-	 */
-	function shimKeys(object) {
-	  var props = keysIn(object),
-	      propsLength = props.length,
-	      length = propsLength && object.length;
-	
-	  var allowIndexes = length && isLength(length) &&
-	    (isArray(object) || (support.nonEnumArgs && isArguments(object)));
-	
-	  var index = -1,
-	      result = [];
-	
-	  while (++index < propsLength) {
-	    var key = props[index];
-	    if ((allowIndexes && isIndex(key, length)) || hasOwnProperty.call(object, key)) {
-	      result.push(key);
-	    }
-	  }
-	  return result;
-	}
-	
-	/**
-	 * Checks if `value` is the language type of `Object`.
-	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
-	 *
-	 * **Note:** See the [ES5 spec](https://es5.github.io/#x8) for more details.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
-	 * @example
-	 *
-	 * _.isObject({});
-	 * // => true
-	 *
-	 * _.isObject([1, 2, 3]);
-	 * // => true
-	 *
-	 * _.isObject(1);
-	 * // => false
-	 */
-	function isObject(value) {
-	  // Avoid a V8 JIT bug in Chrome 19-20.
-	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
-	  var type = typeof value;
-	  return type == 'function' || (value && type == 'object') || false;
-	}
-	
-	/**
-	 * Creates an array of the own enumerable property names of `object`.
-	 *
-	 * **Note:** Non-object values are coerced to objects. See the
-	 * [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.keys)
-	 * for more details.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Object
-	 * @param {Object} object The object to inspect.
-	 * @returns {Array} Returns the array of property names.
-	 * @example
-	 *
-	 * function Foo() {
-	 *   this.a = 1;
-	 *   this.b = 2;
-	 * }
-	 *
-	 * Foo.prototype.c = 3;
-	 *
-	 * _.keys(new Foo);
-	 * // => ['a', 'b'] (iteration order is not guaranteed)
-	 *
-	 * _.keys('hi');
-	 * // => ['0', '1']
-	 */
-	var keys = !nativeKeys ? shimKeys : function(object) {
-	  if (object) {
-	    var Ctor = object.constructor,
-	        length = object.length;
-	  }
-	  if ((typeof Ctor == 'function' && Ctor.prototype === object) ||
-	     (typeof object != 'function' && (length && isLength(length)))) {
-	    return shimKeys(object);
-	  }
-	  return isObject(object) ? nativeKeys(object) : [];
-	};
-	
-	/**
-	 * Creates an array of the own and inherited enumerable property names of `object`.
-	 *
-	 * **Note:** Non-object values are coerced to objects.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Object
-	 * @param {Object} object The object to inspect.
-	 * @returns {Array} Returns the array of property names.
-	 * @example
-	 *
-	 * function Foo() {
-	 *   this.a = 1;
-	 *   this.b = 2;
-	 * }
-	 *
-	 * Foo.prototype.c = 3;
-	 *
-	 * _.keysIn(new Foo);
-	 * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
-	 */
-	function keysIn(object) {
-	  if (object == null) {
-	    return [];
-	  }
-	  if (!isObject(object)) {
-	    object = Object(object);
-	  }
-	  var length = object.length;
-	  length = (length && isLength(length) &&
-	    (isArray(object) || (support.nonEnumArgs && isArguments(object))) && length) || 0;
-	
-	  var Ctor = object.constructor,
-	      index = -1,
-	      isProto = typeof Ctor == 'function' && Ctor.prototype == object,
-	      result = Array(length),
-	      skipIndexes = length > 0;
-	
-	  while (++index < length) {
-	    result[index] = (index + '');
-	  }
-	  for (var key in object) {
-	    if (!(skipIndexes && isIndex(key, length)) &&
-	        !(key == 'constructor' && (isProto || !hasOwnProperty.call(object, key)))) {
-	      result.push(key);
-	    }
-	  }
-	  return result;
-	}
-	
-	module.exports = keys;
-	
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
-
-/***/ },
-/* 12 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/** `Object#toString` result references. */
-	var argsTag = '[object Arguments]';
-	
-	/**
-	 * Checks if `value` is object-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 */
-	function isObjectLike(value) {
-	  return (value && typeof value == 'object') || false;
-	}
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/**
-	 * Used to resolve the `toStringTag` of values.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
-	 * for more details.
-	 */
-	var objToString = objectProto.toString;
-	
-	/**
-	 * Used as the maximum length of an array-like value.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
-	 * for more details.
-	 */
-	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
-	
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * Checks if `value` is classified as an `arguments` object.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
-	 * @example
-	 *
-	 * (function() { return _.isArguments(arguments); })();
-	 * // => true
-	 *
-	 * _.isArguments([1, 2, 3]);
-	 * // => false
-	 */
-	function isArguments(value) {
-	  var length = isObjectLike(value) ? value.length : undefined;
-	  return (isLength(length) && objToString.call(value) == argsTag) || false;
-	}
-	
-	module.exports = isArguments;
-
-
-/***/ },
-/* 13 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/** `Object#toString` result references. */
-	var arrayTag = '[object Array]',
-	    funcTag = '[object Function]';
-	
-	/** Used to detect host constructors (Safari > 5). */
-	var reHostCtor = /^\[object .+?Constructor\]$/;
-	
-	/**
-	 * Used to match `RegExp` special characters.
-	 * See this [article on `RegExp` characters](http://www.regular-expressions.info/characters.html#special)
-	 * for more details.
-	 */
-	var reRegExpChars = /[.*+?^${}()|[\]\/\\]/g,
-	    reHasRegExpChars = RegExp(reRegExpChars.source);
-	
-	/**
-	 * Converts `value` to a string if it is not one. An empty string is returned
-	 * for `null` or `undefined` values.
-	 *
-	 * @private
-	 * @param {*} value The value to process.
-	 * @returns {string} Returns the string.
-	 */
-	function baseToString(value) {
-	  if (typeof value == 'string') {
-	    return value;
-	  }
-	  return value == null ? '' : (value + '');
-	}
-	
-	/**
-	 * Checks if `value` is object-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 */
-	function isObjectLike(value) {
-	  return (value && typeof value == 'object') || false;
-	}
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/** Used to resolve the decompiled source of functions. */
-	var fnToString = Function.prototype.toString;
-	
-	/**
-	 * Used to resolve the `toStringTag` of values.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
-	 * for more details.
-	 */
-	var objToString = objectProto.toString;
-	
-	/** Used to detect if a method is native. */
-	var reNative = RegExp('^' +
-	  escapeRegExp(objToString)
-	  .replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
-	);
-	
-	/* Native method references for those with the same name as other `lodash` methods. */
-	var nativeIsArray = isNative(nativeIsArray = Array.isArray) && nativeIsArray;
-	
-	/**
-	 * Used as the maximum length of an array-like value.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
-	 * for more details.
-	 */
-	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
-	
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * Checks if `value` is classified as an `Array` object.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
-	 * @example
-	 *
-	 * _.isArray([1, 2, 3]);
-	 * // => true
-	 *
-	 * (function() { return _.isArray(arguments); })();
-	 * // => false
-	 */
-	var isArray = nativeIsArray || function(value) {
-	  return (isObjectLike(value) && isLength(value.length) && objToString.call(value) == arrayTag) || false;
-	};
-	
-	/**
-	 * Checks if `value` is a native function.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
-	 * @example
-	 *
-	 * _.isNative(Array.prototype.push);
-	 * // => true
-	 *
-	 * _.isNative(_);
-	 * // => false
-	 */
-	function isNative(value) {
-	  if (value == null) {
-	    return false;
-	  }
-	  if (objToString.call(value) == funcTag) {
-	    return reNative.test(fnToString.call(value));
-	  }
-	  return (isObjectLike(value) && reHostCtor.test(value)) || false;
-	}
-	
-	/**
-	 * Escapes the `RegExp` special characters "\", "^", "$", ".", "|", "?", "*",
-	 * "+", "(", ")", "[", "]", "{" and "}" in `string`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category String
-	 * @param {string} [string=''] The string to escape.
-	 * @returns {string} Returns the escaped string.
-	 * @example
-	 *
-	 * _.escapeRegExp('[lodash](https://lodash.com/)');
-	 * // => '\[lodash\]\(https://lodash\.com/\)'
-	 */
-	function escapeRegExp(string) {
-	  string = baseToString(string);
-	  return (string && reHasRegExpChars.test(string))
-	    ? string.replace(reRegExpChars, '\\$&')
-	    : string;
-	}
-	
-	module.exports = isArray;
-
-
-/***/ },
-/* 14 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/** `Object#toString` result references. */
-	var funcTag = '[object Function]';
-	
-	/** Used to detect host constructors (Safari > 5). */
-	var reHostCtor = /^\[object .+?Constructor\]$/;
-	
-	/**
-	 * Used to match `RegExp` special characters.
-	 * See this [article on `RegExp` characters](http://www.regular-expressions.info/characters.html#special)
-	 * for more details.
-	 */
-	var reRegExpChars = /[.*+?^${}()|[\]\/\\]/g,
-	    reHasRegExpChars = RegExp(reRegExpChars.source);
-	
-	/**
-	 * Converts `value` to a string if it is not one. An empty string is returned
-	 * for `null` or `undefined` values.
-	 *
-	 * @private
-	 * @param {*} value The value to process.
-	 * @returns {string} Returns the string.
-	 */
-	function baseToString(value) {
-	  if (typeof value == 'string') {
-	    return value;
-	  }
-	  return value == null ? '' : (value + '');
-	}
-	
-	/**
-	 * Checks if `value` is object-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 */
-	function isObjectLike(value) {
-	  return (value && typeof value == 'object') || false;
-	}
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/** Used to resolve the decompiled source of functions. */
-	var fnToString = Function.prototype.toString;
-	
-	/**
-	 * Used to resolve the `toStringTag` of values.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
-	 * for more details.
-	 */
-	var objToString = objectProto.toString;
-	
-	/** Used to detect if a method is native. */
-	var reNative = RegExp('^' +
-	  escapeRegExp(objToString)
-	  .replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
-	);
-	
-	/**
-	 * Checks if `value` is a native function.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
-	 * @example
-	 *
-	 * _.isNative(Array.prototype.push);
-	 * // => true
-	 *
-	 * _.isNative(_);
-	 * // => false
-	 */
-	function isNative(value) {
-	  if (value == null) {
-	    return false;
-	  }
-	  if (objToString.call(value) == funcTag) {
-	    return reNative.test(fnToString.call(value));
-	  }
-	  return (isObjectLike(value) && reHostCtor.test(value)) || false;
-	}
-	
-	/**
-	 * Escapes the `RegExp` special characters "\", "^", "$", ".", "|", "?", "*",
-	 * "+", "(", ")", "[", "]", "{" and "}" in `string`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category String
-	 * @param {string} [string=''] The string to escape.
-	 * @returns {string} Returns the escaped string.
-	 * @example
-	 *
-	 * _.escapeRegExp('[lodash](https://lodash.com/)');
-	 * // => '\[lodash\]\(https://lodash\.com/\)'
-	 */
-	function escapeRegExp(string) {
-	  string = baseToString(string);
-	  return (string && reHasRegExpChars.test(string))
-	    ? string.replace(reRegExpChars, '\\$&')
-	    : string;
-	}
-	
-	module.exports = isNative;
-
-
-/***/ },
-/* 15 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/**
-	 * A specialized version of `baseCallback` which only supports `this` binding
-	 * and specifying the number of arguments to provide to `func`.
-	 *
-	 * @private
-	 * @param {Function} func The function to bind.
-	 * @param {*} thisArg The `this` binding of `func`.
-	 * @param {number} [argCount] The number of arguments to provide to `func`.
-	 * @returns {Function} Returns the callback.
-	 */
-	function bindCallback(func, thisArg, argCount) {
-	  if (typeof func != 'function') {
-	    return identity;
-	  }
-	  if (typeof thisArg == 'undefined') {
-	    return func;
-	  }
-	  switch (argCount) {
-	    case 1: return function(value) {
-	      return func.call(thisArg, value);
-	    };
-	    case 3: return function(value, index, collection) {
-	      return func.call(thisArg, value, index, collection);
-	    };
-	    case 4: return function(accumulator, value, index, collection) {
-	      return func.call(thisArg, accumulator, value, index, collection);
-	    };
-	    case 5: return function(value, other, key, object, source) {
-	      return func.call(thisArg, value, other, key, object, source);
-	    };
-	  }
-	  return function() {
-	    return func.apply(thisArg, arguments);
-	  };
-	}
-	
-	/**
-	 * This method returns the first argument provided to it.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Utility
-	 * @param {*} value Any value.
-	 * @returns {*} Returns `value`.
-	 * @example
-	 *
-	 * var object = { 'user': 'fred' };
-	 * _.identity(object) === object;
-	 * // => true
-	 */
-	function identity(value) {
-	  return value;
-	}
-	
-	module.exports = bindCallback;
-
-
-/***/ },
-/* 16 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var baseAssign = __webpack_require__(17),
-	    createAssigner = __webpack_require__(23);
+	var baseAssign = __webpack_require__(58),
+	    createAssigner = __webpack_require__(59);
 	
 	/**
 	 * Assigns own enumerable properties of source object(s) to the destination
@@ -37014,3829 +38964,11 @@
 
 
 /***/ },
-/* 17 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var baseCopy = __webpack_require__(18),
-	    keys = __webpack_require__(19);
-	
-	/**
-	 * The base implementation of `_.assign` without support for argument juggling,
-	 * multiple sources, and `this` binding `customizer` functions.
-	 *
-	 * @private
-	 * @param {Object} object The destination object.
-	 * @param {Object} source The source object.
-	 * @param {Function} [customizer] The function to customize assigning values.
-	 * @returns {Object} Returns the destination object.
-	 */
-	function baseAssign(object, source, customizer) {
-	  var props = keys(source);
-	  if (!customizer) {
-	    return baseCopy(source, object, props);
-	  }
-	  var index = -1,
-	      length = props.length
-	
-	  while (++index < length) {
-	    var key = props[index],
-	        value = object[key],
-	        result = customizer(value, source[key], key, object, source);
-	
-	    if ((result === result ? result !== value : value === value) ||
-	        (typeof value == 'undefined' && !(key in object))) {
-	      object[key] = result;
-	    }
-	  }
-	  return object;
-	}
-	
-	module.exports = baseAssign;
-
-
-/***/ },
-/* 18 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/**
-	 * Copies the properties of `source` to `object`.
-	 *
-	 * @private
-	 * @param {Object} source The object to copy properties from.
-	 * @param {Object} [object={}] The object to copy properties to.
-	 * @param {Array} props The property names to copy.
-	 * @returns {Object} Returns `object`.
-	 */
-	function baseCopy(source, object, props) {
-	  if (!props) {
-	    props = object;
-	    object = {};
-	  }
-	  var index = -1,
-	      length = props.length;
-	
-	  while (++index < length) {
-	    var key = props[index];
-	    object[key] = source[key];
-	  }
-	  return object;
-	}
-	
-	module.exports = baseCopy;
-
-
-/***/ },
-/* 19 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(global) {/**
-	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var isArguments = __webpack_require__(20),
-	    isArray = __webpack_require__(21),
-	    isNative = __webpack_require__(22);
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/** Used to detect DOM support. */
-	var document = (document = global.window) && document.document;
-	
-	/** Used to check objects for own properties. */
-	var hasOwnProperty = objectProto.hasOwnProperty;
-	
-	/** Native method references. */
-	var propertyIsEnumerable = objectProto.propertyIsEnumerable;
-	
-	/* Native method references for those with the same name as other `lodash` methods. */
-	var nativeKeys = isNative(nativeKeys = Object.keys) && nativeKeys;
-	
-	/**
-	 * Used as the maximum length of an array-like value.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
-	 * for more details.
-	 */
-	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
-	
-	/**
-	 * An object environment feature flags.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @type Object
-	 */
-	var support = {};
-	
-	(function(x) {
-	
-	  /**
-	   * Detect if the DOM is supported.
-	   *
-	   * @memberOf _.support
-	   * @type boolean
-	   */
-	  try {
-	    support.dom = document.createDocumentFragment().nodeType === 11;
-	  } catch(e) {
-	    support.dom = false;
-	  }
-	
-	  /**
-	   * Detect if `arguments` object indexes are non-enumerable.
-	   *
-	   * In Firefox < 4, IE < 9, PhantomJS, and Safari < 5.1 `arguments` object
-	   * indexes are non-enumerable. Chrome < 25 and Node.js < 0.11.0 treat
-	   * `arguments` object indexes as non-enumerable and fail `hasOwnProperty`
-	   * checks for indexes that exceed their function's formal parameters with
-	   * associated values of `0`.
-	   *
-	   * @memberOf _.support
-	   * @type boolean
-	   */
-	  try {
-	    support.nonEnumArgs = !propertyIsEnumerable.call(arguments, 1);
-	  } catch(e) {
-	    support.nonEnumArgs = true;
-	  }
-	}(0, 0));
-	
-	/**
-	 * Checks if `value` is a valid array-like index.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
-	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
-	 */
-	function isIndex(value, length) {
-	  value = +value;
-	  length = length == null ? MAX_SAFE_INTEGER : length;
-	  return value > -1 && value % 1 == 0 && value < length;
-	}
-	
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * A fallback implementation of `Object.keys` which creates an array of the
-	 * own enumerable property names of `object`.
-	 *
-	 * @private
-	 * @param {Object} object The object to inspect.
-	 * @returns {Array} Returns the array of property names.
-	 */
-	function shimKeys(object) {
-	  var props = keysIn(object),
-	      propsLength = props.length,
-	      length = propsLength && object.length;
-	
-	  var allowIndexes = length && isLength(length) &&
-	    (isArray(object) || (support.nonEnumArgs && isArguments(object)));
-	
-	  var index = -1,
-	      result = [];
-	
-	  while (++index < propsLength) {
-	    var key = props[index];
-	    if ((allowIndexes && isIndex(key, length)) || hasOwnProperty.call(object, key)) {
-	      result.push(key);
-	    }
-	  }
-	  return result;
-	}
-	
-	/**
-	 * Checks if `value` is the language type of `Object`.
-	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
-	 *
-	 * **Note:** See the [ES5 spec](https://es5.github.io/#x8) for more details.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
-	 * @example
-	 *
-	 * _.isObject({});
-	 * // => true
-	 *
-	 * _.isObject([1, 2, 3]);
-	 * // => true
-	 *
-	 * _.isObject(1);
-	 * // => false
-	 */
-	function isObject(value) {
-	  // Avoid a V8 JIT bug in Chrome 19-20.
-	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
-	  var type = typeof value;
-	  return type == 'function' || (value && type == 'object') || false;
-	}
-	
-	/**
-	 * Creates an array of the own enumerable property names of `object`.
-	 *
-	 * **Note:** Non-object values are coerced to objects. See the
-	 * [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.keys)
-	 * for more details.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Object
-	 * @param {Object} object The object to inspect.
-	 * @returns {Array} Returns the array of property names.
-	 * @example
-	 *
-	 * function Foo() {
-	 *   this.a = 1;
-	 *   this.b = 2;
-	 * }
-	 *
-	 * Foo.prototype.c = 3;
-	 *
-	 * _.keys(new Foo);
-	 * // => ['a', 'b'] (iteration order is not guaranteed)
-	 *
-	 * _.keys('hi');
-	 * // => ['0', '1']
-	 */
-	var keys = !nativeKeys ? shimKeys : function(object) {
-	  if (object) {
-	    var Ctor = object.constructor,
-	        length = object.length;
-	  }
-	  if ((typeof Ctor == 'function' && Ctor.prototype === object) ||
-	     (typeof object != 'function' && (length && isLength(length)))) {
-	    return shimKeys(object);
-	  }
-	  return isObject(object) ? nativeKeys(object) : [];
-	};
-	
-	/**
-	 * Creates an array of the own and inherited enumerable property names of `object`.
-	 *
-	 * **Note:** Non-object values are coerced to objects.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Object
-	 * @param {Object} object The object to inspect.
-	 * @returns {Array} Returns the array of property names.
-	 * @example
-	 *
-	 * function Foo() {
-	 *   this.a = 1;
-	 *   this.b = 2;
-	 * }
-	 *
-	 * Foo.prototype.c = 3;
-	 *
-	 * _.keysIn(new Foo);
-	 * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
-	 */
-	function keysIn(object) {
-	  if (object == null) {
-	    return [];
-	  }
-	  if (!isObject(object)) {
-	    object = Object(object);
-	  }
-	  var length = object.length;
-	  length = (length && isLength(length) &&
-	    (isArray(object) || (support.nonEnumArgs && isArguments(object))) && length) || 0;
-	
-	  var Ctor = object.constructor,
-	      index = -1,
-	      isProto = typeof Ctor == 'function' && Ctor.prototype == object,
-	      result = Array(length),
-	      skipIndexes = length > 0;
-	
-	  while (++index < length) {
-	    result[index] = (index + '');
-	  }
-	  for (var key in object) {
-	    if (!(skipIndexes && isIndex(key, length)) &&
-	        !(key == 'constructor' && (isProto || !hasOwnProperty.call(object, key)))) {
-	      result.push(key);
-	    }
-	  }
-	  return result;
-	}
-	
-	module.exports = keys;
-	
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
-
-/***/ },
-/* 20 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/** `Object#toString` result references. */
-	var argsTag = '[object Arguments]';
-	
-	/**
-	 * Checks if `value` is object-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 */
-	function isObjectLike(value) {
-	  return (value && typeof value == 'object') || false;
-	}
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/**
-	 * Used to resolve the `toStringTag` of values.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
-	 * for more details.
-	 */
-	var objToString = objectProto.toString;
-	
-	/**
-	 * Used as the maximum length of an array-like value.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
-	 * for more details.
-	 */
-	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
-	
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * Checks if `value` is classified as an `arguments` object.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
-	 * @example
-	 *
-	 * (function() { return _.isArguments(arguments); })();
-	 * // => true
-	 *
-	 * _.isArguments([1, 2, 3]);
-	 * // => false
-	 */
-	function isArguments(value) {
-	  var length = isObjectLike(value) ? value.length : undefined;
-	  return (isLength(length) && objToString.call(value) == argsTag) || false;
-	}
-	
-	module.exports = isArguments;
-
-
-/***/ },
-/* 21 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/** `Object#toString` result references. */
-	var arrayTag = '[object Array]',
-	    funcTag = '[object Function]';
-	
-	/** Used to detect host constructors (Safari > 5). */
-	var reHostCtor = /^\[object .+?Constructor\]$/;
-	
-	/**
-	 * Used to match `RegExp` special characters.
-	 * See this [article on `RegExp` characters](http://www.regular-expressions.info/characters.html#special)
-	 * for more details.
-	 */
-	var reRegExpChars = /[.*+?^${}()|[\]\/\\]/g,
-	    reHasRegExpChars = RegExp(reRegExpChars.source);
-	
-	/**
-	 * Converts `value` to a string if it is not one. An empty string is returned
-	 * for `null` or `undefined` values.
-	 *
-	 * @private
-	 * @param {*} value The value to process.
-	 * @returns {string} Returns the string.
-	 */
-	function baseToString(value) {
-	  if (typeof value == 'string') {
-	    return value;
-	  }
-	  return value == null ? '' : (value + '');
-	}
-	
-	/**
-	 * Checks if `value` is object-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 */
-	function isObjectLike(value) {
-	  return (value && typeof value == 'object') || false;
-	}
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/** Used to resolve the decompiled source of functions. */
-	var fnToString = Function.prototype.toString;
-	
-	/**
-	 * Used to resolve the `toStringTag` of values.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
-	 * for more details.
-	 */
-	var objToString = objectProto.toString;
-	
-	/** Used to detect if a method is native. */
-	var reNative = RegExp('^' +
-	  escapeRegExp(objToString)
-	  .replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
-	);
-	
-	/* Native method references for those with the same name as other `lodash` methods. */
-	var nativeIsArray = isNative(nativeIsArray = Array.isArray) && nativeIsArray;
-	
-	/**
-	 * Used as the maximum length of an array-like value.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
-	 * for more details.
-	 */
-	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
-	
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * Checks if `value` is classified as an `Array` object.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
-	 * @example
-	 *
-	 * _.isArray([1, 2, 3]);
-	 * // => true
-	 *
-	 * (function() { return _.isArray(arguments); })();
-	 * // => false
-	 */
-	var isArray = nativeIsArray || function(value) {
-	  return (isObjectLike(value) && isLength(value.length) && objToString.call(value) == arrayTag) || false;
-	};
-	
-	/**
-	 * Checks if `value` is a native function.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
-	 * @example
-	 *
-	 * _.isNative(Array.prototype.push);
-	 * // => true
-	 *
-	 * _.isNative(_);
-	 * // => false
-	 */
-	function isNative(value) {
-	  if (value == null) {
-	    return false;
-	  }
-	  if (objToString.call(value) == funcTag) {
-	    return reNative.test(fnToString.call(value));
-	  }
-	  return (isObjectLike(value) && reHostCtor.test(value)) || false;
-	}
-	
-	/**
-	 * Escapes the `RegExp` special characters "\", "^", "$", ".", "|", "?", "*",
-	 * "+", "(", ")", "[", "]", "{" and "}" in `string`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category String
-	 * @param {string} [string=''] The string to escape.
-	 * @returns {string} Returns the escaped string.
-	 * @example
-	 *
-	 * _.escapeRegExp('[lodash](https://lodash.com/)');
-	 * // => '\[lodash\]\(https://lodash\.com/\)'
-	 */
-	function escapeRegExp(string) {
-	  string = baseToString(string);
-	  return (string && reHasRegExpChars.test(string))
-	    ? string.replace(reRegExpChars, '\\$&')
-	    : string;
-	}
-	
-	module.exports = isArray;
-
-
-/***/ },
-/* 22 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/** `Object#toString` result references. */
-	var funcTag = '[object Function]';
-	
-	/** Used to detect host constructors (Safari > 5). */
-	var reHostCtor = /^\[object .+?Constructor\]$/;
-	
-	/**
-	 * Used to match `RegExp` special characters.
-	 * See this [article on `RegExp` characters](http://www.regular-expressions.info/characters.html#special)
-	 * for more details.
-	 */
-	var reRegExpChars = /[.*+?^${}()|[\]\/\\]/g,
-	    reHasRegExpChars = RegExp(reRegExpChars.source);
-	
-	/**
-	 * Converts `value` to a string if it is not one. An empty string is returned
-	 * for `null` or `undefined` values.
-	 *
-	 * @private
-	 * @param {*} value The value to process.
-	 * @returns {string} Returns the string.
-	 */
-	function baseToString(value) {
-	  if (typeof value == 'string') {
-	    return value;
-	  }
-	  return value == null ? '' : (value + '');
-	}
-	
-	/**
-	 * Checks if `value` is object-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 */
-	function isObjectLike(value) {
-	  return (value && typeof value == 'object') || false;
-	}
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/** Used to resolve the decompiled source of functions. */
-	var fnToString = Function.prototype.toString;
-	
-	/**
-	 * Used to resolve the `toStringTag` of values.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
-	 * for more details.
-	 */
-	var objToString = objectProto.toString;
-	
-	/** Used to detect if a method is native. */
-	var reNative = RegExp('^' +
-	  escapeRegExp(objToString)
-	  .replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
-	);
-	
-	/**
-	 * Checks if `value` is a native function.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
-	 * @example
-	 *
-	 * _.isNative(Array.prototype.push);
-	 * // => true
-	 *
-	 * _.isNative(_);
-	 * // => false
-	 */
-	function isNative(value) {
-	  if (value == null) {
-	    return false;
-	  }
-	  if (objToString.call(value) == funcTag) {
-	    return reNative.test(fnToString.call(value));
-	  }
-	  return (isObjectLike(value) && reHostCtor.test(value)) || false;
-	}
-	
-	/**
-	 * Escapes the `RegExp` special characters "\", "^", "$", ".", "|", "?", "*",
-	 * "+", "(", ")", "[", "]", "{" and "}" in `string`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category String
-	 * @param {string} [string=''] The string to escape.
-	 * @returns {string} Returns the escaped string.
-	 * @example
-	 *
-	 * _.escapeRegExp('[lodash](https://lodash.com/)');
-	 * // => '\[lodash\]\(https://lodash\.com/\)'
-	 */
-	function escapeRegExp(string) {
-	  string = baseToString(string);
-	  return (string && reHasRegExpChars.test(string))
-	    ? string.replace(reRegExpChars, '\\$&')
-	    : string;
-	}
-	
-	module.exports = isNative;
-
-
-/***/ },
-/* 23 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var bindCallback = __webpack_require__(24),
-	    isIterateeCall = __webpack_require__(25);
-	
-	/**
-	 * Creates a function that assigns properties of source object(s) to a given
-	 * destination object.
-	 *
-	 * @private
-	 * @param {Function} assigner The function to assign values.
-	 * @returns {Function} Returns the new assigner function.
-	 */
-	function createAssigner(assigner) {
-	  return function() {
-	    var length = arguments.length,
-	        object = arguments[0];
-	
-	    if (length < 2 || object == null) {
-	      return object;
-	    }
-	    if (length > 3 && isIterateeCall(arguments[1], arguments[2], arguments[3])) {
-	      length = 2;
-	    }
-	    // Juggle arguments.
-	    if (length > 3 && typeof arguments[length - 2] == 'function') {
-	      var customizer = bindCallback(arguments[--length - 1], arguments[length--], 5);
-	    } else if (length > 2 && typeof arguments[length - 1] == 'function') {
-	      customizer = arguments[--length];
-	    }
-	    var index = 0;
-	    while (++index < length) {
-	      var source = arguments[index];
-	      if (source) {
-	        assigner(object, source, customizer);
-	      }
-	    }
-	    return object;
-	  };
-	}
-	
-	module.exports = createAssigner;
-
-
-/***/ },
-/* 24 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/**
-	 * A specialized version of `baseCallback` which only supports `this` binding
-	 * and specifying the number of arguments to provide to `func`.
-	 *
-	 * @private
-	 * @param {Function} func The function to bind.
-	 * @param {*} thisArg The `this` binding of `func`.
-	 * @param {number} [argCount] The number of arguments to provide to `func`.
-	 * @returns {Function} Returns the callback.
-	 */
-	function bindCallback(func, thisArg, argCount) {
-	  if (typeof func != 'function') {
-	    return identity;
-	  }
-	  if (typeof thisArg == 'undefined') {
-	    return func;
-	  }
-	  switch (argCount) {
-	    case 1: return function(value) {
-	      return func.call(thisArg, value);
-	    };
-	    case 3: return function(value, index, collection) {
-	      return func.call(thisArg, value, index, collection);
-	    };
-	    case 4: return function(accumulator, value, index, collection) {
-	      return func.call(thisArg, accumulator, value, index, collection);
-	    };
-	    case 5: return function(value, other, key, object, source) {
-	      return func.call(thisArg, value, other, key, object, source);
-	    };
-	  }
-	  return function() {
-	    return func.apply(thisArg, arguments);
-	  };
-	}
-	
-	/**
-	 * This method returns the first argument provided to it.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Utility
-	 * @param {*} value Any value.
-	 * @returns {*} Returns `value`.
-	 * @example
-	 *
-	 * var object = { 'user': 'fred' };
-	 * _.identity(object) === object;
-	 * // => true
-	 */
-	function identity(value) {
-	  return value;
-	}
-	
-	module.exports = bindCallback;
-
-
-/***/ },
-/* 25 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/**
-	 * Used as the maximum length of an array-like value.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
-	 * for more details.
-	 */
-	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
-	
-	/**
-	 * Checks if `value` is a valid array-like index.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
-	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
-	 */
-	function isIndex(value, length) {
-	  value = +value;
-	  length = length == null ? MAX_SAFE_INTEGER : length;
-	  return value > -1 && value % 1 == 0 && value < length;
-	}
-	
-	/**
-	 * Checks if the provided arguments are from an iteratee call.
-	 *
-	 * @private
-	 * @param {*} value The potential iteratee value argument.
-	 * @param {*} index The potential iteratee index or key argument.
-	 * @param {*} object The potential iteratee object argument.
-	 * @returns {boolean} Returns `true` if the arguments are from an iteratee call, else `false`.
-	 */
-	function isIterateeCall(value, index, object) {
-	  if (!isObject(object)) {
-	    return false;
-	  }
-	  var type = typeof index;
-	  if (type == 'number') {
-	    var length = object.length,
-	        prereq = isLength(length) && isIndex(index, length);
-	  } else {
-	    prereq = type == 'string' && index in value;
-	  }
-	  return prereq && object[index] === value;
-	}
-	
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * Checks if `value` is the language type of `Object`.
-	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
-	 *
-	 * **Note:** See the [ES5 spec](https://es5.github.io/#x8) for more details.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
-	 * @example
-	 *
-	 * _.isObject({});
-	 * // => true
-	 *
-	 * _.isObject([1, 2, 3]);
-	 * // => true
-	 *
-	 * _.isObject(1);
-	 * // => false
-	 */
-	function isObject(value) {
-	  // Avoid a V8 JIT bug in Chrome 19-20.
-	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
-	  var type = typeof value;
-	  return type == 'function' || (value && type == 'object') || false;
-	}
-	
-	module.exports = isIterateeCall;
-
-
-/***/ },
-/* 26 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var map = {
-		"./asphalt.jpg": 54,
-		"./brick-tiles.jpg": 55,
-		"./bricks-normal.jpg": 56,
-		"./bricks-specular.jpg": 57,
-		"./bricks.jpg": 58,
-		"./checkerboard.png": 59,
-		"./grass.jpg": 60,
-		"./metal-floor.jpg": 61,
-		"./metal.jpg": 62,
-		"./stone.jpg": 63,
-		"./tiles.jpg": 64,
-		"./weathered-wood.jpg": 65,
-		"./wood.jpg": 66
-	};
-	function webpackContext(req) {
-		return __webpack_require__(webpackContextResolve(req));
-	};
-	function webpackContextResolve(req) {
-		return map[req] || (function() { throw new Error("Cannot find module '" + req + "'.") }());
-	};
-	webpackContext.keys = function webpackContextKeys() {
-		return Object.keys(map);
-	};
-	webpackContext.resolve = webpackContextResolve;
-	module.exports = webpackContext;
-	webpackContext.id = 26;
-
-
-/***/ },
-/* 27 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var	NEAR_DISTANCE = 3,
-			materials = __webpack_require__(6),
-			THREE = __webpack_require__(7),
-			eventEmitter = __webpack_require__(28),
-	
-			xAxis = new THREE.Vector3(1, 0, 0),
-			yAxis = new THREE.Vector3(0, 1, 0),
-			zAxis = new THREE.Vector3(0, 0, 1),
-	
-			scratchVector1 = new THREE.Vector3(),
-			scratchVector2 = new THREE.Vector3(),
-	
-			allObjects = window.WeakMap ? new WeakMap() : {};
-	
-		function distance(object, origin) {
-			var geometry;
-	
-			geometry = object.geometry;
-	
-			//assumes object world matrix has been updated
-			scratchVector1.setFromMatrixPosition(origin.matrixWorld);
-	
-			if (!geometry) {
-				//first convert to world coordinate
-				scratchVector2.setFromMatrixPosition(object.matrixWorld);
-				return scratchVector2.distanceTo(scratchVector1);
-			}
-	
-			geometry.computeBoundingBox();
-			object.worldToLocal(scratchVector1);
-			return object.geometry.boundingBox.distanceToPoint(scratchVector1);
-		}
-	
-		function VRObject(parent, creator, camera, options) {
-			var material,
-				object,
-				self = this,
-	
-				isNear = false,
-				isTarget = false,
-				raycaster;
-	
-			options = options || {};
-	
-			eventEmitter(this);
-	
-			if (camera) {
-				// raycaster = new THREE.Raycaster();
-	
-				this.update = function () {
-					var wasNear = isNear,
-						wasTarget = isTarget,
-	
-						intersects, intersect, i;
-	
-					isNear = self.distance < NEAR_DISTANCE;
-					if (isNear !== wasNear) {
-						if (isNear) {
-							self.emit('near', self);
-						} else {
-							self.emit('far', self);
-						}
-					}
-	
-					/*
-					raycaster.ray.origin.copy(origin);
-					raycaster.ray.direction.set(0, 0, 0.5).unproject(camera).sub(origin).normalize();
-	
-					//todo: consider whether this needs to be recursive. maybe a different event
-					intersects = raycaster.intersectObject(object);
-					if (intersects.length) {
-						isTarget = true;
-						if (!wasTarget) {
-							self.emit('target-on', intersects[0]);
-						}
-					} else if (wasTarget) {
-						self.emit('target-off');
-					}
-					*/
-				};
-			}
-	
-			//todo: get material from options
-			this.object = object = creator.call(this, parent, options);
-			this.parent = this.object.parent || parent;
-	
-			if (object instanceof THREE.Mesh) {
-				if (options.castShadow !== false) {
-					object.castShadow = true;
-				}
-				if (options.receiveShadow !== false) {
-					object.receiveShadow = true;
-				}
-			}
-	
-			if (options.name !== undefined) {
-				object.name = options.name;
-			}
-			self.name = object.name;
-	
-			if (allObjects.set) {
-				allObjects.set(object, this);
-				// allObjects.set(object.id, this);
-			} else {
-				allObjects[object.id] = this;
-			}
-	
-			object.position.set(
-				parseFloat(options.x) || 0,
-				parseFloat(options.y) || 0,
-				parseFloat(options.z) || 0
-			);
-	
-			this.setMaterial(options.material);
-	
-			if (options.color) {
-				material = object.material;
-				material.color = new THREE.Color(options.color);
-				material.ambient = material.color;
-			}
-	
-			['position', 'scale', 'rotation', 'quaternion', 'material'].forEach(function (prop) {
-				if (prop in object && !self[prop]) {
-					self[prop] = object[prop];
-				}
-			});
-	
-			Object.defineProperty(this, 'visible', {
-				set: function (val) {
-					self.object.visible = !!val;
-				},
-				get: function () {
-					return self.object.visible;
-				}
-			});
-	
-			Object.defineProperty(this, 'distance', {
-				get: function () {
-					return distance(self.object, camera || parent);
-				}
-			});
-		}
-	
-		VRObject.prototype.hide = function () {
-			this.object.visible = false;
-			return this;
-		};
-	
-		VRObject.prototype.show = function () {
-			this.object.visible = true;
-			return this;
-		};
-	
-		VRObject.prototype.moveTo = function (x, y, z) {
-			var position = this.object.position;
-	
-			x = !isNaN(x) ? x : position.x;
-			y = !isNaN(y) ? y : position.y;
-			z = !isNaN(z) ? z : position.z;
-	
-			position.set(x, y, z);
-	
-			return this;
-		};
-	
-		VRObject.prototype.moveX = function (distance) {
-			this.object.translateX(distance);
-			return this;
-		};
-	
-		VRObject.prototype.moveY = function (distance) {
-			this.object.translateY(distance);
-			return this;
-		};
-		VRObject.prototype.moveUp = VRObject.prototype.moveY;
-	
-		VRObject.prototype.moveZ = function (distance) {
-			this.object.translateZ(distance);
-			return this;
-		};
-	
-		VRObject.prototype.rotateX = function (angle) {
-			this.object.rotateOnAxis(xAxis, angle);
-			return this;
-		};
-	
-		VRObject.prototype.rotateY = function (angle) {
-			this.object.rotateOnAxis(yAxis, angle);
-			return this;
-		};
-	
-		VRObject.prototype.rotateZ = function (angle) {
-			this.object.rotateOnAxis(zAxis, angle);
-			return this;
-		};
-	
-		VRObject.prototype.setScale = function (x, y, z) {
-			var scale = this.object.scale;
-	
-			if (x !== undefined && !isNaN(x)) {
-				if (y === undefined && z === undefined) {
-					y = z = x;
-				} else {
-					x = scale.x;
-				}
-			}
-	
-			x = !isNaN(x) ? x : scale.x;
-			y = !isNaN(y) ? y : scale.y;
-			z = !isNaN(z) ? z : scale.z;
-	
-			scale.set(x, y, z);
-	
-			return this;
-		};
-	
-		VRObject.prototype.setMaterial = function (material, options) {
-			if (material && this.object instanceof THREE.Mesh) {
-				if (typeof material === 'function') {
-					material = material();
-				} else if (typeof material === 'string' && materials[material]) {
-					material = materials[material](options);
-				} else if (material && !material instanceof THREE.Material && typeof material !== 'number') {
-					try {
-						material = materials(material);
-					} catch (e) {}
-				}
-				this.object.material = material || this.object.material;
-			}
-	
-			return this;
-		};
-	
-		VRObject.prototype.update = function () {};
-	
-		VRObject.repeat = function (count, options) {
-			var i,
-				change = false,
-				lastObject = this,
-				currentPosition = new THREE.Vector3(),
-				deltaPosition = new THREE.Vector3(),
-				currentQuaternion = new THREE.Quaternion(),
-				deltaQuaternion = new THREE.Quaternion();
-	
-			if (!options) {
-				return;
-			}
-	
-			if (options.offset) {}
-	
-			for (i = 0; i < count; i++) {
-	
-			}
-		};
-	
-		VRObject.findObject = function (object) {
-			if (object instanceof VRObject) {
-				return object;
-			}
-	
-			if (object && object instanceof THREE.Object3D) {
-				if (allObjects.get) {
-					return allObjects.get(object);
-				}
-	
-				return allObjects[object.id];
-			}
-	
-			// if (typeof object === 'number') {
-			// 	return allObjects[object];
-			// }
-		};
-	
-		return VRObject;
-	
-	}());
-
-/***/ },
-/* 28 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var d        = __webpack_require__(29)
-	  , callable = __webpack_require__(42)
-	
-	  , apply = Function.prototype.apply, call = Function.prototype.call
-	  , create = Object.create, defineProperty = Object.defineProperty
-	  , defineProperties = Object.defineProperties
-	  , hasOwnProperty = Object.prototype.hasOwnProperty
-	  , descriptor = { configurable: true, enumerable: false, writable: true }
-	
-	  , on, once, off, emit, methods, descriptors, base;
-	
-	on = function (type, listener) {
-		var data;
-	
-		callable(listener);
-	
-		if (!hasOwnProperty.call(this, '__ee__')) {
-			data = descriptor.value = create(null);
-			defineProperty(this, '__ee__', descriptor);
-			descriptor.value = null;
-		} else {
-			data = this.__ee__;
-		}
-		if (!data[type]) data[type] = listener;
-		else if (typeof data[type] === 'object') data[type].push(listener);
-		else data[type] = [data[type], listener];
-	
-		return this;
-	};
-	
-	once = function (type, listener) {
-		var once, self;
-	
-		callable(listener);
-		self = this;
-		on.call(this, type, once = function () {
-			off.call(self, type, once);
-			apply.call(listener, this, arguments);
-		});
-	
-		once.__eeOnceListener__ = listener;
-		return this;
-	};
-	
-	off = function (type, listener) {
-		var data, listeners, candidate, i;
-	
-		callable(listener);
-	
-		if (!hasOwnProperty.call(this, '__ee__')) return this;
-		data = this.__ee__;
-		if (!data[type]) return this;
-		listeners = data[type];
-	
-		if (typeof listeners === 'object') {
-			for (i = 0; (candidate = listeners[i]); ++i) {
-				if ((candidate === listener) ||
-						(candidate.__eeOnceListener__ === listener)) {
-					if (listeners.length === 2) data[type] = listeners[i ? 0 : 1];
-					else listeners.splice(i, 1);
-				}
-			}
-		} else {
-			if ((listeners === listener) ||
-					(listeners.__eeOnceListener__ === listener)) {
-				delete data[type];
-			}
-		}
-	
-		return this;
-	};
-	
-	emit = function (type) {
-		var i, l, listener, listeners, args;
-	
-		if (!hasOwnProperty.call(this, '__ee__')) return;
-		listeners = this.__ee__[type];
-		if (!listeners) return;
-	
-		if (typeof listeners === 'object') {
-			l = arguments.length;
-			args = new Array(l - 1);
-			for (i = 1; i < l; ++i) args[i - 1] = arguments[i];
-	
-			listeners = listeners.slice();
-			for (i = 0; (listener = listeners[i]); ++i) {
-				apply.call(listener, this, args);
-			}
-		} else {
-			switch (arguments.length) {
-			case 1:
-				call.call(listeners, this);
-				break;
-			case 2:
-				call.call(listeners, this, arguments[1]);
-				break;
-			case 3:
-				call.call(listeners, this, arguments[1], arguments[2]);
-				break;
-			default:
-				l = arguments.length;
-				args = new Array(l - 1);
-				for (i = 1; i < l; ++i) {
-					args[i - 1] = arguments[i];
-				}
-				apply.call(listeners, this, args);
-			}
-		}
-	};
-	
-	methods = {
-		on: on,
-		once: once,
-		off: off,
-		emit: emit
-	};
-	
-	descriptors = {
-		on: d(on),
-		once: d(once),
-		off: d(off),
-		emit: d(emit)
-	};
-	
-	base = defineProperties({}, descriptors);
-	
-	module.exports = exports = function (o) {
-		return (o == null) ? create(base) : defineProperties(Object(o), descriptors);
-	};
-	exports.methods = methods;
-
-
-/***/ },
-/* 29 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var assign        = __webpack_require__(30)
-	  , normalizeOpts = __webpack_require__(37)
-	  , isCallable    = __webpack_require__(38)
-	  , contains      = __webpack_require__(39)
-	
-	  , d;
-	
-	d = module.exports = function (dscr, value/*, options*/) {
-		var c, e, w, options, desc;
-		if ((arguments.length < 2) || (typeof dscr !== 'string')) {
-			options = value;
-			value = dscr;
-			dscr = null;
-		} else {
-			options = arguments[2];
-		}
-		if (dscr == null) {
-			c = w = true;
-			e = false;
-		} else {
-			c = contains.call(dscr, 'c');
-			e = contains.call(dscr, 'e');
-			w = contains.call(dscr, 'w');
-		}
-	
-		desc = { value: value, configurable: c, enumerable: e, writable: w };
-		return !options ? desc : assign(normalizeOpts(options), desc);
-	};
-	
-	d.gs = function (dscr, get, set/*, options*/) {
-		var c, e, options, desc;
-		if (typeof dscr !== 'string') {
-			options = set;
-			set = get;
-			get = dscr;
-			dscr = null;
-		} else {
-			options = arguments[3];
-		}
-		if (get == null) {
-			get = undefined;
-		} else if (!isCallable(get)) {
-			options = get;
-			get = set = undefined;
-		} else if (set == null) {
-			set = undefined;
-		} else if (!isCallable(set)) {
-			options = set;
-			set = undefined;
-		}
-		if (dscr == null) {
-			c = true;
-			e = false;
-		} else {
-			c = contains.call(dscr, 'c');
-			e = contains.call(dscr, 'e');
-		}
-	
-		desc = { get: get, set: set, configurable: c, enumerable: e };
-		return !options ? desc : assign(normalizeOpts(options), desc);
-	};
-
-
-/***/ },
-/* 30 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = __webpack_require__(31)()
-		? Object.assign
-		: __webpack_require__(32);
-
-
-/***/ },
-/* 31 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = function () {
-		var assign = Object.assign, obj;
-		if (typeof assign !== 'function') return false;
-		obj = { foo: 'raz' };
-		assign(obj, { bar: 'dwa' }, { trzy: 'trzy' });
-		return (obj.foo + obj.bar + obj.trzy) === 'razdwatrzy';
-	};
-
-
-/***/ },
-/* 32 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var keys  = __webpack_require__(33)
-	  , value = __webpack_require__(36)
-	
-	  , max = Math.max;
-	
-	module.exports = function (dest, src/*, …srcn*/) {
-		var error, i, l = max(arguments.length, 2), assign;
-		dest = Object(value(dest));
-		assign = function (key) {
-			try { dest[key] = src[key]; } catch (e) {
-				if (!error) error = e;
-			}
-		};
-		for (i = 1; i < l; ++i) {
-			src = arguments[i];
-			keys(src).forEach(assign);
-		}
-		if (error !== undefined) throw error;
-		return dest;
-	};
-
-
-/***/ },
-/* 33 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = __webpack_require__(34)()
-		? Object.keys
-		: __webpack_require__(35);
-
-
-/***/ },
-/* 34 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = function () {
-		try {
-			Object.keys('primitive');
-			return true;
-		} catch (e) { return false; }
-	};
-
-
-/***/ },
-/* 35 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var keys = Object.keys;
-	
-	module.exports = function (object) {
-		return keys(object == null ? object : Object(object));
-	};
-
-
-/***/ },
 /* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
-	
-	module.exports = function (value) {
-		if (value == null) throw new TypeError("Cannot use null or undefined");
-		return value;
-	};
-
-
-/***/ },
-/* 37 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var assign = __webpack_require__(30)
-	
-	  , forEach = Array.prototype.forEach
-	  , create = Object.create, getPrototypeOf = Object.getPrototypeOf
-	
-	  , process;
-	
-	process = function (src, obj) {
-		var proto = getPrototypeOf(src);
-		return assign(proto ? process(proto, obj) : obj, src);
-	};
-	
-	module.exports = function (options/*, …options*/) {
-		var result = create(null);
-		forEach.call(arguments, function (options) {
-			if (options == null) return;
-			process(Object(options), result);
-		});
-		return result;
-	};
-
-
-/***/ },
-/* 38 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// Deprecated
-	
-	'use strict';
-	
-	module.exports = function (obj) { return typeof obj === 'function'; };
-
-
-/***/ },
-/* 39 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = __webpack_require__(40)()
-		? String.prototype.contains
-		: __webpack_require__(41);
-
-
-/***/ },
-/* 40 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var str = 'razdwatrzy';
-	
-	module.exports = function () {
-		if (typeof str.contains !== 'function') return false;
-		return ((str.contains('dwa') === true) && (str.contains('foo') === false));
-	};
-
-
-/***/ },
-/* 41 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var indexOf = String.prototype.indexOf;
-	
-	module.exports = function (searchString/*, position*/) {
-		return indexOf.call(this, searchString, arguments[1]) > -1;
-	};
-
-
-/***/ },
-/* 42 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = function (fn) {
-		if (typeof fn !== 'function') throw new TypeError(fn + " is not a function");
-		return fn;
-	};
-
-
-/***/ },
-/* 43 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(6),
-			THREE = __webpack_require__(7);
-	
-		return function empty(parent, options) {
-			var obj = new THREE.Object3D();
-	
-			obj.name = 'empty';
-	
-			parent.add(obj);
-	
-			return obj;
-		};
-	}());
-
-/***/ },
-/* 44 */
-/***/ function(module, exports, __webpack_require__) {
-
 	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(7);
-	
-	/**
-	 * @author richt / http://richt.me
-	 * @author WestLangley / http://github.com/WestLangley
-	 *
-	 * W3C Device Orientation control (http://w3c.github.io/deviceorientation/spec-source-orientation.html)
-	 */
-	
-	THREE.DeviceOrientationControls = function ( object ) {
-	
-		var scope = this;
-	
-		this.object = object;
-		this.object.rotation.reorder( "YXZ" );
-	
-		this.enabled = true;
-	
-		this.deviceOrientation = {};
-		this.screenOrientation = 0;
-	
-		var onDeviceOrientationChangeEvent = function ( event ) {
-	
-			scope.deviceOrientation = event;
-	
-		};
-	
-		var onScreenOrientationChangeEvent = function () {
-	
-			scope.screenOrientation = window.orientation || 0;
-	
-		};
-	
-		// The angles alpha, beta and gamma form a set of intrinsic Tait-Bryan angles of type Z-X'-Y''
-	
-		var setObjectQuaternion = function () {
-	
-			var zee = new THREE.Vector3( 0, 0, 1 );
-	
-			var euler = new THREE.Euler();
-	
-			var q0 = new THREE.Quaternion();
-	
-			var q1 = new THREE.Quaternion( - Math.sqrt( 0.5 ), 0, 0, Math.sqrt( 0.5 ) ); // - PI/2 around the x-axis
-	
-			return function ( quaternion, alpha, beta, gamma, orient ) {
-	
-				euler.set( beta, alpha, - gamma, 'YXZ' );                       // 'ZXY' for the device, but 'YXZ' for us
-	
-				quaternion.setFromEuler( euler );                               // orient the device
-	
-				quaternion.multiply( q1 );                                      // camera looks out the back of the device, not the top
-	
-				quaternion.multiply( q0.setFromAxisAngle( zee, - orient ) );    // adjust for screen orientation
-	
-			}
-	
-		}();
-	
-		this.connect = function() {
-	
-			onScreenOrientationChangeEvent(); // run once on load
-	
-			window.addEventListener( 'orientationchange', onScreenOrientationChangeEvent, false );
-			window.addEventListener( 'deviceorientation', onDeviceOrientationChangeEvent, false );
-	
-			scope.enabled = true;
-	
-		};
-	
-		this.disconnect = function() {
-	
-			window.removeEventListener( 'orientationchange', onScreenOrientationChangeEvent, false );
-			window.removeEventListener( 'deviceorientation', onDeviceOrientationChangeEvent, false );
-	
-			scope.enabled = false;
-	
-		};
-	
-		this.update = function () {
-	
-			if ( scope.enabled === false ) return;
-	
-			var alpha  = scope.deviceOrientation.alpha ? THREE.Math.degToRad( scope.deviceOrientation.alpha ) : 0; // Z
-			var beta   = scope.deviceOrientation.beta  ? THREE.Math.degToRad( scope.deviceOrientation.beta  ) : 0; // X'
-			var gamma  = scope.deviceOrientation.gamma ? THREE.Math.degToRad( scope.deviceOrientation.gamma ) : 0; // Y''
-			var orient = scope.screenOrientation       ? THREE.Math.degToRad( scope.screenOrientation       ) : 0; // O
-	
-			setObjectQuaternion( scope.object.quaternion, alpha, beta, gamma, orient );
-	
-		};
-	
-		this.connect();
-	
-	};
-
-
-/***/ },
-/* 45 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(7);
-	
-	/**
-	 * @author qiao / https://github.com/qiao
-	 * @author mrdoob / http://mrdoob.com
-	 * @author alteredq / http://alteredqualia.com/
-	 * @author WestLangley / http://github.com/WestLangley
-	 * @author erich666 / http://erichaines.com
-	 */
-	/*global THREE, console */
-	
-	// This set of controls performs orbiting, dollying (zooming), and panning. It maintains
-	// the "up" direction as +Y, unlike the TrackballControls. Touch on tablet and phones is
-	// supported.
-	//
-	//    Orbit - left mouse / touch: one finger move
-	//    Zoom - middle mouse, or mousewheel / touch: two finger spread or squish
-	//    Pan - right mouse, or arrow keys / touch: three finter swipe
-	//
-	// This is a drop-in replacement for (most) TrackballControls used in examples.
-	// That is, include this js file and wherever you see:
-	//    	controls = new THREE.TrackballControls( camera );
-	//      controls.target.z = 150;
-	// Simple substitute "OrbitControls" and the control should work as-is.
-	
-	THREE.OrbitControls = function ( object, domElement ) {
-	
-		this.object = object;
-		this.domElement = ( domElement !== undefined ) ? domElement : document;
-	
-		// API
-	
-		// Set to false to disable this control
-		this.enabled = true;
-	
-		// "target" sets the location of focus, where the control orbits around
-		// and where it pans with respect to.
-		this.target = new THREE.Vector3();
-	
-		// center is old, deprecated; use "target" instead
-		this.center = this.target;
-	
-		// This option actually enables dollying in and out; left as "zoom" for
-		// backwards compatibility
-		this.noZoom = false;
-		this.zoomSpeed = 1.0;
-	
-		// Limits to how far you can dolly in and out
-		this.minDistance = 0;
-		this.maxDistance = Infinity;
-	
-		// Set to true to disable this control
-		this.noRotate = false;
-		this.rotateSpeed = 1.0;
-	
-		// Set to true to disable this control
-		this.noPan = false;
-		this.keyPanSpeed = 7.0;	// pixels moved per arrow key push
-	
-		// Set to true to automatically rotate around the target
-		this.autoRotate = false;
-		this.autoRotateSpeed = 2.0; // 30 seconds per round when fps is 60
-	
-		// How far you can orbit vertically, upper and lower limits.
-		// Range is 0 to Math.PI radians.
-		this.minPolarAngle = 0; // radians
-		this.maxPolarAngle = Math.PI; // radians
-	
-		// How far you can orbit horizontally, upper and lower limits.
-		// If set, must be a sub-interval of the interval [ - Math.PI, Math.PI ].
-		this.minAzimuthAngle = - Infinity; // radians
-		this.maxAzimuthAngle = Infinity; // radians
-	
-		// Set to true to disable use of the keys
-		this.noKeys = false;
-	
-		// The four arrow keys
-		this.keys = { LEFT: 37, UP: 38, RIGHT: 39, BOTTOM: 40 };
-	
-		// Mouse buttons
-		this.mouseButtons = { ORBIT: THREE.MOUSE.LEFT, ZOOM: THREE.MOUSE.MIDDLE, PAN: THREE.MOUSE.RIGHT };
-	
-		////////////
-		// internals
-	
-		var scope = this;
-	
-		var EPS = 0.000001;
-	
-		var rotateStart = new THREE.Vector2();
-		var rotateEnd = new THREE.Vector2();
-		var rotateDelta = new THREE.Vector2();
-	
-		var panStart = new THREE.Vector2();
-		var panEnd = new THREE.Vector2();
-		var panDelta = new THREE.Vector2();
-		var panOffset = new THREE.Vector3();
-	
-		var offset = new THREE.Vector3();
-	
-		var dollyStart = new THREE.Vector2();
-		var dollyEnd = new THREE.Vector2();
-		var dollyDelta = new THREE.Vector2();
-	
-		var theta;
-		var phi;
-		var phiDelta = 0;
-		var thetaDelta = 0;
-		var scale = 1;
-		var pan = new THREE.Vector3();
-	
-		var lastPosition = new THREE.Vector3();
-		var lastQuaternion = new THREE.Quaternion();
-	
-		var STATE = { NONE : -1, ROTATE : 0, DOLLY : 1, PAN : 2, TOUCH_ROTATE : 3, TOUCH_DOLLY : 4, TOUCH_PAN : 5 };
-	
-		var state = STATE.NONE;
-	
-		// for reset
-	
-		this.target0 = this.target.clone();
-		this.position0 = this.object.position.clone();
-	
-		// so camera.up is the orbit axis
-	
-		var quat = new THREE.Quaternion().setFromUnitVectors( object.up, new THREE.Vector3( 0, 1, 0 ) );
-		var quatInverse = quat.clone().inverse();
-	
-		// events
-	
-		var changeEvent = { type: 'change' };
-		var startEvent = { type: 'start'};
-		var endEvent = { type: 'end'};
-	
-		this.rotateLeft = function ( angle ) {
-	
-			if ( angle === undefined ) {
-	
-				angle = getAutoRotationAngle();
-	
-			}
-	
-			thetaDelta -= angle;
-	
-		};
-	
-		this.rotateUp = function ( angle ) {
-	
-			if ( angle === undefined ) {
-	
-				angle = getAutoRotationAngle();
-	
-			}
-	
-			phiDelta -= angle;
-	
-		};
-	
-		// pass in distance in world space to move left
-		this.panLeft = function ( distance ) {
-	
-			var te = this.object.matrix.elements;
-	
-			// get X column of matrix
-			panOffset.set( te[ 0 ], te[ 1 ], te[ 2 ] );
-			panOffset.multiplyScalar( - distance );
-	
-			pan.add( panOffset );
-	
-		};
-	
-		// pass in distance in world space to move up
-		this.panUp = function ( distance ) {
-	
-			var te = this.object.matrix.elements;
-	
-			// get Y column of matrix
-			panOffset.set( te[ 4 ], te[ 5 ], te[ 6 ] );
-			panOffset.multiplyScalar( distance );
-	
-			pan.add( panOffset );
-	
-		};
-	
-		// pass in x,y of change desired in pixel space,
-		// right and down are positive
-		this.pan = function ( deltaX, deltaY ) {
-	
-			var element = scope.domElement === document ? scope.domElement.body : scope.domElement;
-	
-			if ( scope.object.fov !== undefined ) {
-	
-				// perspective
-				var position = scope.object.position;
-				var offset = position.clone().sub( scope.target );
-				var targetDistance = offset.length();
-	
-				// half of the fov is center to top of screen
-				targetDistance *= Math.tan( ( scope.object.fov / 2 ) * Math.PI / 180.0 );
-	
-				// we actually don't use screenWidth, since perspective camera is fixed to screen height
-				scope.panLeft( 2 * deltaX * targetDistance / element.clientHeight );
-				scope.panUp( 2 * deltaY * targetDistance / element.clientHeight );
-	
-			} else if ( scope.object.top !== undefined ) {
-	
-				// orthographic
-				scope.panLeft( deltaX * (scope.object.right - scope.object.left) / element.clientWidth );
-				scope.panUp( deltaY * (scope.object.top - scope.object.bottom) / element.clientHeight );
-	
-			} else {
-	
-				// camera neither orthographic or perspective
-				console.warn( 'WARNING: OrbitControls.js encountered an unknown camera type - pan disabled.' );
-	
-			}
-	
-		};
-	
-		this.dollyIn = function ( dollyScale ) {
-	
-			if ( dollyScale === undefined ) {
-	
-				dollyScale = getZoomScale();
-	
-			}
-	
-			scale /= dollyScale;
-	
-		};
-	
-		this.dollyOut = function ( dollyScale ) {
-	
-			if ( dollyScale === undefined ) {
-	
-				dollyScale = getZoomScale();
-	
-			}
-	
-			scale *= dollyScale;
-	
-		};
-	
-		this.update = function () {
-	
-			var position = this.object.position;
-	
-			offset.copy( position ).sub( this.target );
-	
-			// rotate offset to "y-axis-is-up" space
-			offset.applyQuaternion( quat );
-	
-			// angle from z-axis around y-axis
-	
-			theta = Math.atan2( offset.x, offset.z );
-	
-			// angle from y-axis
-	
-			phi = Math.atan2( Math.sqrt( offset.x * offset.x + offset.z * offset.z ), offset.y );
-	
-			if ( this.autoRotate && state === STATE.NONE ) {
-	
-				this.rotateLeft( getAutoRotationAngle() );
-	
-			}
-	
-			theta += thetaDelta;
-			phi += phiDelta;
-	
-			// restrict theta to be between desired limits
-			theta = Math.max( this.minAzimuthAngle, Math.min( this.maxAzimuthAngle, theta ) );
-	
-			// restrict phi to be between desired limits
-			phi = Math.max( this.minPolarAngle, Math.min( this.maxPolarAngle, phi ) );
-	
-			// restrict phi to be betwee EPS and PI-EPS
-			phi = Math.max( EPS, Math.min( Math.PI - EPS, phi ) );
-	
-			var radius = offset.length() * scale;
-	
-			// restrict radius to be between desired limits
-			radius = Math.max( this.minDistance, Math.min( this.maxDistance, radius ) );
-	
-			// move target to panned location
-			this.target.add( pan );
-	
-			offset.x = radius * Math.sin( phi ) * Math.sin( theta );
-			offset.y = radius * Math.cos( phi );
-			offset.z = radius * Math.sin( phi ) * Math.cos( theta );
-	
-			// rotate offset back to "camera-up-vector-is-up" space
-			offset.applyQuaternion( quatInverse );
-	
-			position.copy( this.target ).add( offset );
-	
-			this.object.lookAt( this.target );
-	
-			thetaDelta = 0;
-			phiDelta = 0;
-			scale = 1;
-			pan.set( 0, 0, 0 );
-	
-			// update condition is:
-			// min(camera displacement, camera rotation in radians)^2 > EPS
-			// using small-angle approximation cos(x/2) = 1 - x^2 / 8
-	
-			if ( lastPosition.distanceToSquared( this.object.position ) > EPS
-			    || 8 * (1 - lastQuaternion.dot(this.object.quaternion)) > EPS ) {
-	
-				this.dispatchEvent( changeEvent );
-	
-				lastPosition.copy( this.object.position );
-				lastQuaternion.copy (this.object.quaternion );
-	
-			}
-	
-		};
-	
-	
-		this.reset = function () {
-	
-			state = STATE.NONE;
-	
-			this.target.copy( this.target0 );
-			this.object.position.copy( this.position0 );
-	
-			this.update();
-	
-		};
-	
-		this.getPolarAngle = function () {
-	
-			return phi;
-	
-		};
-	
-		this.getAzimuthalAngle = function () {
-	
-			return theta
-	
-		};
-	
-		function getAutoRotationAngle() {
-	
-			return 2 * Math.PI / 60 / 60 * scope.autoRotateSpeed;
-	
-		}
-	
-		function getZoomScale() {
-	
-			return Math.pow( 0.95, scope.zoomSpeed );
-	
-		}
-	
-		function onMouseDown( event ) {
-	
-			if (event.button !== THREE.MOUSE.LEFT) {
-				return;
-			}
-	
-			if ( scope.enabled === false ) return;
-			event.preventDefault();
-	
-			if ( event.button === scope.mouseButtons.ORBIT ) {
-				if ( scope.noRotate === true ) return;
-	
-				state = STATE.ROTATE;
-	
-				rotateStart.set( event.clientX, event.clientY );
-	
-			} else if ( event.button === scope.mouseButtons.ZOOM ) {
-				if ( scope.noZoom === true ) return;
-	
-				state = STATE.DOLLY;
-	
-				dollyStart.set( event.clientX, event.clientY );
-	
-			} else if ( event.button === scope.mouseButtons.PAN ) {
-				if ( scope.noPan === true ) return;
-	
-				state = STATE.PAN;
-	
-				panStart.set( event.clientX, event.clientY );
-	
-			}
-	
-			if ( state !== STATE.NONE ) {
-				window.addEventListener( 'mousemove', onMouseMove, false );
-				window.addEventListener( 'mouseup', onMouseUp, false );
-				scope.dispatchEvent( startEvent );
-			}
-	
-		}
-	
-		function onMouseMove( event ) {
-	
-			if ( scope.enabled === false ) return;
-	
-			event.preventDefault();
-	
-			var element = scope.domElement === document ? scope.domElement.body : scope.domElement;
-	
-			if ( state === STATE.ROTATE ) {
-	
-				if ( scope.noRotate === true ) return;
-	
-				rotateEnd.set( event.clientX, event.clientY );
-				rotateDelta.subVectors( rotateEnd, rotateStart );
-	
-				// rotating across whole screen goes 360 degrees around
-				scope.rotateLeft( 2 * Math.PI * rotateDelta.x / element.clientWidth * scope.rotateSpeed );
-	
-				// rotating up and down along whole screen attempts to go 360, but limited to 180
-				scope.rotateUp( 2 * Math.PI * rotateDelta.y / element.clientHeight * scope.rotateSpeed );
-	
-				rotateStart.copy( rotateEnd );
-	
-			} else if ( state === STATE.DOLLY ) {
-	
-				if ( scope.noZoom === true ) return;
-	
-				dollyEnd.set( event.clientX, event.clientY );
-				dollyDelta.subVectors( dollyEnd, dollyStart );
-	
-				if ( dollyDelta.y > 0 ) {
-	
-					scope.dollyIn();
-	
-				} else {
-	
-					scope.dollyOut();
-	
-				}
-	
-				dollyStart.copy( dollyEnd );
-	
-			} else if ( state === STATE.PAN ) {
-	
-				if ( scope.noPan === true ) return;
-	
-				panEnd.set( event.clientX, event.clientY );
-				panDelta.subVectors( panEnd, panStart );
-	
-				scope.pan( panDelta.x, panDelta.y );
-	
-				panStart.copy( panEnd );
-	
-			}
-	
-			if ( state !== STATE.NONE ) scope.update();
-	
-		}
-	
-		function onMouseUp( /* event */ ) {
-	
-			if ( scope.enabled === false ) return;
-	
-			//window.removeEventListener( 'mousemove', onMouseMove, false );
-			window.removeEventListener( 'mouseup', onMouseUp, false );
-			scope.dispatchEvent( endEvent );
-			state = STATE.NONE;
-	
-		}
-	
-		function onMouseWheel( event ) {
-	
-			if ( scope.enabled === false || scope.noZoom === true || state !== STATE.NONE ) return;
-	
-			event.preventDefault();
-			event.stopPropagation();
-	
-			var delta = 0;
-	
-			if ( event.wheelDelta !== undefined ) { // WebKit / Opera / Explorer 9
-	
-				delta = event.wheelDelta;
-	
-			} else if ( event.detail !== undefined ) { // Firefox
-	
-				delta = - event.detail;
-	
-			}
-	
-			if ( delta > 0 ) {
-	
-				scope.dollyOut();
-	
-			} else {
-	
-				scope.dollyIn();
-	
-			}
-	
-			scope.update();
-			scope.dispatchEvent( startEvent );
-			scope.dispatchEvent( endEvent );
-	
-		}
-	
-		function onKeyDown( event ) {
-	
-			if ( scope.enabled === false || scope.noKeys === true || scope.noPan === true ) return;
-	
-			switch ( event.keyCode ) {
-	
-				case scope.keys.UP:
-					scope.pan( 0, scope.keyPanSpeed );
-					scope.update();
-					break;
-	
-				case scope.keys.BOTTOM:
-					scope.pan( 0, - scope.keyPanSpeed );
-					scope.update();
-					break;
-	
-				case scope.keys.LEFT:
-					scope.pan( scope.keyPanSpeed, 0 );
-					scope.update();
-					break;
-	
-				case scope.keys.RIGHT:
-					scope.pan( - scope.keyPanSpeed, 0 );
-					scope.update();
-					break;
-	
-			}
-	
-		}
-	
-		function touchstart( event ) {
-	
-			if ( scope.enabled === false ) return;
-	
-			switch ( event.touches.length ) {
-	
-				case 1:	// one-fingered touch: rotate
-	
-					if ( scope.noRotate === true ) return;
-	
-					state = STATE.TOUCH_ROTATE;
-	
-					rotateStart.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
-					break;
-	
-				case 2:	// two-fingered touch: dolly
-	
-					if ( scope.noZoom === true ) return;
-	
-					state = STATE.TOUCH_DOLLY;
-	
-					var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
-					var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
-					var distance = Math.sqrt( dx * dx + dy * dy );
-					dollyStart.set( 0, distance );
-					break;
-	
-				case 3: // three-fingered touch: pan
-	
-					if ( scope.noPan === true ) return;
-	
-					state = STATE.TOUCH_PAN;
-	
-					panStart.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
-					break;
-	
-				default:
-	
-					state = STATE.NONE;
-	
-			}
-	
-			if ( state !== STATE.NONE ) scope.dispatchEvent( startEvent );
-	
-		}
-	
-		function touchmove( event ) {
-	
-			if ( scope.enabled === false ) return;
-	
-			event.preventDefault();
-			event.stopPropagation();
-	
-			var element = scope.domElement === document ? scope.domElement.body : scope.domElement;
-	
-			switch ( event.touches.length ) {
-	
-				case 1: // one-fingered touch: rotate
-	
-					if ( scope.noRotate === true ) return;
-					if ( state !== STATE.TOUCH_ROTATE ) return;
-	
-					rotateEnd.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
-					rotateDelta.subVectors( rotateEnd, rotateStart );
-	
-					// rotating across whole screen goes 360 degrees around
-					scope.rotateLeft( 2 * Math.PI * rotateDelta.x / element.clientWidth * scope.rotateSpeed );
-					// rotating up and down along whole screen attempts to go 360, but limited to 180
-					scope.rotateUp( 2 * Math.PI * rotateDelta.y / element.clientHeight * scope.rotateSpeed );
-	
-					rotateStart.copy( rotateEnd );
-	
-					scope.update();
-					break;
-	
-				case 2: // two-fingered touch: dolly
-	
-					if ( scope.noZoom === true ) return;
-					if ( state !== STATE.TOUCH_DOLLY ) return;
-	
-					var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
-					var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
-					var distance = Math.sqrt( dx * dx + dy * dy );
-	
-					dollyEnd.set( 0, distance );
-					dollyDelta.subVectors( dollyEnd, dollyStart );
-	
-					if ( dollyDelta.y > 0 ) {
-	
-						scope.dollyOut();
-	
-					} else {
-	
-						scope.dollyIn();
-	
-					}
-	
-					dollyStart.copy( dollyEnd );
-	
-					scope.update();
-					break;
-	
-				case 3: // three-fingered touch: pan
-	
-					if ( scope.noPan === true ) return;
-					if ( state !== STATE.TOUCH_PAN ) return;
-	
-					panEnd.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
-					panDelta.subVectors( panEnd, panStart );
-	
-					scope.pan( panDelta.x, panDelta.y );
-	
-					panStart.copy( panEnd );
-	
-					scope.update();
-					break;
-	
-				default:
-	
-					state = STATE.NONE;
-	
-			}
-	
-		}
-	
-		function touchend( /* event */ ) {
-	
-			if ( scope.enabled === false ) return;
-	
-			scope.dispatchEvent( endEvent );
-			state = STATE.NONE;
-	
-		}
-	
-		//this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
-		this.domElement.addEventListener( 'mousedown', onMouseDown, false );
-		this.domElement.addEventListener( 'mousewheel', onMouseWheel, false );
-		this.domElement.addEventListener( 'DOMMouseScroll', onMouseWheel, false ); // firefox
-	
-		this.domElement.addEventListener( 'touchstart', touchstart, false );
-		this.domElement.addEventListener( 'touchend', touchend, false );
-		this.domElement.addEventListener( 'touchmove', touchmove, false );
-	
-		window.addEventListener( 'keydown', onKeyDown, false );
-	
-	//window.addEventListener( 'mousemove', onMouseMove, true );
-		// force an update at start
-		this.update();
-	
-	};
-	
-	THREE.OrbitControls.prototype = Object.create( THREE.EventDispatcher.prototype );
-	THREE.OrbitControls.prototype.constructor = THREE.OrbitControls;
-
-
-/***/ },
-/* 46 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(7);
-	
-	( function() {
-	
-		var _oldConsole = console.log;
-	
-		var supportedTypes = [];
-	
-		function addSupportedType( type, format ) {
-	
-			supportedTypes.push( {
-				type: type,
-				format: format
-			} );
-	
-		}
-	
-		addSupportedType( THREE.Matrix4, function( v ) {
-	
-			var e = v.elements;
-					
-			return [
-				[ e[ 0 ], e[ 1 ], e[ 2 ], e[ 3 ] ],
-				[ e[ 4 ], e[ 5 ], e[ 6 ], e[ 7 ] ],
-				[ e[ 8 ], e[ 9 ], e[ 10 ], e[ 11 ] ],
-				[ e[ 12 ], e[ 13 ], e[ 14 ], e[ 15 ] ]
-			];
-	
-		} );
-	
-		addSupportedType( THREE.Matrix3, function( v ) {
-	
-			var e = v.elements;
-					
-			return [
-				[ e[ 0 ], e[ 1 ], e[ 2 ] ],
-				[ e[ 3 ], e[ 4 ], e[ 5 ] ],
-				[ e[ 6 ], e[ 7 ], e[ 8 ] ]
-			];
-	
-		} );
-	
-		addSupportedType( THREE.Vector2, function( v ) {
-	
-			return {
-				Vector2: { x: v.x, y: v.y }
-			};
-	
-		} );
-	
-		addSupportedType( THREE.Vector3, function( v ) {
-	
-			return {
-				Vector3: { x: v.x, y: v.y, z: v.z }
-			};
-	
-		} );
-	
-		addSupportedType( THREE.Vector4, function( v ) {
-	
-			return {
-				Vector4: { x: v.x, y: v.y, z: v.z, w: v.w }
-			};
-	
-		} );
-	
-		addSupportedType( THREE.Euler, function( v ) {
-	
-			return {
-				Vector4: { x: v.x, y: v.y, z: v.z, order: v.order }
-			};
-	
-		} );
-	
-		addSupportedType( THREE.Ray, function( v ) {
-	
-			return { 
-				'Ray origin': { x: v.origin.x, y: v.origin.y, z: v.origin.z },
-				'Ray direction': { x: v.direction.x, y: v.direction.y, z: v.direction.z }
-			};
-	
-		} );
-	
-		console.log = function() {
-	
-			var special = false;
-	
-			[].forEach.call( arguments, function( a ) { 
-				supportedTypes.forEach( function( t ) {
-					if( a instanceof t.type ) special = true;;
-				} );
-			} );
-	
-			if( special ) {
-	
-				[].forEach.call( arguments, function( a ) { 
-				
-					_oldConsole.apply( console, [ a ] );
-	
-					supportedTypes.forEach( function( t ) {
-	
-						if( a instanceof t.type ) {
-	
-							console.table( t.format( a ) );
-	
-						}
-						
-					} );
-	
-				} );
-	
-			} else {
-	
-				_oldConsole.apply( console, arguments );
-	
-			}
-	
-		}
-	
-	} )();
-
-/***/ },
-/* 47 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(7);
-	
-	/**
-	 * @author bchirls / http://bchirls.com/
-	 */
-	
-	THREE.VRStereoEffect = function ( renderer, fullScreenElement, options ) {
-	
-		// internals
-		var self = this;
-		var width = 0, height = 0;
-		var hmdWidth, hmdHeight;
-	
-		var hmdDevice;
-		var vrMode;
-		var vrPreview = false;
-		var eyeOffsetLeft, eyeOffsetRight;
-	
-		var position = new THREE.Vector3();
-		var quaternion = new THREE.Quaternion();
-		var scale = new THREE.Vector3();
-	
-		var cameraLeft = new THREE.PerspectiveCamera();
-		var cameraRight = new THREE.PerspectiveCamera();
-	
-		var near = 2;
-		var far = 40000;
-	
-		var requestFullscreen;
-		var fullScreenParam = {
-			vrDisplay: null
-		};
-		var fovScale;
-	
-		var RADIANS = Math.PI / 180;
-	
-		var poll = options && options.poll || 1000;
-		var pollTimeout;
-	
-		function perspectiveMatrixFromVRFieldOfView(fov, zNear, zFar) {
-			var outMat = new THREE.Matrix4(),
-				out = outMat.elements,
-				upTan = Math.tan(fov.upDegrees * RADIANS),
-				downTan = Math.tan(fov.downDegrees * RADIANS),
-				leftTan = Math.tan(fov.leftDegrees * RADIANS),
-				rightTan = Math.tan(fov.rightDegrees * RADIANS),
-	
-				xScale = 2 / (leftTan + rightTan),
-				yScale = 2 / (upTan + downTan);
-	
-			out[0] = xScale;
-			out[4] = 0;
-			out[8] = -((leftTan - rightTan) * xScale * 0.5);
-			out[12] = 0;
-	
-			out[1] = 0;
-			out[5] = yScale;
-			out[9] = ((upTan - downTan) * yScale * 0.5);
-			out[13] = 0;
-	
-			out[2] = 0;
-			out[6] = 0;
-			out[10] = zFar / (zNear - zFar);
-			out[14] = (zFar * zNear) / (zNear - zFar);
-	
-			out[3] = 0;
-			out[7] = 0;
-			out[11] = -1;
-			out[15] = 0;
-	
-			return outMat;
-		}
-	
-		function resize() {
-			var w, h;
-	
-			if (hmdDevice && vrMode) {
-				w = hmdWidth;// / Math.pow(window.devicePixelRatio || 1, 2);
-				h = hmdHeight;// / Math.pow(window.devicePixelRatio || 1, 2);
-			} else {
-				w = width || renderer.domElement.offsetWidth || window.innerWidth;
-				h = height || renderer.domElement.offsetHeight || window.innerHeight;
-			}
-	
-			renderer.setSize(w, h);
-		}
-	
-		function resizeFOV(amount) {
-			var fovLeft,
-				fovRight,
-				leftEyeViewport,
-				rightEyeViewport;
-	
-			if (!hmdDevice) {
-				return;
-			}
-	
-			if (amount && hmdDevice.setFieldOfView) {
-				fovScale += amount;
-				fovScale = Math.max(0.1, fovScale);
-	
-				fovLeft = hmdDevice.getRecommendedEyeFieldOfView('left');
-	
-				fovLeft.upDegrees *= fovScale;
-				fovLeft.downDegrees *= fovScale;
-				fovLeft.leftDegrees *= fovScale;
-				fovLeft.rightDegrees *= fovScale;
-	
-				fovRight = hmdDevice.getRecommendedEyeFieldOfView('right');
-				fovRight.upDegrees *= fovScale;
-				fovRight.downDegrees *= fovScale;
-				fovRight.leftDegrees *= fovScale;
-				fovRight.rightDegrees *= fovScale;
-	
-				hmdDevice.setFieldOfView(fovLeft, fovRight);
-			}
-	
-			if (hmdDevice.getRecommendedEyeRenderRect) {
-				leftEyeViewport = hmdDevice.getRecommendedEyeRenderRect('left');
-				rightEyeViewport = hmdDevice.getRecommendedEyeRenderRect('right');
-				hmdWidth = leftEyeViewport.width + rightEyeViewport.width;
-				hmdHeight = Math.max(leftEyeViewport.height, rightEyeViewport.height);
-			}
-	
-			resize();
-	
-			if (hmdDevice.getCurrentEyeFieldOfView) {
-				fovLeft = hmdDevice.getCurrentEyeFieldOfView('left');
-				fovRight = hmdDevice.getCurrentEyeFieldOfView('right');
-			} else {
-				fovLeft = hmdDevice.getRecommendedEyeFieldOfView('left');
-				fovRight = hmdDevice.getRecommendedEyeFieldOfView('right');
-			}
-	
-			cameraLeft.projectionMatrix = perspectiveMatrixFromVRFieldOfView(fovLeft, near, far);
-			cameraRight.projectionMatrix = perspectiveMatrixFromVRFieldOfView(fovRight, near, far);
-		}
-	
-		function gotVRDevices(devices) {
-			var i,
-				device;
-	
-			for (i = 0; i < devices.length; i++) {
-				device = devices[i];
-				if (device instanceof HMDVRDevice &&
-						(!hmdDevice || device.hardwareUnitId !== hmdDevice.hardwareUnitId)) {
-	
-					hmdDevice = device;
-					console.log('Using HMD Device:', hmdDevice.deviceName);
-	
-					if (hmdDevice.setTimewarp) {
-						hmdDevice.setTimewarp(false);
-					}
-	
-					eyeOffsetLeft = hmdDevice.getEyeTranslation('left');
-					//cameraLeft.position.add(eyeOffsetLeft);
-	
-					eyeOffsetRight = hmdDevice.getEyeTranslation('right');
-					//cameraRight.position.add(eyeOffsetRight);
-	
-					resizeFOV(0);
-	
-					fullScreenParam.vrDisplay = hmdDevice;
-	
-					self.dispatchEvent( {
-						type: "devicechange"
-					} );
-	
-					break;
-				}
-			}
-	
-			if (poll) {
-				clearTimeout(pollTimeout);
-				setTimeout(self.scan, poll);
-			}
-		}
-	
-		function onFullscreenChange() {
-			if (!document.webkitFullscreenElement &&
-					!document.mozFullScreenElement &&
-					!document.msFullscreenElement) {
-				vrMode = false;
-			}
-	
-			resize();
-	
-			self.dispatchEvent( {
-				type: "fullscreenchange"
-			} );
-		}
-	
-		// API
-	
-		this.separation = 0.01;
-	
-		// initialization
-	
-		renderer.autoClear = false;
-	
-		if (!fullScreenElement) {
-			fullScreenElement = renderer.domElement;
-		}
-		requestFullscreen = fullScreenElement.webkitRequestFullscreen ||
-			fullScreenElement.mozRequestFullScreen ||
-			fullScreenElement.msRequestFullscreen;
-		if (requestFullscreen) {
-			requestFullscreen = requestFullscreen.bind(fullScreenElement, fullScreenParam);
-		}
-	
-		document.addEventListener('fullscreenchange', onFullscreenChange, false);
-		document.addEventListener('webkitfullscreenchange', onFullscreenChange, false);
-		document.addEventListener('mozfullscreenchange', onFullscreenChange, false);
-		document.addEventListener('MSFullscreenChange', onFullscreenChange, false);
-	
-		//todo: method for adjusting HMD FOV
-	
-		this.scan = function () {
-			if (navigator.getVRDevices) {
-				navigator.getVRDevices().then(gotVRDevices);
-			} else if (navigator.mozGetVRDevices) {
-				navigator.mozGetVRDevices(gotVRDevices);
-			}
-		};
-	
-		this.requestFullScreen = function () {
-			vrMode = true;
-			requestFullscreen();
-		};
-	
-		this.exit = function () {
-			vrMode = false;
-			vrPreview = false;
-		};
-	
-		this.setSize = function ( w, h ) {
-			width = w;
-			height = h;
-	
-			resize();
-		};
-	
-		this.vrPreview = function (val) {
-			if (val !== undefined) {
-				vrPreview = !!val;
-			}
-			return vrPreview;
-		};
-	
-		this.isFullscreen = function () {
-			return vrMode;
-		};
-	
-		this.hmd = function () {
-			return hmdDevice;
-		};
-	
-		this.render = function ( leftScene, rightScene, camera, renderTarget, forceClear ) {
-			var w, h;
-	
-			if ( rightScene && rightScene instanceof THREE.Scene ) {
-				//rightScene.updateMatrixWorld();
-			} else {
-				if ( (!camera || camera instanceof THREE.WebGLRenderTarget) && rightScene instanceof THREE.Camera ) {
-					forceClear = renderTarget;
-					renderTarget = camera;
-					camera = rightScene;
-				}
-				rightScene = leftScene;
-			}
-	
-			//leftScene.updateMatrixWorld();
-	
-			if ( camera.parent === undefined ) {
-				camera.updateMatrixWorld();
-			}
-	
-			w = width || renderer.domElement.width;
-			h = height || renderer.domElement.height;
-			// w /= window.devicePixelRatio || 1;
-			// h /= window.devicePixelRatio || 1;
-	
-			/*
-			todo: make this work when CSS VR Rendering is fixed
-			http://blog.bitops.com/blog/2014/08/20/updated-firefox-vr-builds/
-			if (renderer instanceof THREE.CSS3DRenderer) {
-				renderer.render( leftScene, camera );
-				return;
-			}
-			*/
-	
-			if (!vrMode && !vrPreview) {
-				renderer.enableScissorTest( false );
-				renderer.setViewport( 0, 0, w, h );
-				renderer.render( leftScene, camera, renderTarget, true );
-				return;
-			}
-	
-			camera.matrixWorld.decompose( position, quaternion, scale );
-	
-			if (!hmdDevice) {
-				// left
-				cameraLeft.fov = camera.fov;
-				cameraLeft.aspect = 0.5 * camera.aspect;
-				cameraLeft.near = camera.near;
-				cameraLeft.far = camera.far;
-				cameraLeft.updateProjectionMatrix();
-	
-				// right
-	
-				cameraRight.fov = camera.fov;
-				cameraRight.aspect = 0.5 * camera.aspect;
-				cameraRight.near = camera.near;
-				cameraRight.far = camera.far;
-				cameraRight.updateProjectionMatrix();
-			}
-	
-			cameraLeft.position.copy( position );
-			cameraLeft.quaternion.copy( quaternion );
-	
-			cameraRight.position.copy( position );
-			cameraRight.quaternion.copy( quaternion );
-	
-			if (hmdDevice) {
-				cameraLeft.position.add( eyeOffsetLeft ) ;
-				cameraRight.position.add( eyeOffsetRight );
-			} else {
-				cameraLeft.translateX( - this.separation );
-				cameraRight.translateX( this.separation );
-			}
-	
-			cameraLeft.updateMatrixWorld();
-			cameraRight.updateMatrixWorld();
-	
-			//
-	
-			renderer.enableScissorTest(true);
-	
-			w /= 2;
-	
-			if (renderTarget) {
-				renderer.setRenderTarget(renderTarget);
-			}
-			renderer.setScissor( 0, 0, w, h );
-			renderer.setViewport( 0, 0, w, h );
-			renderer.render( leftScene, cameraLeft, renderTarget, forceClear );
-	
-			renderer.setScissor( w, 0, w, h );
-			renderer.setViewport( w, 0, w, h );
-			renderer.render( rightScene, cameraRight, renderTarget, forceClear );
-	
-			//reset viewport, scissor
-			w *= 2;
-			renderer.setViewport( 0, 0, w, h );
-			renderer.setScissor( 0, 0, w, h );
-			renderer.enableScissorTest( false );
-		};
-	
-		Object.defineProperty(this, 'near', {
-			get: function () {
-				return near;
-			},
-			set: function (val) {
-				val = parseFloat(val);
-				if (val && !isNaN(val)) {
-					near = Math.max(0, val);
-					resizeFOV(0);
-				}
-			}
-		});
-	
-		Object.defineProperty(this, 'far', {
-			get: function () {
-				return far;
-			},
-			set: function (val) {
-				val = parseFloat(val);
-				if (val && !isNaN(val)) {
-					far = Math.max(0, val);
-					resizeFOV(0);
-				}
-			}
-		});
-	
-		this.scan();
-		resize();
-	};
-	
-	THREE.VRStereoEffect.prototype = Object.create( THREE.EventDispatcher.prototype );
-
-
-/***/ },
-/* 48 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(7);
-	
-	THREE.VRControls = function ( object, options ) {
-	
-		var self = this;
-	
-		//HMD sensor stuff
-		var sensorDevice;
-		var vrState;
-	
-		//device orientation stuff
-		var deviceControls;
-		var zeroAngle = 0;
-	
-		var mode = '';
-	
-		var vrBrowser = navigator.getVRDevices || navigator.mozGetVRDevices;
-	
-		var poll = options && options.poll || 1000;
-		var pollTimeout;
-	
-		function gotVRDevices( devices ) {
-			var i,
-				device;
-	
-			for ( i = 0; i < devices.length; ++i ) {
-				device = devices[i];
-				if ( device instanceof PositionSensorVRDevice &&
-						( !sensorDevice || device.hardwareUnitId !== sensorDevice.hardwareUnitId ) ) {
-	
-					sensorDevice = device;
-					console.log('Using Sensor Device:', sensorDevice.deviceName);
-	
-					if ( sensorDevice.zeroSensor ) {
-						self.zeroSensor = sensorDevice.zeroSensor.bind(sensorDevice);
-					} else if ( sensorDevice.resetSensor ) {
-						self.zeroSensor = sensorDevice.resetSensor.bind(sensorDevice);
-					}
-					self.zeroSensor();
-	
-					mode = 'hmd';
-	
-					self.dispatchEvent( {
-						type: "devicechange"
-					} );
-	
-					break; // We keep the first we encounter
-				}
-			}
-	
-			if (poll) {
-				clearTimeout(pollTimeout);
-				setTimeout(self.scan, poll);
-			}
-		}
-	
-		function deviceOrientationChange( event ) {
-			if ( typeof event.gamma === 'number' ) {
-				mode = 'deviceorientation';
-				window.removeEventListener( 'deviceorientation', deviceOrientationChange, false );
-				deviceControls = new THREE.DeviceOrientationControls( object );
-				deviceControls.connect();
-				if (!this.freeze) {
-					deviceControls.update();
-				}
-	
-				self.dispatchEvent( {
-					type: "devicechange"
-				} );
-			}
-		}
-	
-		this.update = function() {
-			// Applies head rotation from sensor data.
-			if (self.freeze) {
-				return;
-			}
-	
-			if ( sensorDevice ) {
-				vrState = sensorDevice.getState();
-				if ( vrState && vrState.orientation ) {
-					object.quaternion.copy( vrState.orientation );
-	
-					if ( vrState.position ) {
-						// vrState.position is null if using DK1 or if DK2 camera is not plugged in
-						object.position.copy( vrState.position );
-					}
-	
-					object.updateMatrixWorld();
-				}
-			} else if (deviceControls && deviceControls.deviceOrientation.gamma !== undefined) {
-				deviceControls.update();
-				object.rotateY(-zeroAngle);
-				object.updateMatrixWorld();
-			}
-		};
-	
-		//only useful when frozen
-		this.reset = function () {
-			if ( object ) {
-				object.quaternion.set( 0, 0, 0, 1 );
-				object.position.set( 0, 0, 0 );
-			}
-		};
-	
-		//zeros only rotation on Y axis
-		//todo: find out if it zeros out position. need a DK2 to test
-		this.zeroSensor = function () {
-			if (sensorDevice && sensorDevice.zeroSensor) {
-				sensorDevice.zeroSensor();
-			}
-			zeroAngle = object.rotation.y;
-			self.update();
-		};
-	
-		this.freeze = false;
-	
-		//method to query which tech we're using
-		this.mode = function () {
-			return mode;
-		};
-	
-		this.scan = function () {
-			if ( navigator.getVRDevices ) {
-				navigator.getVRDevices().then( gotVRDevices );
-			} else if ( navigator.mozGetVRDevices ) {
-				navigator.mozGetVRDevices( gotVRDevices );
-			}
-		};
-	
-		//todo: connect/disconnect methods
-		//todo: method to query orientation/position without changing object
-		//todo: work without an object
-	
-		if ( vrBrowser ) {
-			this.scan();
-		} else if ( "DeviceOrientationEvent" in window && THREE.DeviceOrientationControls) {
-			//device orientation
-			window.addEventListener( "deviceorientation", deviceOrientationChange, false );
-		}
-	};
-	
-	THREE.VRControls.prototype = Object.create( THREE.EventDispatcher.prototype );
-
-
-/***/ },
-/* 49 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var map = {
-		"./box": 67,
-		"./box.js": 67,
-		"./cylinder": 68,
-		"./cylinder.js": 68,
-		"./empty": 43,
-		"./empty.js": 43,
-		"./floor": 69,
-		"./floor.js": 69,
-		"./image": 70,
-		"./image.js": 70,
-		"./panorama": 71,
-		"./panorama.js": 71,
-		"./sky": 72,
-		"./sky.js": 72,
-		"./snow": 73,
-		"./snow.js": 73,
-		"./sound": 75,
-		"./sound.js": 75,
-		"./sphere": 77,
-		"./sphere.js": 77,
-		"./torus": 78,
-		"./torus.js": 78
-	};
-	function webpackContext(req) {
-		return __webpack_require__(webpackContextResolve(req));
-	};
-	function webpackContextResolve(req) {
-		return map[req] || (function() { throw new Error("Cannot find module '" + req + "'.") }());
-	};
-	webpackContext.keys = function webpackContextKeys() {
-		return Object.keys(map);
-	};
-	webpackContext.resolve = webpackContextResolve;
-	module.exports = webpackContext;
-	webpackContext.id = 49;
-
-
-/***/ },
-/* 50 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M0 0v4l1.5-1.5 1.5 1.5 1-1-1.5-1.5 1.5-1.5h-4zm5 4l-1 1 1.5 1.5-1.5 1.5h4v-4l-1.5 1.5-1.5-1.5z\" />\n</svg>"
-
-/***/ },
-/* 51 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M1 0l-1 1 1.5 1.5-1.5 1.5h4v-4l-1.5 1.5-1.5-1.5zm3 4v4l1.5-1.5 1.5 1.5 1-1-1.5-1.5 1.5-1.5h-4z\" />\n</svg>"
-
-/***/ },
-/* 52 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M4.03 0c-2.53 0-4.03 3-4.03 3s1.5 3 4.03 3c2.47 0 3.97-3 3.97-3s-1.5-3-3.97-3zm-.03 1c1.11 0 2 .9 2 2 0 1.11-.89 2-2 2-1.1 0-2-.89-2-2 0-1.1.9-2 2-2zm0 1c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1c0-.1-.04-.19-.06-.28-.08.16-.24.28-.44.28-.28 0-.5-.22-.5-.5 0-.2.12-.36.28-.44-.09-.03-.18-.06-.28-.06z\"\n  transform=\"translate(0 1)\" />\n</svg>"
-
-/***/ },
-/* 53 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M4 0c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 1c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm2 1l-3 1-1 3 3-1 1-3zm-2 1.5c.28 0 .5.22.5.5s-.22.5-.5.5-.5-.22-.5-.5.22-.5.5-.5z\" />\n</svg>"
-
-/***/ },
-/* 54 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/asphalt.jpg"
-
-/***/ },
-/* 55 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/brick-tiles.jpg"
-
-/***/ },
-/* 56 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/bricks-normal.jpg"
-
-/***/ },
-/* 57 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/bricks-specular.jpg"
-
-/***/ },
-/* 58 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/bricks.jpg"
-
-/***/ },
-/* 59 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAABlBMVEUsLCzp6enLhVdXAAAAAWJLR0QAiAUdSAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB94KFBIOCP7R3TQAAAA4SURBVGje7dAhEgAACMOw/f/T4Gc5XKqjmlRTBQAAAAAAAAAAAAAA4AiMAQAAAAAAAAAAAADgGSyKafDiEFszywAAAABJRU5ErkJggg=="
-
-/***/ },
-/* 60 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/grass.jpg"
-
-/***/ },
-/* 61 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/metal-floor.jpg"
-
-/***/ },
-/* 62 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/metal.jpg"
-
-/***/ },
-/* 63 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/stone.jpg"
-
-/***/ },
-/* 64 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/tiles.jpg"
-
-/***/ },
-/* 65 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/weathered-wood.jpg"
-
-/***/ },
-/* 66 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/wood.jpg"
-
-/***/ },
-/* 67 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(6),
-			THREE = __webpack_require__(7);
-	
-		return function box(parent, options) {
-			var geometry,
-				mesh;
-	
-			geometry = new THREE.BoxGeometry( 1, 1, 1 );
-			mesh = new THREE.Mesh(geometry, materials.standard());
-			mesh.name = 'box';
-	
-			parent.add(mesh);
-	
-			return mesh;
-		};
-	}());
-
-/***/ },
-/* 68 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(6),
-			THREE = __webpack_require__(7);
-	
-		function cylinder(parent, options) {
-			var geometry,
-				mesh;
-	
-			geometry = new THREE.CylinderGeometry(
-				options.radiusTop === undefined ? 0.5 : options.radiusTop,
-				options.radiusBottom === undefined ? 0.5 : options.radiusBottom,
-				options.height === undefined ? 1 : options.height,
-				options.radiusSegments === undefined ? 16 : options.radiusSegments,
-				options.heightSegments,
-				options.openEnded
-			);
-			mesh = new THREE.Mesh(geometry, materials.standard());
-			mesh.name = 'cylinder';
-	
-			parent.add(mesh);
-	
-			return mesh;
-		}
-	
-		return cylinder;
-	}());
-
-/***/ },
-/* 69 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(6),
-			THREE = __webpack_require__(7);
-	
-		function floor(parent, options) {
-			var obj,
-				geometry;
-	
-			geometry = new THREE.CircleGeometry( options.radius || 100, options.segments || 16 );
-			geometry.applyMatrix( new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-	
-			obj = new THREE.Mesh(
-				geometry,
-				materials.checkerboard({
-					repeat: 100
-				})
-			);
-			obj.name = 'floor';
-	
-			obj.receiveShadow = true;
-	
-			parent.add(obj);
-	
-			return obj;
-		}
-	
-		return floor;
-	}());
-
-/***/ },
-/* 70 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(6),
-			THREE = __webpack_require__(7);
-	
-		return function image(parent, options) {
-			var geometry,
-				material,
-				mesh,
-				src,
-				tex;
-	
-			if (typeof options === 'string') {
-				src = options;
-			} else if (options) {
-				src = options.src;
-			}
-	
-			if (src) {
-				tex = materials.imageTexture(src, THREE.UVMapping, function (t, image) {
-					geometry.applyMatrix(new THREE.Matrix4().makeScale(1, image.naturalHeight / image.naturalWidth, 1));
-					material.map = tex;
-					material.visible = true;
-					mesh.visible = true;
-					parent.add(mesh);
-				});
-			}
-	
-			geometry = new THREE.PlaneBufferGeometry(1, 1, 8);
-	
-			material = new THREE.MeshBasicMaterial({
-				side: THREE.DoubleSide,
-				transparent: true,
-				map: tex
-			});
-	
-			mesh = new THREE.Mesh( geometry, material );
-	
-			mesh.visible = false;
-	
-			parent.add(mesh);
-	
-			return mesh;
-		};
-	}());
-
-/***/ },
-/* 71 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(6),
-			THREE = __webpack_require__(7);
-	
-		return function panorama(parent, options) {
-			var geometry,
-				material,
-				mesh,
-				src,
-				tex;
-	
-			if (typeof options === 'string') {
-				src = options;
-			} else if (options) {
-				src = options.src;
-			}
-	
-			if (src) {
-				tex = materials.imageTexture(src, THREE.UVMapping);
-			}
-	
-			geometry = new THREE.SphereGeometry( 1000, 60, 60 );
-			geometry.applyMatrix( new THREE.Matrix4().makeScale( -1, 1, 1 ) );
-	
-			material = new THREE.MeshBasicMaterial({
-				side: THREE.DoubleSide,
-				transparent: true,
-				map: tex
-			});
-	
-			mesh = new THREE.Mesh( geometry, material );
-			mesh.rotation.set( 0, -90 * Math.PI / 180, 0 );
-	
-			mesh.name = 'panorama';
-	
-			parent.add(mesh);
-	
-			return mesh;
-		};
-	}());
-
-/***/ },
-/* 72 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(6),
-			THREE = __webpack_require__(7),
-			TAU = Math.PI * 2,
-			HALF_PI = Math.PI / 2,
-	
-			distance = 400000,
-			scratchVector = new THREE.Vector3(),
-	
-			params = [
-				'luminance',
-				'turbidity',
-				'reileigh',
-				'mieCoefficient',
-				'mieDirectionalG'
-			];
-	
-		__webpack_require__(79);
-	
-		return function sky(parent, options) {
-			var obj = new THREE.Sky(),
-				self = this,
-				scene = parent,
-				light,
-				sunPosition,
-				azimuth = Math.PI / 6,
-				altitude = Math.PI / 6;
-	
-			function mod(x, y) {
-				return x - y * Math.floor(x / y);
-			}
-	
-			function update() {
-				var sinTheta,
-					cosTheta,
-					phi,
-					sinPhi,
-					cosPhi;
-	
-				sinTheta = Math.sin(altitude);
-				cosTheta = Math.cos(altitude);
-				phi = -HALF_PI - azimuth;
-				sinPhi = Math.sin(phi);
-				cosPhi = Math.cos(phi);
-	
-				sunPosition.set(
-					distance * cosPhi * cosTheta,
-					distance * sinTheta,
-					distance * sinPhi * cosTheta
-				);
-	
-				if (light) {
-					light.intensity = 1.5 * Math.max(0.0, 1.0 - Math.exp(-((Math.PI / 1.95 - Math.abs(HALF_PI - altitude)) / 1.5)));
-					light.position.copy(sunPosition).normalize().multiplyScalar(100);
-				}
-			}
-	
-			obj.mesh.name = 'sky';
-	
-			parent.add(obj.mesh);
-	
-			while (!(scene instanceof THREE.Scene) && scene.parent) {
-				scene = scene.parent;
-			}
-			light = scene.getObjectByName('directional-light');
-	
-			this.setOptions = function (options) {
-				var needUpdate = false,
-					altitude,
-					azimuth;
-	
-				if (options) {
-					params.forEach(function (param) {
-						var val;
-						if (param !== undefined) {
-							val = parseFloat(param);
-							if (!isNaN(val)) {
-								obj.uniforms[param].value = val;
-							}
-						}
-					});
-	
-					if (options.sunPosition instanceof THREE.Vector3) {
-						obj.uniforms.sunPosition.value.copy(options.sunPosition);
-					} else if (Array.isArray(options.sunPosition)) {
-						obj.uniforms.sunPosition.value.set(obj.uniforms.sunPosition.value, options.sunPosition);
-					} else {
-						self.altitude = options.altitude;
-						self.azimuth = options.azimuth;
-					}
-				}
-			};
-	
-			Object.defineProperty(this, 'azimuth', {
-				set: function (val) {
-					val = mod(parseFloat(val), TAU);
-					if (!isNaN(val) && val !== azimuth) {
-						azimuth = val;
-						update();
-					}
-				},
-				get: function () {
-					return azimuth;
-				}
-			});
-	
-			Object.defineProperty(this, 'altitude', {
-				set: function (val) {
-					val = mod(parseFloat(val), TAU);
-					if (!isNaN(val) && val !== altitude) {
-						altitude = val;
-						update();
-					}
-				},
-				get: function() {
-					return altitude;
-				}
-			});
-	
-			this.setAltitude = function (val) {
-				self.altitude = val;
-				return this;
-			};
-	
-			this.setAzimuth = function (val) {
-				self.azimuth = val;
-				return this;
-			};
-	
-			sunPosition = obj.uniforms.sunPosition.value;
-			update();
-	
-			this.setOptions(options);
-	
-			return obj.mesh;
-		};
-	}());
-
-/***/ },
-/* 73 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(6),
-			THREE = __webpack_require__(7);
-	
-		__webpack_require__(74);
-	
-		return function snow(parent, options) {
-			var snowObj,
-				empty,
-				update;
-	
-			snowObj = new THREE.Snow();
-			empty = new THREE.Object3D();
-			empty.name = 'snow';
-	
-			empty.add(snowObj.particles);
-	
-			parent.add(empty);
-	
-			update = this.update;
-			this.update = function (time) {
-				snowObj.time(time * 0.04);
-				update();
-			};
-	
-			return empty;
-		};
-	}());
-
-/***/ },
-/* 74 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(7);
-	
-	THREE.ShaderLib.snow = {
-		uniforms: {
-			color:  { type: 'c', value: new THREE.Color( 0xFFFFFF ) },
-			height: { type: 'f', value: 20 },
-			elapsedTime: { type: 'f', value: 0 },
-			radiusX: { type: 'f', value: 0.1 },
-			radiusZ: { type: 'f', value: 0.1 },
-			size: { type: 'f', value: 20 },
-			scale: { type: 'f', value: 4 },
-			opacity: { type: 'f', value: 0.4 },
-			texture: { type: 't', value: null },
-			speedH: { type: 'f', value: 1 },
-			speedV: { type: 'f', value: 1 }
-		},
-		vertexShader: [
-			'uniform float radiusX;',
-			'uniform float radiusZ;',
-			'uniform float size;',
-			'uniform float scale;',
-			'uniform float height;',
-			'uniform float elapsedTime;',
-			'uniform float speedH;',
-			'uniform float speedV;',
-	
-			'void main() {',
-			'	vec3 pos = position;',
-			'	pos.x += cos((elapsedTime + position.z) * 0.25 * speedH) * radiusX;',
-			'	pos.y = mod(pos.y - elapsedTime * speedV, height);',
-			'	pos.z += sin((elapsedTime + position.x) * 0.25 * speedH) * radiusZ;',
-	
-			'	vec4 mvPosition = modelViewMatrix * vec4( pos, 1.0 );',
-	
-			'	gl_PointSize = size * ( scale / length( mvPosition.xyz ) );',
-	
-			'	gl_Position = projectionMatrix * mvPosition;',
-			'}'
-		].join("\n"),
-		fragmentShader: [
-			'uniform vec3 color;',
-			'uniform float opacity;',
-			'uniform sampler2D texture;',
-	
-			'void main() {',
-			'	vec4 texColor = texture2D( texture, gl_PointCoord );',
-			'	gl_FragColor = texColor * vec4( color, opacity );',
-			'}',
-		].join("\n")
-	};
-	
-	THREE.Snow = function (options) {
-		var snowShader = THREE.ShaderLib.snow;
-		var uniforms = THREE.UniformsUtils.clone( snowShader.uniforms );
-		var attributes = {};
-	
-		var shaderMaterial = new THREE.ShaderMaterial( {
-			uniforms: 		uniforms,
-			attributes:     attributes,
-			vertexShader:   snowShader.vertexShader,
-			fragmentShader: snowShader.fragmentShader,
-	
-			blending: 		THREE.AdditiveBlending,
-			depthTest: 		false,
-			transparent:	true
-		});
-	
-		options = options || {};
-	
-		var count = options.count || 10000;
-		// var minSize = options.minSize || 50;
-		// var sizeRange = (options.maxSize || 80) - minSize;
-		var range = options.range || new THREE.Vector3(20, 20, 20);
-	
-		uniforms.texture.value = THREE.ImageUtils.loadTexture( options.flake || THREE.Snow.flake ); //todo: make configurable
-		// uniforms.range.value = [range.x, range.y, range.z];
-	
-		var geometry = new THREE.BufferGeometry();
-		var vertices = [];
-		// var size = [];
-		// var colors = [];
-		// var times = [];
-		// var color = new THREE.Color( 0xffffff );
-	
-		for ( var i = 0; i < count; i++ ) {
-			vertices.push(
-				Math.random() * range.x - range.x / 2,
-				-range.y,
-				Math.random() * range.z - range.z / 2
-			);
-		}
-	
-		geometry.addAttribute( 'position',
-			new THREE.BufferAttribute( new Float32Array( vertices ), 3 )
-		);
-	
-		var particles = new THREE.PointCloud( geometry, shaderMaterial );
-		//particles.position.y = range.y / 2;
-		//particles.position.z = -range.z / 2;
-	
-		this.particles = particles;
-		this.position = particles.position;
-	
-		this.time = function (t) {
-			if (t !== undefined) {
-				uniforms.elapsedTime.value = t;
-			}
-	
-			return uniforms.elapsedTime.value;
-		};
-	
-		Object.defineProperty(this, 'visible', {
-			get: function () {
-				return particles.visible;
-			},
-			set: function (val) {
-				particles.visible = !!val;
-			}
-		});
-	};
-	
-	THREE.Snow.flake = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyBpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBXaW5kb3dzIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOkU3RTAyNUNGNjU3MDExRTE4RjZFQUQzRTYzNzcxOENCIiB4bXBNTTpEb2N1bWVudElEPSJ4bXAuZGlkOkU3RTAyNUQwNjU3MDExRTE4RjZFQUQzRTYzNzcxOENCIj4gPHhtcE1NOkRlcml2ZWRGcm9tIHN0UmVmOmluc3RhbmNlSUQ9InhtcC5paWQ6RTdFMDI1Q0Q2NTcwMTFFMThGNkVBRDNFNjM3NzE4Q0IiIHN0UmVmOmRvY3VtZW50SUQ9InhtcC5kaWQ6RTdFMDI1Q0U2NTcwMTFFMThGNkVBRDNFNjM3NzE4Q0IiLz4gPC9yZGY6RGVzY3JpcHRpb24+IDwvcmRmOlJERj4gPC94OnhtcG1ldGE+IDw/eHBhY2tldCBlbmQ9InIiPz5CMaWgAAASq0lEQVR42tRd23YbOQ6U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';
-
-/***/ },
-/* 75 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(6),
-			THREE = __webpack_require__(7);
-	
-		__webpack_require__(76);
-	
-		return function sound(parent, options) {
-			var obj,
-				src,
-				listener,
-				scene = parent;
-	
-			if (typeof options === 'string' || Array.isArray(options)) {
-				src = options;
-			} else if (options) {
-				src = options.src;
-			}
-	
-			while (!(scene instanceof THREE.Scene) && scene.parent) {
-				scene = scene.parent;
-			}
-	
-			listener = scene.getObjectByName('audio-listener');
-			obj = new THREE.Audio(listener);
-			// obj.setLoop(true);
-			obj.load(src);
-	
-			this.start = obj.start.bind(obj);
-			this.volume = obj.volume.bind(obj);
-	
-			parent.add(obj);
-	
-			return obj;
-		};
-	}());
-
-/***/ },
-/* 76 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(7);
+	var THREE = __webpack_require__(32);
 	
 	/**
 	 * @author mrdoob / http://mrdoob.com/
@@ -41089,73 +39221,11 @@
 
 
 /***/ },
-/* 77 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(6),
-			THREE = __webpack_require__(7);
-	
-		return function box(parent, options) {
-			var geometry,
-				mesh;
-	
-			geometry = new THREE.SphereGeometry(
-				options.radius === undefined ? 0.5 : options.radius,
-				options.widthSegments === undefined ? 16 : options.widthSegments,
-				options.heightSegments === undefined ? 12 : options.heightSegments,
-				options.phiStart,
-				options.phiLength,
-				options.thetaStart,
-				options.thetaLength
-			);
-			mesh = new THREE.Mesh(geometry, materials.standard());
-			mesh.name = 'sphere';
-	
-			parent.add(mesh);
-	
-			return mesh;
-		};
-	}());
-
-/***/ },
-/* 78 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(6),
-			THREE = __webpack_require__(7);
-	
-		return function torus(parent, options) {
-			var geometry,
-				mesh;
-	
-			geometry = new THREE.TorusGeometry(
-				options.radius === undefined ? 0.5 : options.radius,
-				options.tube === undefined ? 0.125 : options.tube,
-				options.radialSegments === undefined ? 12 : options.radialSegments,
-				options.tubularSegments === undefined ? 16 : options.tubularSegments,
-				options.arc
-			);
-			mesh = new THREE.Mesh(geometry, materials.standard());
-			mesh.name = 'torus';
-	
-			parent.add(mesh);
-	
-			return mesh;
-		};
-	}());
-
-/***/ },
-/* 79 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(7);
+	var THREE = __webpack_require__(32);
 	
 	/**
 	 * @author zz85 / https://github.com/zz85
@@ -41426,6 +39496,2276 @@
 	
 	
 	};
+
+
+/***/ },
+/* 38 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/*** IMPORTS FROM imports-loader ***/
+	var THREE = __webpack_require__(32);
+	
+	THREE.ShaderLib.snow = {
+		uniforms: {
+			color:  { type: 'c', value: new THREE.Color( 0xFFFFFF ) },
+			height: { type: 'f', value: 20 },
+			elapsedTime: { type: 'f', value: 0 },
+			radiusX: { type: 'f', value: 0.1 },
+			radiusZ: { type: 'f', value: 0.1 },
+			size: { type: 'f', value: 20 },
+			scale: { type: 'f', value: 4 },
+			opacity: { type: 'f', value: 0.4 },
+			texture: { type: 't', value: null },
+			speedH: { type: 'f', value: 1 },
+			speedV: { type: 'f', value: 1 }
+		},
+		vertexShader: [
+			'uniform float radiusX;',
+			'uniform float radiusZ;',
+			'uniform float size;',
+			'uniform float scale;',
+			'uniform float height;',
+			'uniform float elapsedTime;',
+			'uniform float speedH;',
+			'uniform float speedV;',
+	
+			'void main() {',
+			'	vec3 pos = position;',
+			'	pos.x += cos((elapsedTime + position.z) * 0.25 * speedH) * radiusX;',
+			'	pos.y = mod(pos.y - elapsedTime * speedV, height);',
+			'	pos.z += sin((elapsedTime + position.x) * 0.25 * speedH) * radiusZ;',
+	
+			'	vec4 mvPosition = modelViewMatrix * vec4( pos, 1.0 );',
+	
+			'	gl_PointSize = size * ( scale / length( mvPosition.xyz ) );',
+	
+			'	gl_Position = projectionMatrix * mvPosition;',
+			'}'
+		].join("\n"),
+		fragmentShader: [
+			'uniform vec3 color;',
+			'uniform float opacity;',
+			'uniform sampler2D texture;',
+	
+			'void main() {',
+			'	vec4 texColor = texture2D( texture, gl_PointCoord );',
+			'	gl_FragColor = texColor * vec4( color, opacity );',
+			'}',
+		].join("\n")
+	};
+	
+	THREE.Snow = function (options) {
+		var snowShader = THREE.ShaderLib.snow;
+		var uniforms = THREE.UniformsUtils.clone( snowShader.uniforms );
+		var attributes = {};
+	
+		var shaderMaterial = new THREE.ShaderMaterial( {
+			uniforms: 		uniforms,
+			attributes:     attributes,
+			vertexShader:   snowShader.vertexShader,
+			fragmentShader: snowShader.fragmentShader,
+	
+			blending: 		THREE.AdditiveBlending,
+			depthTest: 		false,
+			transparent:	true
+		});
+	
+		options = options || {};
+	
+		var count = options.count || 10000;
+		// var minSize = options.minSize || 50;
+		// var sizeRange = (options.maxSize || 80) - minSize;
+		var range = options.range || new THREE.Vector3(20, 20, 20);
+	
+		uniforms.texture.value = THREE.ImageUtils.loadTexture( options.flake || THREE.Snow.flake ); //todo: make configurable
+		// uniforms.range.value = [range.x, range.y, range.z];
+	
+		var geometry = new THREE.BufferGeometry();
+		var vertices = [];
+		// var size = [];
+		// var colors = [];
+		// var times = [];
+		// var color = new THREE.Color( 0xffffff );
+	
+		for ( var i = 0; i < count; i++ ) {
+			vertices.push(
+				Math.random() * range.x - range.x / 2,
+				-range.y,
+				Math.random() * range.z - range.z / 2
+			);
+		}
+	
+		geometry.addAttribute( 'position',
+			new THREE.BufferAttribute( new Float32Array( vertices ), 3 )
+		);
+	
+		var particles = new THREE.PointCloud( geometry, shaderMaterial );
+		//particles.position.y = range.y / 2;
+		//particles.position.z = -range.z / 2;
+	
+		this.particles = particles;
+		this.position = particles.position;
+	
+		this.time = function (t) {
+			if (t !== undefined) {
+				uniforms.elapsedTime.value = t;
+			}
+	
+			return uniforms.elapsedTime.value;
+		};
+	
+		Object.defineProperty(this, 'visible', {
+			get: function () {
+				return particles.visible;
+			},
+			set: function (val) {
+				particles.visible = !!val;
+			}
+		});
+	};
+	
+	THREE.Snow.flake = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyBpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBXaW5kb3dzIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOkU3RTAyNUNGNjU3MDExRTE4RjZFQUQzRTYzNzcxOENCIiB4bXBNTTpEb2N1bWVudElEPSJ4bXAuZGlkOkU3RTAyNUQwNjU3MDExRTE4RjZFQUQzRTYzNzcxOENCIj4gPHhtcE1NOkRlcml2ZWRGcm9tIHN0UmVmOmluc3RhbmNlSUQ9InhtcC5paWQ6RTdFMDI1Q0Q2NTcwMTFFMThGNkVBRDNFNjM3NzE4Q0IiIHN0UmVmOmRvY3VtZW50SUQ9InhtcC5kaWQ6RTdFMDI1Q0U2NTcwMTFFMThGNkVBRDNFNjM3NzE4Q0IiLz4gPC9yZGY6RGVzY3JpcHRpb24+IDwvcmRmOlJERj4gPC94OnhtcG1ldGE+IDw/eHBhY2tldCBlbmQ9InIiPz5CMaWgAAASq0lEQVR42tRd23YbOQ6U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';
+
+/***/ },
+/* 39 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var assign        = __webpack_require__(62)
+	  , normalizeOpts = __webpack_require__(60)
+	  , isCallable    = __webpack_require__(61)
+	  , contains      = __webpack_require__(63)
+	
+	  , d;
+	
+	d = module.exports = function (dscr, value/*, options*/) {
+		var c, e, w, options, desc;
+		if ((arguments.length < 2) || (typeof dscr !== 'string')) {
+			options = value;
+			value = dscr;
+			dscr = null;
+		} else {
+			options = arguments[2];
+		}
+		if (dscr == null) {
+			c = w = true;
+			e = false;
+		} else {
+			c = contains.call(dscr, 'c');
+			e = contains.call(dscr, 'e');
+			w = contains.call(dscr, 'w');
+		}
+	
+		desc = { value: value, configurable: c, enumerable: e, writable: w };
+		return !options ? desc : assign(normalizeOpts(options), desc);
+	};
+	
+	d.gs = function (dscr, get, set/*, options*/) {
+		var c, e, options, desc;
+		if (typeof dscr !== 'string') {
+			options = set;
+			set = get;
+			get = dscr;
+			dscr = null;
+		} else {
+			options = arguments[3];
+		}
+		if (get == null) {
+			get = undefined;
+		} else if (!isCallable(get)) {
+			options = get;
+			get = set = undefined;
+		} else if (set == null) {
+			set = undefined;
+		} else if (!isCallable(set)) {
+			options = set;
+			set = undefined;
+		}
+		if (dscr == null) {
+			c = true;
+			e = false;
+		} else {
+			c = contains.call(dscr, 'c');
+			e = contains.call(dscr, 'e');
+		}
+	
+		desc = { get: get, set: set, configurable: c, enumerable: e };
+		return !options ? desc : assign(normalizeOpts(options), desc);
+	};
+
+
+/***/ },
+/* 40 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/asphalt.jpg"
+
+/***/ },
+/* 41 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/brick-tiles.jpg"
+
+/***/ },
+/* 42 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/bricks-normal.jpg"
+
+/***/ },
+/* 43 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/bricks-specular.jpg"
+
+/***/ },
+/* 44 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/bricks.jpg"
+
+/***/ },
+/* 45 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAABlBMVEUsLCzp6enLhVdXAAAAAWJLR0QAiAUdSAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB94KFBIOCP7R3TQAAAA4SURBVGje7dAhEgAACMOw/f/T4Gc5XKqjmlRTBQAAAAAAAAAAAAAA4AiMAQAAAAAAAAAAAADgGSyKafDiEFszywAAAABJRU5ErkJggg=="
+
+/***/ },
+/* 46 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/grass.jpg"
+
+/***/ },
+/* 47 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/metal-floor.jpg"
+
+/***/ },
+/* 48 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/metal.jpg"
+
+/***/ },
+/* 49 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/stone.jpg"
+
+/***/ },
+/* 50 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/tiles.jpg"
+
+/***/ },
+/* 51 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/weathered-wood.jpg"
+
+/***/ },
+/* 52 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/wood.jpg"
+
+/***/ },
+/* 53 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = function (fn) {
+		if (typeof fn !== 'function') throw new TypeError(fn + " is not a function");
+		return fn;
+	};
+
+
+/***/ },
+/* 54 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/**
+	 * A specialized version of `_.forEach` for arrays without support for callback
+	 * shorthands or `this` binding.
+	 *
+	 * @private
+	 * @param {Array} array The array to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @returns {Array} Returns `array`.
+	 */
+	function arrayEach(array, iteratee) {
+	  var index = -1,
+	      length = array.length;
+	
+	  while (++index < length) {
+	    if (iteratee(array[index], index, array) === false) {
+	      break;
+	    }
+	  }
+	  return array;
+	}
+	
+	module.exports = arrayEach;
+
+
+/***/ },
+/* 55 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var keys = __webpack_require__(68);
+	
+	/**
+	 * Used as the maximum length of an array-like value.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+	 * for more details.
+	 */
+	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
+	
+	/**
+	 * The base implementation of `_.forEach` without support for callback
+	 * shorthands and `this` binding.
+	 *
+	 * @private
+	 * @param {Array|Object|string} collection The collection to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @returns {Array|Object|string} Returns `collection`.
+	 */
+	function baseEach(collection, iteratee) {
+	  var length = collection ? collection.length : 0;
+	  if (!isLength(length)) {
+	    return baseForOwn(collection, iteratee);
+	  }
+	  var index = -1,
+	      iterable = toObject(collection);
+	
+	  while (++index < length) {
+	    if (iteratee(iterable[index], index, iterable) === false) {
+	      break;
+	    }
+	  }
+	  return collection;
+	}
+	
+	/**
+	 * The base implementation of `baseForIn` and `baseForOwn` which iterates
+	 * over `object` properties returned by `keysFunc` invoking `iteratee` for
+	 * each property. Iterator functions may exit iteration early by explicitly
+	 * returning `false`.
+	 *
+	 * @private
+	 * @param {Object} object The object to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @param {Function} keysFunc The function to get the keys of `object`.
+	 * @returns {Object} Returns `object`.
+	 */
+	function baseFor(object, iteratee, keysFunc) {
+	  var index = -1,
+	      iterable = toObject(object),
+	      props = keysFunc(object),
+	      length = props.length;
+	
+	  while (++index < length) {
+	    var key = props[index];
+	    if (iteratee(iterable[key], key, iterable) === false) {
+	      break;
+	    }
+	  }
+	  return object;
+	}
+	
+	/**
+	 * The base implementation of `_.forOwn` without support for callback
+	 * shorthands and `this` binding.
+	 *
+	 * @private
+	 * @param {Object} object The object to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @returns {Object} Returns `object`.
+	 */
+	function baseForOwn(object, iteratee) {
+	  return baseFor(object, iteratee, keys);
+	}
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * Converts `value` to an object if it is not one.
+	 *
+	 * @private
+	 * @param {*} value The value to process.
+	 * @returns {Object} Returns the object.
+	 */
+	function toObject(value) {
+	  return isObject(value) ? value : Object(value);
+	}
+	
+	/**
+	 * Checks if `value` is the language type of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * **Note:** See the [ES5 spec](https://es5.github.io/#x8) for more details.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(1);
+	 * // => false
+	 */
+	function isObject(value) {
+	  // Avoid a V8 JIT bug in Chrome 19-20.
+	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+	  var type = typeof value;
+	  return type == 'function' || (value && type == 'object') || false;
+	}
+	
+	module.exports = baseEach;
+
+
+/***/ },
+/* 56 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/**
+	 * A specialized version of `baseCallback` which only supports `this` binding
+	 * and specifying the number of arguments to provide to `func`.
+	 *
+	 * @private
+	 * @param {Function} func The function to bind.
+	 * @param {*} thisArg The `this` binding of `func`.
+	 * @param {number} [argCount] The number of arguments to provide to `func`.
+	 * @returns {Function} Returns the callback.
+	 */
+	function bindCallback(func, thisArg, argCount) {
+	  if (typeof func != 'function') {
+	    return identity;
+	  }
+	  if (typeof thisArg == 'undefined') {
+	    return func;
+	  }
+	  switch (argCount) {
+	    case 1: return function(value) {
+	      return func.call(thisArg, value);
+	    };
+	    case 3: return function(value, index, collection) {
+	      return func.call(thisArg, value, index, collection);
+	    };
+	    case 4: return function(accumulator, value, index, collection) {
+	      return func.call(thisArg, accumulator, value, index, collection);
+	    };
+	    case 5: return function(value, other, key, object, source) {
+	      return func.call(thisArg, value, other, key, object, source);
+	    };
+	  }
+	  return function() {
+	    return func.apply(thisArg, arguments);
+	  };
+	}
+	
+	/**
+	 * This method returns the first argument provided to it.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Utility
+	 * @param {*} value Any value.
+	 * @returns {*} Returns `value`.
+	 * @example
+	 *
+	 * var object = { 'user': 'fred' };
+	 * _.identity(object) === object;
+	 * // => true
+	 */
+	function identity(value) {
+	  return value;
+	}
+	
+	module.exports = bindCallback;
+
+
+/***/ },
+/* 57 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** `Object#toString` result references. */
+	var arrayTag = '[object Array]',
+	    funcTag = '[object Function]';
+	
+	/** Used to detect host constructors (Safari > 5). */
+	var reHostCtor = /^\[object .+?Constructor\]$/;
+	
+	/**
+	 * Used to match `RegExp` special characters.
+	 * See this [article on `RegExp` characters](http://www.regular-expressions.info/characters.html#special)
+	 * for more details.
+	 */
+	var reRegExpChars = /[.*+?^${}()|[\]\/\\]/g,
+	    reHasRegExpChars = RegExp(reRegExpChars.source);
+	
+	/**
+	 * Converts `value` to a string if it is not one. An empty string is returned
+	 * for `null` or `undefined` values.
+	 *
+	 * @private
+	 * @param {*} value The value to process.
+	 * @returns {string} Returns the string.
+	 */
+	function baseToString(value) {
+	  if (typeof value == 'string') {
+	    return value;
+	  }
+	  return value == null ? '' : (value + '');
+	}
+	
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return (value && typeof value == 'object') || false;
+	}
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to resolve the decompiled source of functions. */
+	var fnToString = Function.prototype.toString;
+	
+	/**
+	 * Used to resolve the `toStringTag` of values.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
+	 * for more details.
+	 */
+	var objToString = objectProto.toString;
+	
+	/** Used to detect if a method is native. */
+	var reNative = RegExp('^' +
+	  escapeRegExp(objToString)
+	  .replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+	);
+	
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeIsArray = isNative(nativeIsArray = Array.isArray) && nativeIsArray;
+	
+	/**
+	 * Used as the maximum length of an array-like value.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+	 * for more details.
+	 */
+	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * Checks if `value` is classified as an `Array` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isArray([1, 2, 3]);
+	 * // => true
+	 *
+	 * (function() { return _.isArray(arguments); })();
+	 * // => false
+	 */
+	var isArray = nativeIsArray || function(value) {
+	  return (isObjectLike(value) && isLength(value.length) && objToString.call(value) == arrayTag) || false;
+	};
+	
+	/**
+	 * Checks if `value` is a native function.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
+	 * @example
+	 *
+	 * _.isNative(Array.prototype.push);
+	 * // => true
+	 *
+	 * _.isNative(_);
+	 * // => false
+	 */
+	function isNative(value) {
+	  if (value == null) {
+	    return false;
+	  }
+	  if (objToString.call(value) == funcTag) {
+	    return reNative.test(fnToString.call(value));
+	  }
+	  return (isObjectLike(value) && reHostCtor.test(value)) || false;
+	}
+	
+	/**
+	 * Escapes the `RegExp` special characters "\", "^", "$", ".", "|", "?", "*",
+	 * "+", "(", ")", "[", "]", "{" and "}" in `string`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category String
+	 * @param {string} [string=''] The string to escape.
+	 * @returns {string} Returns the escaped string.
+	 * @example
+	 *
+	 * _.escapeRegExp('[lodash](https://lodash.com/)');
+	 * // => '\[lodash\]\(https://lodash\.com/\)'
+	 */
+	function escapeRegExp(string) {
+	  string = baseToString(string);
+	  return (string && reHasRegExpChars.test(string))
+	    ? string.replace(reRegExpChars, '\\$&')
+	    : string;
+	}
+	
+	module.exports = isArray;
+
+
+/***/ },
+/* 58 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var baseCopy = __webpack_require__(69),
+	    keys = __webpack_require__(70);
+	
+	/**
+	 * The base implementation of `_.assign` without support for argument juggling,
+	 * multiple sources, and `this` binding `customizer` functions.
+	 *
+	 * @private
+	 * @param {Object} object The destination object.
+	 * @param {Object} source The source object.
+	 * @param {Function} [customizer] The function to customize assigning values.
+	 * @returns {Object} Returns the destination object.
+	 */
+	function baseAssign(object, source, customizer) {
+	  var props = keys(source);
+	  if (!customizer) {
+	    return baseCopy(source, object, props);
+	  }
+	  var index = -1,
+	      length = props.length
+	
+	  while (++index < length) {
+	    var key = props[index],
+	        value = object[key],
+	        result = customizer(value, source[key], key, object, source);
+	
+	    if ((result === result ? result !== value : value === value) ||
+	        (typeof value == 'undefined' && !(key in object))) {
+	      object[key] = result;
+	    }
+	  }
+	  return object;
+	}
+	
+	module.exports = baseAssign;
+
+
+/***/ },
+/* 59 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var bindCallback = __webpack_require__(71),
+	    isIterateeCall = __webpack_require__(72);
+	
+	/**
+	 * Creates a function that assigns properties of source object(s) to a given
+	 * destination object.
+	 *
+	 * @private
+	 * @param {Function} assigner The function to assign values.
+	 * @returns {Function} Returns the new assigner function.
+	 */
+	function createAssigner(assigner) {
+	  return function() {
+	    var length = arguments.length,
+	        object = arguments[0];
+	
+	    if (length < 2 || object == null) {
+	      return object;
+	    }
+	    if (length > 3 && isIterateeCall(arguments[1], arguments[2], arguments[3])) {
+	      length = 2;
+	    }
+	    // Juggle arguments.
+	    if (length > 3 && typeof arguments[length - 2] == 'function') {
+	      var customizer = bindCallback(arguments[--length - 1], arguments[length--], 5);
+	    } else if (length > 2 && typeof arguments[length - 1] == 'function') {
+	      customizer = arguments[--length];
+	    }
+	    var index = 0;
+	    while (++index < length) {
+	      var source = arguments[index];
+	      if (source) {
+	        assigner(object, source, customizer);
+	      }
+	    }
+	    return object;
+	  };
+	}
+	
+	module.exports = createAssigner;
+
+
+/***/ },
+/* 60 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var assign = __webpack_require__(62)
+	
+	  , forEach = Array.prototype.forEach
+	  , create = Object.create, getPrototypeOf = Object.getPrototypeOf
+	
+	  , process;
+	
+	process = function (src, obj) {
+		var proto = getPrototypeOf(src);
+		return assign(proto ? process(proto, obj) : obj, src);
+	};
+	
+	module.exports = function (options/*, …options*/) {
+		var result = create(null);
+		forEach.call(arguments, function (options) {
+			if (options == null) return;
+			process(Object(options), result);
+		});
+		return result;
+	};
+
+
+/***/ },
+/* 61 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// Deprecated
+	
+	'use strict';
+	
+	module.exports = function (obj) { return typeof obj === 'function'; };
+
+
+/***/ },
+/* 62 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = __webpack_require__(64)()
+		? Object.assign
+		: __webpack_require__(65);
+
+
+/***/ },
+/* 63 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = __webpack_require__(66)()
+		? String.prototype.contains
+		: __webpack_require__(67);
+
+
+/***/ },
+/* 64 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = function () {
+		var assign = Object.assign, obj;
+		if (typeof assign !== 'function') return false;
+		obj = { foo: 'raz' };
+		assign(obj, { bar: 'dwa' }, { trzy: 'trzy' });
+		return (obj.foo + obj.bar + obj.trzy) === 'razdwatrzy';
+	};
+
+
+/***/ },
+/* 65 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var keys  = __webpack_require__(74)
+	  , value = __webpack_require__(73)
+	
+	  , max = Math.max;
+	
+	module.exports = function (dest, src/*, …srcn*/) {
+		var error, i, l = max(arguments.length, 2), assign;
+		dest = Object(value(dest));
+		assign = function (key) {
+			try { dest[key] = src[key]; } catch (e) {
+				if (!error) error = e;
+			}
+		};
+		for (i = 1; i < l; ++i) {
+			src = arguments[i];
+			keys(src).forEach(assign);
+		}
+		if (error !== undefined) throw error;
+		return dest;
+	};
+
+
+/***/ },
+/* 66 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var str = 'razdwatrzy';
+	
+	module.exports = function () {
+		if (typeof str.contains !== 'function') return false;
+		return ((str.contains('dwa') === true) && (str.contains('foo') === false));
+	};
+
+
+/***/ },
+/* 67 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var indexOf = String.prototype.indexOf;
+	
+	module.exports = function (searchString/*, position*/) {
+		return indexOf.call(this, searchString, arguments[1]) > -1;
+	};
+
+
+/***/ },
+/* 68 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(global) {/**
+	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var isArguments = __webpack_require__(76),
+	    isArray = __webpack_require__(57),
+	    isNative = __webpack_require__(77);
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to detect DOM support. */
+	var document = (document = global.window) && document.document;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/** Native method references. */
+	var propertyIsEnumerable = objectProto.propertyIsEnumerable;
+	
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeKeys = isNative(nativeKeys = Object.keys) && nativeKeys;
+	
+	/**
+	 * Used as the maximum length of an array-like value.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+	 * for more details.
+	 */
+	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
+	
+	/**
+	 * An object environment feature flags.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @type Object
+	 */
+	var support = {};
+	
+	(function(x) {
+	
+	  /**
+	   * Detect if the DOM is supported.
+	   *
+	   * @memberOf _.support
+	   * @type boolean
+	   */
+	  try {
+	    support.dom = document.createDocumentFragment().nodeType === 11;
+	  } catch(e) {
+	    support.dom = false;
+	  }
+	
+	  /**
+	   * Detect if `arguments` object indexes are non-enumerable.
+	   *
+	   * In Firefox < 4, IE < 9, PhantomJS, and Safari < 5.1 `arguments` object
+	   * indexes are non-enumerable. Chrome < 25 and Node.js < 0.11.0 treat
+	   * `arguments` object indexes as non-enumerable and fail `hasOwnProperty`
+	   * checks for indexes that exceed their function's formal parameters with
+	   * associated values of `0`.
+	   *
+	   * @memberOf _.support
+	   * @type boolean
+	   */
+	  try {
+	    support.nonEnumArgs = !propertyIsEnumerable.call(arguments, 1);
+	  } catch(e) {
+	    support.nonEnumArgs = true;
+	  }
+	}(0, 0));
+	
+	/**
+	 * Checks if `value` is a valid array-like index.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+	 */
+	function isIndex(value, length) {
+	  value = +value;
+	  length = length == null ? MAX_SAFE_INTEGER : length;
+	  return value > -1 && value % 1 == 0 && value < length;
+	}
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * A fallback implementation of `Object.keys` which creates an array of the
+	 * own enumerable property names of `object`.
+	 *
+	 * @private
+	 * @param {Object} object The object to inspect.
+	 * @returns {Array} Returns the array of property names.
+	 */
+	function shimKeys(object) {
+	  var props = keysIn(object),
+	      propsLength = props.length,
+	      length = propsLength && object.length;
+	
+	  var allowIndexes = length && isLength(length) &&
+	    (isArray(object) || (support.nonEnumArgs && isArguments(object)));
+	
+	  var index = -1,
+	      result = [];
+	
+	  while (++index < propsLength) {
+	    var key = props[index];
+	    if ((allowIndexes && isIndex(key, length)) || hasOwnProperty.call(object, key)) {
+	      result.push(key);
+	    }
+	  }
+	  return result;
+	}
+	
+	/**
+	 * Checks if `value` is the language type of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * **Note:** See the [ES5 spec](https://es5.github.io/#x8) for more details.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(1);
+	 * // => false
+	 */
+	function isObject(value) {
+	  // Avoid a V8 JIT bug in Chrome 19-20.
+	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+	  var type = typeof value;
+	  return type == 'function' || (value && type == 'object') || false;
+	}
+	
+	/**
+	 * Creates an array of the own enumerable property names of `object`.
+	 *
+	 * **Note:** Non-object values are coerced to objects. See the
+	 * [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.keys)
+	 * for more details.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Object
+	 * @param {Object} object The object to inspect.
+	 * @returns {Array} Returns the array of property names.
+	 * @example
+	 *
+	 * function Foo() {
+	 *   this.a = 1;
+	 *   this.b = 2;
+	 * }
+	 *
+	 * Foo.prototype.c = 3;
+	 *
+	 * _.keys(new Foo);
+	 * // => ['a', 'b'] (iteration order is not guaranteed)
+	 *
+	 * _.keys('hi');
+	 * // => ['0', '1']
+	 */
+	var keys = !nativeKeys ? shimKeys : function(object) {
+	  if (object) {
+	    var Ctor = object.constructor,
+	        length = object.length;
+	  }
+	  if ((typeof Ctor == 'function' && Ctor.prototype === object) ||
+	     (typeof object != 'function' && (length && isLength(length)))) {
+	    return shimKeys(object);
+	  }
+	  return isObject(object) ? nativeKeys(object) : [];
+	};
+	
+	/**
+	 * Creates an array of the own and inherited enumerable property names of `object`.
+	 *
+	 * **Note:** Non-object values are coerced to objects.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Object
+	 * @param {Object} object The object to inspect.
+	 * @returns {Array} Returns the array of property names.
+	 * @example
+	 *
+	 * function Foo() {
+	 *   this.a = 1;
+	 *   this.b = 2;
+	 * }
+	 *
+	 * Foo.prototype.c = 3;
+	 *
+	 * _.keysIn(new Foo);
+	 * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
+	 */
+	function keysIn(object) {
+	  if (object == null) {
+	    return [];
+	  }
+	  if (!isObject(object)) {
+	    object = Object(object);
+	  }
+	  var length = object.length;
+	  length = (length && isLength(length) &&
+	    (isArray(object) || (support.nonEnumArgs && isArguments(object))) && length) || 0;
+	
+	  var Ctor = object.constructor,
+	      index = -1,
+	      isProto = typeof Ctor == 'function' && Ctor.prototype == object,
+	      result = Array(length),
+	      skipIndexes = length > 0;
+	
+	  while (++index < length) {
+	    result[index] = (index + '');
+	  }
+	  for (var key in object) {
+	    if (!(skipIndexes && isIndex(key, length)) &&
+	        !(key == 'constructor' && (isProto || !hasOwnProperty.call(object, key)))) {
+	      result.push(key);
+	    }
+	  }
+	  return result;
+	}
+	
+	module.exports = keys;
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+
+/***/ },
+/* 69 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/**
+	 * Copies the properties of `source` to `object`.
+	 *
+	 * @private
+	 * @param {Object} source The object to copy properties from.
+	 * @param {Object} [object={}] The object to copy properties to.
+	 * @param {Array} props The property names to copy.
+	 * @returns {Object} Returns `object`.
+	 */
+	function baseCopy(source, object, props) {
+	  if (!props) {
+	    props = object;
+	    object = {};
+	  }
+	  var index = -1,
+	      length = props.length;
+	
+	  while (++index < length) {
+	    var key = props[index];
+	    object[key] = source[key];
+	  }
+	  return object;
+	}
+	
+	module.exports = baseCopy;
+
+
+/***/ },
+/* 70 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(global) {/**
+	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var isArguments = __webpack_require__(80),
+	    isArray = __webpack_require__(79),
+	    isNative = __webpack_require__(81);
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to detect DOM support. */
+	var document = (document = global.window) && document.document;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/** Native method references. */
+	var propertyIsEnumerable = objectProto.propertyIsEnumerable;
+	
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeKeys = isNative(nativeKeys = Object.keys) && nativeKeys;
+	
+	/**
+	 * Used as the maximum length of an array-like value.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+	 * for more details.
+	 */
+	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
+	
+	/**
+	 * An object environment feature flags.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @type Object
+	 */
+	var support = {};
+	
+	(function(x) {
+	
+	  /**
+	   * Detect if the DOM is supported.
+	   *
+	   * @memberOf _.support
+	   * @type boolean
+	   */
+	  try {
+	    support.dom = document.createDocumentFragment().nodeType === 11;
+	  } catch(e) {
+	    support.dom = false;
+	  }
+	
+	  /**
+	   * Detect if `arguments` object indexes are non-enumerable.
+	   *
+	   * In Firefox < 4, IE < 9, PhantomJS, and Safari < 5.1 `arguments` object
+	   * indexes are non-enumerable. Chrome < 25 and Node.js < 0.11.0 treat
+	   * `arguments` object indexes as non-enumerable and fail `hasOwnProperty`
+	   * checks for indexes that exceed their function's formal parameters with
+	   * associated values of `0`.
+	   *
+	   * @memberOf _.support
+	   * @type boolean
+	   */
+	  try {
+	    support.nonEnumArgs = !propertyIsEnumerable.call(arguments, 1);
+	  } catch(e) {
+	    support.nonEnumArgs = true;
+	  }
+	}(0, 0));
+	
+	/**
+	 * Checks if `value` is a valid array-like index.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+	 */
+	function isIndex(value, length) {
+	  value = +value;
+	  length = length == null ? MAX_SAFE_INTEGER : length;
+	  return value > -1 && value % 1 == 0 && value < length;
+	}
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * A fallback implementation of `Object.keys` which creates an array of the
+	 * own enumerable property names of `object`.
+	 *
+	 * @private
+	 * @param {Object} object The object to inspect.
+	 * @returns {Array} Returns the array of property names.
+	 */
+	function shimKeys(object) {
+	  var props = keysIn(object),
+	      propsLength = props.length,
+	      length = propsLength && object.length;
+	
+	  var allowIndexes = length && isLength(length) &&
+	    (isArray(object) || (support.nonEnumArgs && isArguments(object)));
+	
+	  var index = -1,
+	      result = [];
+	
+	  while (++index < propsLength) {
+	    var key = props[index];
+	    if ((allowIndexes && isIndex(key, length)) || hasOwnProperty.call(object, key)) {
+	      result.push(key);
+	    }
+	  }
+	  return result;
+	}
+	
+	/**
+	 * Checks if `value` is the language type of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * **Note:** See the [ES5 spec](https://es5.github.io/#x8) for more details.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(1);
+	 * // => false
+	 */
+	function isObject(value) {
+	  // Avoid a V8 JIT bug in Chrome 19-20.
+	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+	  var type = typeof value;
+	  return type == 'function' || (value && type == 'object') || false;
+	}
+	
+	/**
+	 * Creates an array of the own enumerable property names of `object`.
+	 *
+	 * **Note:** Non-object values are coerced to objects. See the
+	 * [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.keys)
+	 * for more details.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Object
+	 * @param {Object} object The object to inspect.
+	 * @returns {Array} Returns the array of property names.
+	 * @example
+	 *
+	 * function Foo() {
+	 *   this.a = 1;
+	 *   this.b = 2;
+	 * }
+	 *
+	 * Foo.prototype.c = 3;
+	 *
+	 * _.keys(new Foo);
+	 * // => ['a', 'b'] (iteration order is not guaranteed)
+	 *
+	 * _.keys('hi');
+	 * // => ['0', '1']
+	 */
+	var keys = !nativeKeys ? shimKeys : function(object) {
+	  if (object) {
+	    var Ctor = object.constructor,
+	        length = object.length;
+	  }
+	  if ((typeof Ctor == 'function' && Ctor.prototype === object) ||
+	     (typeof object != 'function' && (length && isLength(length)))) {
+	    return shimKeys(object);
+	  }
+	  return isObject(object) ? nativeKeys(object) : [];
+	};
+	
+	/**
+	 * Creates an array of the own and inherited enumerable property names of `object`.
+	 *
+	 * **Note:** Non-object values are coerced to objects.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Object
+	 * @param {Object} object The object to inspect.
+	 * @returns {Array} Returns the array of property names.
+	 * @example
+	 *
+	 * function Foo() {
+	 *   this.a = 1;
+	 *   this.b = 2;
+	 * }
+	 *
+	 * Foo.prototype.c = 3;
+	 *
+	 * _.keysIn(new Foo);
+	 * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
+	 */
+	function keysIn(object) {
+	  if (object == null) {
+	    return [];
+	  }
+	  if (!isObject(object)) {
+	    object = Object(object);
+	  }
+	  var length = object.length;
+	  length = (length && isLength(length) &&
+	    (isArray(object) || (support.nonEnumArgs && isArguments(object))) && length) || 0;
+	
+	  var Ctor = object.constructor,
+	      index = -1,
+	      isProto = typeof Ctor == 'function' && Ctor.prototype == object,
+	      result = Array(length),
+	      skipIndexes = length > 0;
+	
+	  while (++index < length) {
+	    result[index] = (index + '');
+	  }
+	  for (var key in object) {
+	    if (!(skipIndexes && isIndex(key, length)) &&
+	        !(key == 'constructor' && (isProto || !hasOwnProperty.call(object, key)))) {
+	      result.push(key);
+	    }
+	  }
+	  return result;
+	}
+	
+	module.exports = keys;
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+
+/***/ },
+/* 71 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/**
+	 * A specialized version of `baseCallback` which only supports `this` binding
+	 * and specifying the number of arguments to provide to `func`.
+	 *
+	 * @private
+	 * @param {Function} func The function to bind.
+	 * @param {*} thisArg The `this` binding of `func`.
+	 * @param {number} [argCount] The number of arguments to provide to `func`.
+	 * @returns {Function} Returns the callback.
+	 */
+	function bindCallback(func, thisArg, argCount) {
+	  if (typeof func != 'function') {
+	    return identity;
+	  }
+	  if (typeof thisArg == 'undefined') {
+	    return func;
+	  }
+	  switch (argCount) {
+	    case 1: return function(value) {
+	      return func.call(thisArg, value);
+	    };
+	    case 3: return function(value, index, collection) {
+	      return func.call(thisArg, value, index, collection);
+	    };
+	    case 4: return function(accumulator, value, index, collection) {
+	      return func.call(thisArg, accumulator, value, index, collection);
+	    };
+	    case 5: return function(value, other, key, object, source) {
+	      return func.call(thisArg, value, other, key, object, source);
+	    };
+	  }
+	  return function() {
+	    return func.apply(thisArg, arguments);
+	  };
+	}
+	
+	/**
+	 * This method returns the first argument provided to it.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Utility
+	 * @param {*} value Any value.
+	 * @returns {*} Returns `value`.
+	 * @example
+	 *
+	 * var object = { 'user': 'fred' };
+	 * _.identity(object) === object;
+	 * // => true
+	 */
+	function identity(value) {
+	  return value;
+	}
+	
+	module.exports = bindCallback;
+
+
+/***/ },
+/* 72 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/**
+	 * Used as the maximum length of an array-like value.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+	 * for more details.
+	 */
+	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
+	
+	/**
+	 * Checks if `value` is a valid array-like index.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+	 */
+	function isIndex(value, length) {
+	  value = +value;
+	  length = length == null ? MAX_SAFE_INTEGER : length;
+	  return value > -1 && value % 1 == 0 && value < length;
+	}
+	
+	/**
+	 * Checks if the provided arguments are from an iteratee call.
+	 *
+	 * @private
+	 * @param {*} value The potential iteratee value argument.
+	 * @param {*} index The potential iteratee index or key argument.
+	 * @param {*} object The potential iteratee object argument.
+	 * @returns {boolean} Returns `true` if the arguments are from an iteratee call, else `false`.
+	 */
+	function isIterateeCall(value, index, object) {
+	  if (!isObject(object)) {
+	    return false;
+	  }
+	  var type = typeof index;
+	  if (type == 'number') {
+	    var length = object.length,
+	        prereq = isLength(length) && isIndex(index, length);
+	  } else {
+	    prereq = type == 'string' && index in value;
+	  }
+	  return prereq && object[index] === value;
+	}
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * Checks if `value` is the language type of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * **Note:** See the [ES5 spec](https://es5.github.io/#x8) for more details.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(1);
+	 * // => false
+	 */
+	function isObject(value) {
+	  // Avoid a V8 JIT bug in Chrome 19-20.
+	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+	  var type = typeof value;
+	  return type == 'function' || (value && type == 'object') || false;
+	}
+	
+	module.exports = isIterateeCall;
+
+
+/***/ },
+/* 73 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = function (value) {
+		if (value == null) throw new TypeError("Cannot use null or undefined");
+		return value;
+	};
+
+
+/***/ },
+/* 74 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = __webpack_require__(75)()
+		? Object.keys
+		: __webpack_require__(78);
+
+
+/***/ },
+/* 75 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = function () {
+		try {
+			Object.keys('primitive');
+			return true;
+		} catch (e) { return false; }
+	};
+
+
+/***/ },
+/* 76 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** `Object#toString` result references. */
+	var argsTag = '[object Arguments]';
+	
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return (value && typeof value == 'object') || false;
+	}
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/**
+	 * Used to resolve the `toStringTag` of values.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
+	 * for more details.
+	 */
+	var objToString = objectProto.toString;
+	
+	/**
+	 * Used as the maximum length of an array-like value.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+	 * for more details.
+	 */
+	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * Checks if `value` is classified as an `arguments` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * (function() { return _.isArguments(arguments); })();
+	 * // => true
+	 *
+	 * _.isArguments([1, 2, 3]);
+	 * // => false
+	 */
+	function isArguments(value) {
+	  var length = isObjectLike(value) ? value.length : undefined;
+	  return (isLength(length) && objToString.call(value) == argsTag) || false;
+	}
+	
+	module.exports = isArguments;
+
+
+/***/ },
+/* 77 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** `Object#toString` result references. */
+	var funcTag = '[object Function]';
+	
+	/** Used to detect host constructors (Safari > 5). */
+	var reHostCtor = /^\[object .+?Constructor\]$/;
+	
+	/**
+	 * Used to match `RegExp` special characters.
+	 * See this [article on `RegExp` characters](http://www.regular-expressions.info/characters.html#special)
+	 * for more details.
+	 */
+	var reRegExpChars = /[.*+?^${}()|[\]\/\\]/g,
+	    reHasRegExpChars = RegExp(reRegExpChars.source);
+	
+	/**
+	 * Converts `value` to a string if it is not one. An empty string is returned
+	 * for `null` or `undefined` values.
+	 *
+	 * @private
+	 * @param {*} value The value to process.
+	 * @returns {string} Returns the string.
+	 */
+	function baseToString(value) {
+	  if (typeof value == 'string') {
+	    return value;
+	  }
+	  return value == null ? '' : (value + '');
+	}
+	
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return (value && typeof value == 'object') || false;
+	}
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to resolve the decompiled source of functions. */
+	var fnToString = Function.prototype.toString;
+	
+	/**
+	 * Used to resolve the `toStringTag` of values.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
+	 * for more details.
+	 */
+	var objToString = objectProto.toString;
+	
+	/** Used to detect if a method is native. */
+	var reNative = RegExp('^' +
+	  escapeRegExp(objToString)
+	  .replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+	);
+	
+	/**
+	 * Checks if `value` is a native function.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
+	 * @example
+	 *
+	 * _.isNative(Array.prototype.push);
+	 * // => true
+	 *
+	 * _.isNative(_);
+	 * // => false
+	 */
+	function isNative(value) {
+	  if (value == null) {
+	    return false;
+	  }
+	  if (objToString.call(value) == funcTag) {
+	    return reNative.test(fnToString.call(value));
+	  }
+	  return (isObjectLike(value) && reHostCtor.test(value)) || false;
+	}
+	
+	/**
+	 * Escapes the `RegExp` special characters "\", "^", "$", ".", "|", "?", "*",
+	 * "+", "(", ")", "[", "]", "{" and "}" in `string`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category String
+	 * @param {string} [string=''] The string to escape.
+	 * @returns {string} Returns the escaped string.
+	 * @example
+	 *
+	 * _.escapeRegExp('[lodash](https://lodash.com/)');
+	 * // => '\[lodash\]\(https://lodash\.com/\)'
+	 */
+	function escapeRegExp(string) {
+	  string = baseToString(string);
+	  return (string && reHasRegExpChars.test(string))
+	    ? string.replace(reRegExpChars, '\\$&')
+	    : string;
+	}
+	
+	module.exports = isNative;
+
+
+/***/ },
+/* 78 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var keys = Object.keys;
+	
+	module.exports = function (object) {
+		return keys(object == null ? object : Object(object));
+	};
+
+
+/***/ },
+/* 79 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** `Object#toString` result references. */
+	var arrayTag = '[object Array]',
+	    funcTag = '[object Function]';
+	
+	/** Used to detect host constructors (Safari > 5). */
+	var reHostCtor = /^\[object .+?Constructor\]$/;
+	
+	/**
+	 * Used to match `RegExp` special characters.
+	 * See this [article on `RegExp` characters](http://www.regular-expressions.info/characters.html#special)
+	 * for more details.
+	 */
+	var reRegExpChars = /[.*+?^${}()|[\]\/\\]/g,
+	    reHasRegExpChars = RegExp(reRegExpChars.source);
+	
+	/**
+	 * Converts `value` to a string if it is not one. An empty string is returned
+	 * for `null` or `undefined` values.
+	 *
+	 * @private
+	 * @param {*} value The value to process.
+	 * @returns {string} Returns the string.
+	 */
+	function baseToString(value) {
+	  if (typeof value == 'string') {
+	    return value;
+	  }
+	  return value == null ? '' : (value + '');
+	}
+	
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return (value && typeof value == 'object') || false;
+	}
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to resolve the decompiled source of functions. */
+	var fnToString = Function.prototype.toString;
+	
+	/**
+	 * Used to resolve the `toStringTag` of values.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
+	 * for more details.
+	 */
+	var objToString = objectProto.toString;
+	
+	/** Used to detect if a method is native. */
+	var reNative = RegExp('^' +
+	  escapeRegExp(objToString)
+	  .replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+	);
+	
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeIsArray = isNative(nativeIsArray = Array.isArray) && nativeIsArray;
+	
+	/**
+	 * Used as the maximum length of an array-like value.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+	 * for more details.
+	 */
+	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * Checks if `value` is classified as an `Array` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isArray([1, 2, 3]);
+	 * // => true
+	 *
+	 * (function() { return _.isArray(arguments); })();
+	 * // => false
+	 */
+	var isArray = nativeIsArray || function(value) {
+	  return (isObjectLike(value) && isLength(value.length) && objToString.call(value) == arrayTag) || false;
+	};
+	
+	/**
+	 * Checks if `value` is a native function.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
+	 * @example
+	 *
+	 * _.isNative(Array.prototype.push);
+	 * // => true
+	 *
+	 * _.isNative(_);
+	 * // => false
+	 */
+	function isNative(value) {
+	  if (value == null) {
+	    return false;
+	  }
+	  if (objToString.call(value) == funcTag) {
+	    return reNative.test(fnToString.call(value));
+	  }
+	  return (isObjectLike(value) && reHostCtor.test(value)) || false;
+	}
+	
+	/**
+	 * Escapes the `RegExp` special characters "\", "^", "$", ".", "|", "?", "*",
+	 * "+", "(", ")", "[", "]", "{" and "}" in `string`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category String
+	 * @param {string} [string=''] The string to escape.
+	 * @returns {string} Returns the escaped string.
+	 * @example
+	 *
+	 * _.escapeRegExp('[lodash](https://lodash.com/)');
+	 * // => '\[lodash\]\(https://lodash\.com/\)'
+	 */
+	function escapeRegExp(string) {
+	  string = baseToString(string);
+	  return (string && reHasRegExpChars.test(string))
+	    ? string.replace(reRegExpChars, '\\$&')
+	    : string;
+	}
+	
+	module.exports = isArray;
+
+
+/***/ },
+/* 80 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** `Object#toString` result references. */
+	var argsTag = '[object Arguments]';
+	
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return (value && typeof value == 'object') || false;
+	}
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/**
+	 * Used to resolve the `toStringTag` of values.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
+	 * for more details.
+	 */
+	var objToString = objectProto.toString;
+	
+	/**
+	 * Used as the maximum length of an array-like value.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+	 * for more details.
+	 */
+	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * Checks if `value` is classified as an `arguments` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * (function() { return _.isArguments(arguments); })();
+	 * // => true
+	 *
+	 * _.isArguments([1, 2, 3]);
+	 * // => false
+	 */
+	function isArguments(value) {
+	  var length = isObjectLike(value) ? value.length : undefined;
+	  return (isLength(length) && objToString.call(value) == argsTag) || false;
+	}
+	
+	module.exports = isArguments;
+
+
+/***/ },
+/* 81 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** `Object#toString` result references. */
+	var funcTag = '[object Function]';
+	
+	/** Used to detect host constructors (Safari > 5). */
+	var reHostCtor = /^\[object .+?Constructor\]$/;
+	
+	/**
+	 * Used to match `RegExp` special characters.
+	 * See this [article on `RegExp` characters](http://www.regular-expressions.info/characters.html#special)
+	 * for more details.
+	 */
+	var reRegExpChars = /[.*+?^${}()|[\]\/\\]/g,
+	    reHasRegExpChars = RegExp(reRegExpChars.source);
+	
+	/**
+	 * Converts `value` to a string if it is not one. An empty string is returned
+	 * for `null` or `undefined` values.
+	 *
+	 * @private
+	 * @param {*} value The value to process.
+	 * @returns {string} Returns the string.
+	 */
+	function baseToString(value) {
+	  if (typeof value == 'string') {
+	    return value;
+	  }
+	  return value == null ? '' : (value + '');
+	}
+	
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return (value && typeof value == 'object') || false;
+	}
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to resolve the decompiled source of functions. */
+	var fnToString = Function.prototype.toString;
+	
+	/**
+	 * Used to resolve the `toStringTag` of values.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
+	 * for more details.
+	 */
+	var objToString = objectProto.toString;
+	
+	/** Used to detect if a method is native. */
+	var reNative = RegExp('^' +
+	  escapeRegExp(objToString)
+	  .replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+	);
+	
+	/**
+	 * Checks if `value` is a native function.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
+	 * @example
+	 *
+	 * _.isNative(Array.prototype.push);
+	 * // => true
+	 *
+	 * _.isNative(_);
+	 * // => false
+	 */
+	function isNative(value) {
+	  if (value == null) {
+	    return false;
+	  }
+	  if (objToString.call(value) == funcTag) {
+	    return reNative.test(fnToString.call(value));
+	  }
+	  return (isObjectLike(value) && reHostCtor.test(value)) || false;
+	}
+	
+	/**
+	 * Escapes the `RegExp` special characters "\", "^", "$", ".", "|", "?", "*",
+	 * "+", "(", ")", "[", "]", "{" and "}" in `string`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category String
+	 * @param {string} [string=''] The string to escape.
+	 * @returns {string} Returns the escaped string.
+	 * @example
+	 *
+	 * _.escapeRegExp('[lodash](https://lodash.com/)');
+	 * // => '\[lodash\]\(https://lodash\.com/\)'
+	 */
+	function escapeRegExp(string) {
+	  string = baseToString(string);
+	  return (string && reHasRegExpChars.test(string))
+	    ? string.replace(reRegExpChars, '\\$&')
+	    : string;
+	}
+	
+	module.exports = isNative;
 
 
 /***/ }
