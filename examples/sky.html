@@ -12,17 +12,24 @@
         });
 
         //an animated sky
-        var sky = VR.sky().setAzimuth(0);
+        var sky = VR.sky();
         VR.animate(function (delta, time) {
+            var oldAzimuth = sky.azimuth;
             sky.altitude = time / 10;
+            if (oldAzimuth !== sky.azimuth) {
+                console.log(sky.azimuth);
+            }
         });
+
+        //place viewer in center
+        VR.body.moveTo(0, 1.5, 0);
 
         //some random stone monoliths
         var i, obj, height;
         for (i = 0; i < 10; i++) {
             obj = i % 3 ? VR.box() : VR.cylinder();
             height = 2 + Math.random() * 2;
-            obj.moveTo(10 * Math.cos(i / 10 * 2 * Math.PI), height / 2, 10 * Math.sin(i / 10 * 2 * Math.PI));
+            obj.moveTo(6 * Math.cos(i / 10 * 2 * Math.PI), height / 2, 6 * Math.sin(i / 10 * 2 * Math.PI));
             obj.setScale(Math.random() + 1, height, Math.random() + 1);
         }
         </script>

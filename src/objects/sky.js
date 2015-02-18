@@ -23,17 +23,21 @@ module.exports = (function () {
 		var obj = new THREE.Sky(),
 			self = this,
 			scene = parent,
-			light;
+			light,
+			sunPosition,
+			azimuth = Math.PI / 6,
+			altitude = Math.PI / 6;
 
-		function update(altitude, azimuth) {
+		function mod(x, y) {
+			return x - y * Math.floor(x / y);
+		}
+
+		function update() {
 			var sinTheta,
 				cosTheta,
 				phi,
 				sinPhi,
 				cosPhi;
-
-			altitude = altitude - TAU * Math.floor(altitude / TAU);
-			azimuth = azimuth - TAU * Math.floor(azimuth / TAU);
 
 			sinTheta = Math.sin(altitude);
 			cosTheta = Math.cos(altitude);
@@ -41,30 +45,16 @@ module.exports = (function () {
 			sinPhi = Math.sin(phi);
 			cosPhi = Math.cos(phi);
 
-			self.sunPosition.set(
+			sunPosition.set(
 				distance * cosPhi * cosTheta,
 				distance * sinTheta,
 				distance * sinPhi * cosTheta
 			);
 
 			if (light) {
-
 				light.intensity = 1.5 * Math.max(0.0, 1.0 - Math.exp(-((Math.PI / 1.95 - Math.abs(HALF_PI - altitude)) / 1.5)));
-				light.position.copy(self.sunPosition).normalize().multiplyScalar(100);
+				light.position.copy(sunPosition).normalize().multiplyScalar(100);
 			}
-		}
-
-		function getAzimuth() {
-			var x = self.sunPosition.x,
-				y = self.sunPosition.z,
-				angle = Math.atan2(y, x);
-
-			return Math.PI / 2 + angle;
-		}
-
-		function getAltitude() {
-			scratchVector.copy(self.sunPosition).normalize();
-			return Math.asin(scratchVector.y);
 		}
 
 		obj.mesh.name = 'sky';
@@ -97,55 +87,52 @@ module.exports = (function () {
 				} else if (Array.isArray(options.sunPosition)) {
 					obj.uniforms.sunPosition.value.set(obj.uniforms.sunPosition.value, options.sunPosition);
 				} else {
-					altitude = parseFloat(options.altitude);
-					if (isNaN(altitude)) {
-						altitude = getAltitude();
-					} else {
-						needUpdate = true;
-					}
-
-					azimuth = parseFloat(options.azimuth);
-					if (!isNaN(azimuth)) {
-						needUpdate = true;
-					} else if (needUpdate) {
-						azimuth = getAzimuth();
-					}
-
-					if (needUpdate) {
-						update(altitude, azimuth);
-					}
+					self.altitude = options.altitude;
+					self.azimuth = options.azimuth;
 				}
 			}
 		};
 
-		this.sunPosition = obj.uniforms.sunPosition.value;
-		update(Math.PI / 6, Math.PI / 6);
-
-		this.setOptions(options);
-
 		Object.defineProperty(this, 'azimuth', {
 			set: function (val) {
-				update(getAltitude(), val);
+				val = mod(parseFloat(val), TAU);
+				if (!isNaN(val) && val !== azimuth) {
+					azimuth = val;
+					update();
+				}
 			},
-			get: getAzimuth
+			get: function () {
+				return azimuth;
+			}
 		});
 
 		Object.defineProperty(this, 'altitude', {
 			set: function (val) {
-				update(val, getAzimuth());
+				val = mod(parseFloat(val), TAU);
+				if (!isNaN(val) && val !== altitude) {
+					altitude = val;
+					update();
+				}
 			},
-			get: getAltitude
+			get: function() {
+				return altitude;
+			}
 		});
 
 		this.setAltitude = function (val) {
-			update(val, getAzimuth());
+			self.altitude = val;
 			return this;
 		};
 
 		this.setAzimuth = function (val) {
-			update(getAltitude(), val);
+			self.azimuth = val;
 			return this;
 		};
+
+		sunPosition = obj.uniforms.sunPosition.value;
+		update();
+
+		this.setOptions(options);
 
 		return obj.mesh;
 	};
