@@ -73,9 +73,9 @@ module.exports = (function () {
 
 			if (options) {
 				params.forEach(function (param) {
-					var val;
-					if (param !== undefined) {
-						val = parseFloat(param);
+					var val = options[param];
+					if (val !== undefined) {
+						val = parseFloat(val);
 						if (!isNaN(val)) {
 							obj.uniforms[param].value = val;
 						}
