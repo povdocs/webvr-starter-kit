@@ -1,0 +1,40 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>WebVR Starter Kit - Animation Example</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    </head>
+    <body>
+        <script type="text/javascript" src="../build/vr.js" charset="utf-8"></script>
+        <script type="text/javascript">
+        //Make a floor, with default checkerboard texture and tinted blue
+        VR.floor({ color: 'lightblue' });
+
+        //make a box, using brick-tiles material. Move it up and over.
+        var box = VR.box()
+          .setMaterial('brick-tiles')
+          .moveTo(-2, 1, 0.5);
+
+        //make a sphere, using shiny, metal material. make it a bit bigger and move it up
+        var sphere = VR.sphere()
+          .setMaterial('metal')
+          .setScale(1.4)
+          .moveTo(0, 1, 0);
+
+        //make a torus, using wood material. Move it up and over
+        var torus = VR.torus()
+          .setMaterial('wood')
+          .moveTo(2, 1, 0.5);
+
+        /*
+        Click on live preview link at the top right to view in full screen. Open the output page on a mobile phone or WebVR browser to view in 3D.
+        */
+
+        VR.animate(function (delta, time) {
+            box.rotateY(Math.PI * delta / 2);
+            torus.rotateX(Math.PI * delta * 2);
+            sphere.moveTo(0, 1, Math.sin(time));
+        });
+        </script>
+    </body>
+</html>
