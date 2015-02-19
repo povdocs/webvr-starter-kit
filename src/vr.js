@@ -54,7 +54,6 @@
 			'empty',
 			'sound',
 			'floor',
-			'snow',
 			'sky',
 			'panorama',
 			'image'
@@ -273,6 +272,7 @@
 		vrEffect.near = NEAR;
 		vrEffect.far = FAR;
 		vrEffect.addEventListener('fullscreenchange', function (evt) {
+			var screen;
 			if (isFullscreen()) {
 				if (vrMode) {
 					//no mouse control
@@ -280,6 +280,15 @@
 
 					vrControls.freeze = false;
 					vrControls.reset();
+
+					screen = window.screen;
+					if (screen.lockOrientation) {
+						screen.lockOrientation('landscape-primary');
+					} else if (screen.mozLockOrientation) {
+						screen.mozLockOrientation('landscape-primary');
+					} else if (screen.orientation && screen.orientation.lock) {
+						screen.orientation.lock('landscape-primary');
+					}
 				}
 			} else {
 				VR.exitVR();

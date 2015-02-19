@@ -123,11 +123,11 @@
 	
 			//todo: use icons instead of text
 			if (requestFullscreen && fullscreenEnabled) {
-				enableFullscreen = svgButton(__webpack_require__(5), 'fs-enable');
+				enableFullscreen = svgButton(__webpack_require__(4), 'fs-enable');
 				enableFullscreen.setAttribute('title', 'Enable Full Screen');
 				enableFullscreen.addEventListener('click', requestFullscreen.bind(fullScreenElement), false);
 	
-				disableFullscreen = svgButton(__webpack_require__(6), 'fs-disable');
+				disableFullscreen = svgButton(__webpack_require__(5), 'fs-disable');
 				disableFullscreen.setAttribute('title', 'Exit Full Screen');
 				disableFullscreen.addEventListener('click', VR.exitFullscreen, false);
 			}
@@ -142,12 +142,12 @@
 				}
 			});
 	
-			vrButton = svgButton(__webpack_require__(7), 'vr');
+			vrButton = svgButton(__webpack_require__(6), 'vr');
 			vrButton.setAttribute('title', 'Toggle Virtual Reality');
 			vrButton.className = 'unsupported';
 			vrButton.addEventListener('click', VR.requestVR, false);
 	
-			orientationButton = svgButton(__webpack_require__(8), 'orientation');
+			orientationButton = svgButton(__webpack_require__(7), 'orientation');
 			orientationButton.setAttribute('title', 'Toggle Orientation');
 			orientationButton.className = 'unsupported';
 			orientationButton.addEventListener('click', toggleOrientation, false);
@@ -257,7 +257,6 @@
 				'empty',
 				'sound',
 				'floor',
-				'snow',
 				'sky',
 				'panorama',
 				'image'
@@ -448,7 +447,7 @@
 			//need a scene to put all our objects in
 			scene = new THREE.Scene();
 	
-			bodyWrapper = new VRObject(scene, __webpack_require__(12), null, {
+			bodyWrapper = new VRObject(scene, __webpack_require__(11), null, {
 				name: 'body'
 			}).moveTo(0, 1.5, 4);
 			body = bodyWrapper.object;
@@ -476,6 +475,7 @@
 			vrEffect.near = NEAR;
 			vrEffect.far = FAR;
 			vrEffect.addEventListener('fullscreenchange', function (evt) {
+				var screen;
 				if (isFullscreen()) {
 					if (vrMode) {
 						//no mouse control
@@ -483,6 +483,15 @@
 	
 						vrControls.freeze = false;
 						vrControls.reset();
+	
+						screen = window.screen;
+						if (screen.lockOrientation) {
+							screen.lockOrientation('landscape-primary');
+						} else if (screen.mozLockOrientation) {
+							screen.mozLockOrientation('landscape-primary');
+						} else if (screen.orientation && screen.orientation.lock) {
+							screen.orientation.lock('landscape-primary');
+						}
 					}
 				} else {
 					VR.exitVR();
@@ -706,7 +715,7 @@
 		};
 	
 		objectMethods.forEach(function (method) {
-			var creator = __webpack_require__(11)("./" + method);
+			var creator = __webpack_require__(12)("./" + method);
 	
 			VR[method] = function (options) {
 				var obj = new VRObject(scene, creator, body, options);
@@ -741,12 +750,12 @@
 	var content = __webpack_require__(3);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
-	var update = __webpack_require__(4)(content, {});
+	var update = __webpack_require__(8)(content, {});
 	// Hot Module Replacement
 	if(false) {
 		// When the styles change, update the <style> tags
-		module.hot.accept("!!/Volumes/WebDept/techfellow/webvr-starter-kit/node_modules/css-loader/index.js!/Volumes/WebDept/techfellow/webvr-starter-kit/src/css/style.css", function() {
-			var newContent = require("!!/Volumes/WebDept/techfellow/webvr-starter-kit/node_modules/css-loader/index.js!/Volumes/WebDept/techfellow/webvr-starter-kit/src/css/style.css");
+		module.hot.accept("!!/Users/brianchirls/www/VR/webvr-starter-kit/node_modules/css-loader/index.js!/Users/brianchirls/www/VR/webvr-starter-kit/src/css/style.css", function() {
+			var newContent = require("!!/Users/brianchirls/www/VR/webvr-starter-kit/node_modules/css-loader/index.js!/Users/brianchirls/www/VR/webvr-starter-kit/src/css/style.css");
 			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 			update(newContent);
 		});
@@ -763,6 +772,30 @@
 
 /***/ },
 /* 4 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M0 0v4l1.5-1.5 1.5 1.5 1-1-1.5-1.5 1.5-1.5h-4zm5 4l-1 1 1.5 1.5-1.5 1.5h4v-4l-1.5 1.5-1.5-1.5z\" />\n</svg>"
+
+/***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M1 0l-1 1 1.5 1.5-1.5 1.5h4v-4l-1.5 1.5-1.5-1.5zm3 4v4l1.5-1.5 1.5 1.5 1-1-1.5-1.5 1.5-1.5h-4z\" />\n</svg>"
+
+/***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M4.03 0c-2.53 0-4.03 3-4.03 3s1.5 3 4.03 3c2.47 0 3.97-3 3.97-3s-1.5-3-3.97-3zm-.03 1c1.11 0 2 .9 2 2 0 1.11-.89 2-2 2-1.1 0-2-.89-2-2 0-1.1.9-2 2-2zm0 1c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1c0-.1-.04-.19-.06-.28-.08.16-.24.28-.44.28-.28 0-.5-.22-.5-.5 0-.2.12-.36.28-.44-.09-.03-.18-.06-.28-.06z\"\n  transform=\"translate(0 1)\" />\n</svg>"
+
+/***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M4 0c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 1c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm2 1l-3 1-1 3 3-1 1-3zm-2 1.5c.28 0 .5.22.5.5s-.22.5-.5.5-.5-.22-.5-.5.22-.5.5-.5z\" />\n</svg>"
+
+/***/ },
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -956,30 +989,6 @@
 		}
 	}
 
-
-/***/ },
-/* 5 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M0 0v4l1.5-1.5 1.5 1.5 1-1-1.5-1.5 1.5-1.5h-4zm5 4l-1 1 1.5 1.5-1.5 1.5h4v-4l-1.5 1.5-1.5-1.5z\" />\n</svg>"
-
-/***/ },
-/* 6 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M1 0l-1 1 1.5 1.5-1.5 1.5h4v-4l-1.5 1.5-1.5-1.5zm3 4v4l1.5-1.5 1.5 1.5 1-1-1.5-1.5 1.5-1.5h-4z\" />\n</svg>"
-
-/***/ },
-/* 7 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M4.03 0c-2.53 0-4.03 3-4.03 3s1.5 3 4.03 3c2.47 0 3.97-3 3.97-3s-1.5-3-3.97-3zm-.03 1c1.11 0 2 .9 2 2 0 1.11-.89 2-2 2-1.1 0-2-.89-2-2 0-1.1.9-2 2-2zm0 1c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1c0-.1-.04-.19-.06-.28-.08.16-.24.28-.44.28-.28 0-.5-.22-.5-.5 0-.2.12-.36.28-.44-.09-.03-.18-.06-.28-.06z\"\n  transform=\"translate(0 1)\" />\n</svg>"
-
-/***/ },
-/* 8 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M4 0c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 1c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm2 1l-3 1-1 3 3-1 1-3zm-2 1.5c.28 0 .5.22.5.5s-.22.5-.5.5-.5-.22-.5-.5.22-.5.5-.5z\" />\n</svg>"
 
 /***/ },
 /* 9 */
@@ -1590,23 +1599,44 @@
 /* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(9),
+			THREE = __webpack_require__(30);
+	
+		return function empty(parent, options) {
+			var obj = new THREE.Object3D();
+	
+			obj.name = 'empty';
+	
+			parent.add(obj);
+	
+			return obj;
+		};
+	}());
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
 	var map = {
 		"./box": 14,
 		"./box.js": 14,
 		"./cylinder": 15,
 		"./cylinder.js": 15,
-		"./empty": 12,
-		"./empty.js": 12,
+		"./empty": 11,
+		"./empty.js": 11,
 		"./floor": 16,
 		"./floor.js": 16,
 		"./image": 17,
 		"./image.js": 17,
 		"./panorama": 18,
 		"./panorama.js": 18,
-		"./sky": 20,
-		"./sky.js": 20,
-		"./snow": 19,
-		"./snow.js": 19,
+		"./sky": 19,
+		"./sky.js": 19,
+		"./snow": 20,
+		"./snow.js": 20,
 		"./sound": 21,
 		"./sound.js": 21,
 		"./sphere": 22,
@@ -1625,29 +1655,8 @@
 	};
 	webpackContext.resolve = webpackContextResolve;
 	module.exports = webpackContext;
-	webpackContext.id = 11;
+	webpackContext.id = 12;
 
-
-/***/ },
-/* 12 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(9),
-			THREE = __webpack_require__(30);
-	
-		return function empty(parent, options) {
-			var obj = new THREE.Object3D();
-	
-			obj.name = 'empty';
-	
-			parent.add(obj);
-	
-			return obj;
-		};
-	}());
 
 /***/ },
 /* 13 */
@@ -1868,41 +1877,6 @@
 		'use strict';
 	
 		var materials = __webpack_require__(9),
-			THREE = __webpack_require__(30);
-	
-		__webpack_require__(34);
-	
-		return function snow(parent, options) {
-			var snowObj,
-				empty,
-				update;
-	
-			snowObj = new THREE.Snow();
-			empty = new THREE.Object3D();
-			empty.name = 'snow';
-	
-			empty.add(snowObj.particles);
-	
-			parent.add(empty);
-	
-			update = this.update;
-			this.update = function (time) {
-				snowObj.time(time * 0.04);
-				update();
-			};
-	
-			return empty;
-		};
-	}());
-
-/***/ },
-/* 20 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(9),
 			THREE = __webpack_require__(30),
 			TAU = Math.PI * 2,
 			HALF_PI = Math.PI / 2,
@@ -1918,7 +1892,7 @@
 				'mieDirectionalG'
 			];
 	
-		__webpack_require__(36);
+		__webpack_require__(35);
 	
 		return function sky(parent, options) {
 			var obj = new THREE.Sky(),
@@ -2040,6 +2014,41 @@
 	}());
 
 /***/ },
+/* 20 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(9),
+			THREE = __webpack_require__(30);
+	
+		// require('imports?THREE=three!../lib/Snow');
+	
+		return function snow(parent, options) {
+			var snowObj,
+				empty,
+				update;
+	
+			snowObj = new THREE.Snow();
+			empty = new THREE.Object3D();
+			empty.name = 'snow';
+	
+			empty.add(snowObj.particles);
+	
+			parent.add(empty);
+	
+			update = this.update;
+			this.update = function (time) {
+				snowObj.time(time * 0.04);
+				update();
+			};
+	
+			return empty;
+		};
+	}());
+
+/***/ },
 /* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -2049,7 +2058,7 @@
 		var materials = __webpack_require__(9),
 			THREE = __webpack_require__(30);
 	
-		__webpack_require__(35);
+		__webpack_require__(34);
 	
 		return function sound(parent, options) {
 			var obj,
@@ -2606,10 +2615,6 @@
 	
 		function onMouseDown( event ) {
 	
-			if (event.button !== THREE.MOUSE.LEFT) {
-				return;
-			}
-	
 			if ( scope.enabled === false ) return;
 			event.preventDefault();
 	
@@ -2637,8 +2642,8 @@
 			}
 	
 			if ( state !== STATE.NONE ) {
-				window.addEventListener( 'mousemove', onMouseMove, false );
-				window.addEventListener( 'mouseup', onMouseUp, false );
+				document.addEventListener( 'mousemove', onMouseMove, false );
+				document.addEventListener( 'mouseup', onMouseUp, false );
 				scope.dispatchEvent( startEvent );
 			}
 	
@@ -2707,8 +2712,8 @@
 	
 			if ( scope.enabled === false ) return;
 	
-			//window.removeEventListener( 'mousemove', onMouseMove, false );
-			window.removeEventListener( 'mouseup', onMouseUp, false );
+			document.removeEventListener( 'mousemove', onMouseMove, false );
+			document.removeEventListener( 'mouseup', onMouseUp, false );
 			scope.dispatchEvent( endEvent );
 			state = STATE.NONE;
 	
@@ -2913,7 +2918,7 @@
 	
 		}
 	
-		//this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
+		this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
 		this.domElement.addEventListener( 'mousedown', onMouseDown, false );
 		this.domElement.addEventListener( 'mousewheel', onMouseWheel, false );
 		this.domElement.addEventListener( 'DOMMouseScroll', onMouseWheel, false ); // firefox
@@ -2924,7 +2929,6 @@
 	
 		window.addEventListener( 'keydown', onKeyDown, false );
 	
-	//window.addEventListener( 'mousemove', onMouseMove, true );
 		// force an update at start
 		this.update();
 	
@@ -3612,8 +3616,8 @@
 
 	'use strict';
 	
-	var d        = __webpack_require__(37)
-	  , callable = __webpack_require__(51)
+	var d        = __webpack_require__(36)
+	  , callable = __webpack_require__(50)
 	
 	  , apply = Function.prototype.apply, call = Function.prototype.call
 	  , create = Object.create, defineProperty = Object.defineProperty
@@ -38498,19 +38502,19 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	var map = {
-		"./asphalt.jpg": 38,
-		"./brick-tiles.jpg": 39,
-		"./bricks-normal.jpg": 40,
-		"./bricks-specular.jpg": 41,
-		"./bricks.jpg": 42,
-		"./checkerboard.png": 43,
-		"./grass.jpg": 44,
-		"./metal-floor.jpg": 45,
-		"./metal.jpg": 46,
-		"./stone.jpg": 47,
-		"./tiles.jpg": 48,
-		"./weathered-wood.jpg": 49,
-		"./wood.jpg": 50
+		"./asphalt.jpg": 37,
+		"./brick-tiles.jpg": 38,
+		"./bricks-normal.jpg": 39,
+		"./bricks-specular.jpg": 40,
+		"./bricks.jpg": 41,
+		"./checkerboard.png": 42,
+		"./grass.jpg": 43,
+		"./metal-floor.jpg": 44,
+		"./metal.jpg": 45,
+		"./stone.jpg": 46,
+		"./tiles.jpg": 47,
+		"./weathered-wood.jpg": 48,
+		"./wood.jpg": 49
 	};
 	function webpackContext(req) {
 		return __webpack_require__(webpackContextResolve(req));
@@ -38538,10 +38542,10 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var arrayEach = __webpack_require__(52),
-	    baseEach = __webpack_require__(53),
-	    bindCallback = __webpack_require__(54),
-	    isArray = __webpack_require__(55);
+	var arrayEach = __webpack_require__(51),
+	    baseEach = __webpack_require__(52),
+	    bindCallback = __webpack_require__(53),
+	    isArray = __webpack_require__(54);
 	
 	/**
 	 * Iterates over elements of `collection` invoking `iteratee` for each element.
@@ -38590,8 +38594,8 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var baseAssign = __webpack_require__(56),
-	    createAssigner = __webpack_require__(57);
+	var baseAssign = __webpack_require__(55),
+	    createAssigner = __webpack_require__(56);
 	
 	/**
 	 * Assigns own enumerable properties of source object(s) to the destination
@@ -38629,134 +38633,6 @@
 
 /***/ },
 /* 34 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/*** IMPORTS FROM imports-loader ***/
-	var THREE = __webpack_require__(30);
-	
-	THREE.ShaderLib.snow = {
-		uniforms: {
-			color:  { type: 'c', value: new THREE.Color( 0xFFFFFF ) },
-			height: { type: 'f', value: 20 },
-			elapsedTime: { type: 'f', value: 0 },
-			radiusX: { type: 'f', value: 0.1 },
-			radiusZ: { type: 'f', value: 0.1 },
-			size: { type: 'f', value: 20 },
-			scale: { type: 'f', value: 4 },
-			opacity: { type: 'f', value: 0.4 },
-			texture: { type: 't', value: null },
-			speedH: { type: 'f', value: 1 },
-			speedV: { type: 'f', value: 1 }
-		},
-		vertexShader: [
-			'uniform float radiusX;',
-			'uniform float radiusZ;',
-			'uniform float size;',
-			'uniform float scale;',
-			'uniform float height;',
-			'uniform float elapsedTime;',
-			'uniform float speedH;',
-			'uniform float speedV;',
-	
-			'void main() {',
-			'	vec3 pos = position;',
-			'	pos.x += cos((elapsedTime + position.z) * 0.25 * speedH) * radiusX;',
-			'	pos.y = mod(pos.y - elapsedTime * speedV, height);',
-			'	pos.z += sin((elapsedTime + position.x) * 0.25 * speedH) * radiusZ;',
-	
-			'	vec4 mvPosition = modelViewMatrix * vec4( pos, 1.0 );',
-	
-			'	gl_PointSize = size * ( scale / length( mvPosition.xyz ) );',
-	
-			'	gl_Position = projectionMatrix * mvPosition;',
-			'}'
-		].join("\n"),
-		fragmentShader: [
-			'uniform vec3 color;',
-			'uniform float opacity;',
-			'uniform sampler2D texture;',
-	
-			'void main() {',
-			'	vec4 texColor = texture2D( texture, gl_PointCoord );',
-			'	gl_FragColor = texColor * vec4( color, opacity );',
-			'}',
-		].join("\n")
-	};
-	
-	THREE.Snow = function (options) {
-		var snowShader = THREE.ShaderLib.snow;
-		var uniforms = THREE.UniformsUtils.clone( snowShader.uniforms );
-		var attributes = {};
-	
-		var shaderMaterial = new THREE.ShaderMaterial( {
-			uniforms: 		uniforms,
-			attributes:     attributes,
-			vertexShader:   snowShader.vertexShader,
-			fragmentShader: snowShader.fragmentShader,
-	
-			blending: 		THREE.AdditiveBlending,
-			depthTest: 		false,
-			transparent:	true
-		});
-	
-		options = options || {};
-	
-		var count = options.count || 10000;
-		// var minSize = options.minSize || 50;
-		// var sizeRange = (options.maxSize || 80) - minSize;
-		var range = options.range || new THREE.Vector3(20, 20, 20);
-	
-		uniforms.texture.value = THREE.ImageUtils.loadTexture( options.flake || THREE.Snow.flake ); //todo: make configurable
-		// uniforms.range.value = [range.x, range.y, range.z];
-	
-		var geometry = new THREE.BufferGeometry();
-		var vertices = [];
-		// var size = [];
-		// var colors = [];
-		// var times = [];
-		// var color = new THREE.Color( 0xffffff );
-	
-		for ( var i = 0; i < count; i++ ) {
-			vertices.push(
-				Math.random() * range.x - range.x / 2,
-				-range.y,
-				Math.random() * range.z - range.z / 2
-			);
-		}
-	
-		geometry.addAttribute( 'position',
-			new THREE.BufferAttribute( new Float32Array( vertices ), 3 )
-		);
-	
-		var particles = new THREE.PointCloud( geometry, shaderMaterial );
-		//particles.position.y = range.y / 2;
-		//particles.position.z = -range.z / 2;
-	
-		this.particles = particles;
-		this.position = particles.position;
-	
-		this.time = function (t) {
-			if (t !== undefined) {
-				uniforms.elapsedTime.value = t;
-			}
-	
-			return uniforms.elapsedTime.value;
-		};
-	
-		Object.defineProperty(this, 'visible', {
-			get: function () {
-				return particles.visible;
-			},
-			set: function (val) {
-				particles.visible = !!val;
-			}
-		});
-	};
-	
-	THREE.Snow.flake = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyBpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBXaW5kb3dzIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOkU3RTAyNUNGNjU3MDExRTE4RjZFQUQzRTYzNzcxOENCIiB4bXBNTTpEb2N1bWVudElEPSJ4bXAuZGlkOkU3RTAyNUQwNjU3MDExRTE4RjZFQUQzRTYzNzcxOENCIj4gPHhtcE1NOkRlcml2ZWRGcm9tIHN0UmVmOmluc3RhbmNlSUQ9InhtcC5paWQ6RTdFMDI1Q0Q2NTcwMTFFMThGNkVBRDNFNjM3NzE4Q0IiIHN0UmVmOmRvY3VtZW50SUQ9InhtcC5kaWQ6RTdFMDI1Q0U2NTcwMTFFMThGNkVBRDNFNjM3NzE4Q0IiLz4gPC9yZGY6RGVzY3JpcHRpb24+IDwvcmRmOlJERj4gPC94OnhtcG1ldGE+IDw/eHBhY2tldCBlbmQ9InIiPz5CMaWgAAASq0lEQVR42tRd23YbOQ6U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';
-
-/***/ },
-/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
@@ -39013,7 +38889,7 @@
 
 
 /***/ },
-/* 36 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
@@ -39291,15 +39167,15 @@
 
 
 /***/ },
-/* 37 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var assign        = __webpack_require__(60)
-	  , normalizeOpts = __webpack_require__(58)
-	  , isCallable    = __webpack_require__(59)
-	  , contains      = __webpack_require__(61)
+	var assign        = __webpack_require__(59)
+	  , normalizeOpts = __webpack_require__(57)
+	  , isCallable    = __webpack_require__(58)
+	  , contains      = __webpack_require__(60)
 	
 	  , d;
 	
@@ -39360,85 +39236,85 @@
 
 
 /***/ },
-/* 38 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "image/asphalt.jpg"
 
 /***/ },
-/* 39 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "image/brick-tiles.jpg"
 
 /***/ },
-/* 40 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "image/bricks-normal.jpg"
 
 /***/ },
-/* 41 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "image/bricks-specular.jpg"
 
 /***/ },
-/* 42 */
+/* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "image/bricks.jpg"
 
 /***/ },
-/* 43 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAABlBMVEUsLCzp6enLhVdXAAAAAWJLR0QAiAUdSAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB94KFBIOCP7R3TQAAAA4SURBVGje7dAhEgAACMOw/f/T4Gc5XKqjmlRTBQAAAAAAAAAAAAAA4AiMAQAAAAAAAAAAAADgGSyKafDiEFszywAAAABJRU5ErkJggg=="
 
 /***/ },
-/* 44 */
+/* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "image/grass.jpg"
 
 /***/ },
-/* 45 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "image/metal-floor.jpg"
 
 /***/ },
-/* 46 */
+/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "image/metal.jpg"
 
 /***/ },
-/* 47 */
+/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "image/stone.jpg"
 
 /***/ },
-/* 48 */
+/* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "image/tiles.jpg"
 
 /***/ },
-/* 49 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "image/weathered-wood.jpg"
 
 /***/ },
-/* 50 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "image/wood.jpg"
 
 /***/ },
-/* 51 */
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -39450,7 +39326,7 @@
 
 
 /***/ },
-/* 52 */
+/* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -39487,7 +39363,7 @@
 
 
 /***/ },
-/* 53 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -39498,7 +39374,7 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var keys = __webpack_require__(66);
+	var keys = __webpack_require__(65);
 	
 	/**
 	 * Used as the maximum length of an array-like value.
@@ -39627,7 +39503,7 @@
 
 
 /***/ },
-/* 54 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -39697,7 +39573,7 @@
 
 
 /***/ },
-/* 55 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -39861,7 +39737,7 @@
 
 
 /***/ },
-/* 56 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -39872,8 +39748,8 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var baseCopy = __webpack_require__(67),
-	    keys = __webpack_require__(68);
+	var baseCopy = __webpack_require__(66),
+	    keys = __webpack_require__(67);
 	
 	/**
 	 * The base implementation of `_.assign` without support for argument juggling,
@@ -39910,7 +39786,7 @@
 
 
 /***/ },
-/* 57 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -39921,7 +39797,7 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var bindCallback = __webpack_require__(70),
+	var bindCallback = __webpack_require__(68),
 	    isIterateeCall = __webpack_require__(69);
 	
 	/**
@@ -39964,12 +39840,12 @@
 
 
 /***/ },
-/* 58 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var assign = __webpack_require__(60)
+	var assign = __webpack_require__(59)
 	
 	  , forEach = Array.prototype.forEach
 	  , create = Object.create, getPrototypeOf = Object.getPrototypeOf
@@ -39992,7 +39868,7 @@
 
 
 /***/ },
-/* 59 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Deprecated
@@ -40003,29 +39879,29 @@
 
 
 /***/ },
+/* 59 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = __webpack_require__(61)()
+		? Object.assign
+		: __webpack_require__(62);
+
+
+/***/ },
 /* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	module.exports = __webpack_require__(62)()
-		? Object.assign
-		: __webpack_require__(63);
+	module.exports = __webpack_require__(63)()
+		? String.prototype.contains
+		: __webpack_require__(64);
 
 
 /***/ },
 /* 61 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = __webpack_require__(64)()
-		? String.prototype.contains
-		: __webpack_require__(65);
-
-
-/***/ },
-/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -40040,13 +39916,13 @@
 
 
 /***/ },
-/* 63 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var keys  = __webpack_require__(72)
-	  , value = __webpack_require__(71)
+	var keys  = __webpack_require__(71)
+	  , value = __webpack_require__(70)
 	
 	  , max = Math.max;
 	
@@ -40068,7 +39944,7 @@
 
 
 /***/ },
-/* 64 */
+/* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -40082,7 +39958,7 @@
 
 
 /***/ },
-/* 65 */
+/* 64 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -40095,26 +39971,23 @@
 
 
 /***/ },
-/* 66 */
+/* 65 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(global) {/**
-	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	/**
+	 * lodash 3.0.2 (Custom Build) <https://lodash.com/>
 	 * Build: `lodash modern modularize exports="npm" -o ./`
 	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
 	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var isArguments = __webpack_require__(73),
-	    isArray = __webpack_require__(55),
-	    isNative = __webpack_require__(74);
+	var isArguments = __webpack_require__(72),
+	    isArray = __webpack_require__(54),
+	    isNative = __webpack_require__(73);
 	
 	/** Used for native method references. */
 	var objectProto = Object.prototype;
-	
-	/** Used to detect DOM support. */
-	var document = (document = global.window) && document.document;
 	
 	/** Used to check objects for own properties. */
 	var hasOwnProperty = objectProto.hasOwnProperty;
@@ -40127,7 +40000,7 @@
 	
 	/**
 	 * Used as the maximum length of an array-like value.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
 	 * for more details.
 	 */
 	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
@@ -40142,18 +40015,6 @@
 	var support = {};
 	
 	(function(x) {
-	
-	  /**
-	   * Detect if the DOM is supported.
-	   *
-	   * @memberOf _.support
-	   * @type boolean
-	   */
-	  try {
-	    support.dom = document.createDocumentFragment().nodeType === 11;
-	  } catch(e) {
-	    support.dom = false;
-	  }
 	
 	  /**
 	   * Detect if `arguments` object indexes are non-enumerable.
@@ -40190,6 +40051,10 @@
 	
 	/**
 	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on ES `ToLength`. See the
+	 * [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+	 * for more details.
 	 *
 	 * @private
 	 * @param {*} value The value to check.
@@ -40347,11 +40212,10 @@
 	}
 	
 	module.exports = keys;
-	
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+
 
 /***/ },
-/* 67 */
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -40391,26 +40255,23 @@
 
 
 /***/ },
-/* 68 */
+/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(global) {/**
-	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	/**
+	 * lodash 3.0.2 (Custom Build) <https://lodash.com/>
 	 * Build: `lodash modern modularize exports="npm" -o ./`
 	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
 	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var isArguments = __webpack_require__(77),
-	    isArray = __webpack_require__(78),
-	    isNative = __webpack_require__(79);
+	var isArguments = __webpack_require__(74),
+	    isArray = __webpack_require__(75),
+	    isNative = __webpack_require__(76);
 	
 	/** Used for native method references. */
 	var objectProto = Object.prototype;
-	
-	/** Used to detect DOM support. */
-	var document = (document = global.window) && document.document;
 	
 	/** Used to check objects for own properties. */
 	var hasOwnProperty = objectProto.hasOwnProperty;
@@ -40423,7 +40284,7 @@
 	
 	/**
 	 * Used as the maximum length of an array-like value.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
 	 * for more details.
 	 */
 	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
@@ -40438,18 +40299,6 @@
 	var support = {};
 	
 	(function(x) {
-	
-	  /**
-	   * Detect if the DOM is supported.
-	   *
-	   * @memberOf _.support
-	   * @type boolean
-	   */
-	  try {
-	    support.dom = document.createDocumentFragment().nodeType === 11;
-	  } catch(e) {
-	    support.dom = false;
-	  }
 	
 	  /**
 	   * Detect if `arguments` object indexes are non-enumerable.
@@ -40486,6 +40335,10 @@
 	
 	/**
 	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on ES `ToLength`. See the
+	 * [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+	 * for more details.
 	 *
 	 * @private
 	 * @param {*} value The value to check.
@@ -40643,11 +40496,10 @@
 	}
 	
 	module.exports = keys;
-	
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+
 
 /***/ },
-/* 69 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -40660,8 +40512,78 @@
 	 */
 	
 	/**
+	 * A specialized version of `baseCallback` which only supports `this` binding
+	 * and specifying the number of arguments to provide to `func`.
+	 *
+	 * @private
+	 * @param {Function} func The function to bind.
+	 * @param {*} thisArg The `this` binding of `func`.
+	 * @param {number} [argCount] The number of arguments to provide to `func`.
+	 * @returns {Function} Returns the callback.
+	 */
+	function bindCallback(func, thisArg, argCount) {
+	  if (typeof func != 'function') {
+	    return identity;
+	  }
+	  if (typeof thisArg == 'undefined') {
+	    return func;
+	  }
+	  switch (argCount) {
+	    case 1: return function(value) {
+	      return func.call(thisArg, value);
+	    };
+	    case 3: return function(value, index, collection) {
+	      return func.call(thisArg, value, index, collection);
+	    };
+	    case 4: return function(accumulator, value, index, collection) {
+	      return func.call(thisArg, accumulator, value, index, collection);
+	    };
+	    case 5: return function(value, other, key, object, source) {
+	      return func.call(thisArg, value, other, key, object, source);
+	    };
+	  }
+	  return function() {
+	    return func.apply(thisArg, arguments);
+	  };
+	}
+	
+	/**
+	 * This method returns the first argument provided to it.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Utility
+	 * @param {*} value Any value.
+	 * @returns {*} Returns `value`.
+	 * @example
+	 *
+	 * var object = { 'user': 'fred' };
+	 * _.identity(object) === object;
+	 * // => true
+	 */
+	function identity(value) {
+	  return value;
+	}
+	
+	module.exports = bindCallback;
+
+
+/***/ },
+/* 69 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/**
 	 * Used as the maximum length of an array-like value.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
 	 * for more details.
 	 */
 	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
@@ -40698,13 +40620,17 @@
 	    var length = object.length,
 	        prereq = isLength(length) && isIndex(index, length);
 	  } else {
-	    prereq = type == 'string' && index in value;
+	    prereq = type == 'string' && index in object;
 	  }
 	  return prereq && object[index] === value;
 	}
 	
 	/**
 	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on ES `ToLength`. See the
+	 * [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+	 * for more details.
 	 *
 	 * @private
 	 * @param {*} value The value to check.
@@ -40750,76 +40676,6 @@
 /* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/**
-	 * A specialized version of `baseCallback` which only supports `this` binding
-	 * and specifying the number of arguments to provide to `func`.
-	 *
-	 * @private
-	 * @param {Function} func The function to bind.
-	 * @param {*} thisArg The `this` binding of `func`.
-	 * @param {number} [argCount] The number of arguments to provide to `func`.
-	 * @returns {Function} Returns the callback.
-	 */
-	function bindCallback(func, thisArg, argCount) {
-	  if (typeof func != 'function') {
-	    return identity;
-	  }
-	  if (typeof thisArg == 'undefined') {
-	    return func;
-	  }
-	  switch (argCount) {
-	    case 1: return function(value) {
-	      return func.call(thisArg, value);
-	    };
-	    case 3: return function(value, index, collection) {
-	      return func.call(thisArg, value, index, collection);
-	    };
-	    case 4: return function(accumulator, value, index, collection) {
-	      return func.call(thisArg, accumulator, value, index, collection);
-	    };
-	    case 5: return function(value, other, key, object, source) {
-	      return func.call(thisArg, value, other, key, object, source);
-	    };
-	  }
-	  return function() {
-	    return func.apply(thisArg, arguments);
-	  };
-	}
-	
-	/**
-	 * This method returns the first argument provided to it.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Utility
-	 * @param {*} value Any value.
-	 * @returns {*} Returns `value`.
-	 * @example
-	 *
-	 * var object = { 'user': 'fred' };
-	 * _.identity(object) === object;
-	 * // => true
-	 */
-	function identity(value) {
-	  return value;
-	}
-	
-	module.exports = bindCallback;
-
-
-/***/ },
-/* 71 */
-/***/ function(module, exports, __webpack_require__) {
-
 	'use strict';
 	
 	module.exports = function (value) {
@@ -40829,18 +40685,18 @@
 
 
 /***/ },
-/* 72 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	module.exports = __webpack_require__(75)()
+	module.exports = __webpack_require__(77)()
 		? Object.keys
-		: __webpack_require__(76);
+		: __webpack_require__(78);
 
 
 /***/ },
-/* 73 */
+/* 72 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -40919,7 +40775,7 @@
 
 
 /***/ },
-/* 74 */
+/* 73 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -41041,34 +40897,7 @@
 
 
 /***/ },
-/* 75 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = function () {
-		try {
-			Object.keys('primitive');
-			return true;
-		} catch (e) { return false; }
-	};
-
-
-/***/ },
-/* 76 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var keys = Object.keys;
-	
-	module.exports = function (object) {
-		return keys(object == null ? object : Object(object));
-	};
-
-
-/***/ },
-/* 77 */
+/* 74 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -41147,7 +40976,7 @@
 
 
 /***/ },
-/* 78 */
+/* 75 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -41311,7 +41140,7 @@
 
 
 /***/ },
-/* 79 */
+/* 76 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -41430,6 +41259,33 @@
 	}
 	
 	module.exports = isNative;
+
+
+/***/ },
+/* 77 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = function () {
+		try {
+			Object.keys('primitive');
+			return true;
+		} catch (e) { return false; }
+	};
+
+
+/***/ },
+/* 78 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var keys = Object.keys;
+	
+	module.exports = function (object) {
+		return keys(object == null ? object : Object(object));
+	};
 
 
 /***/ }

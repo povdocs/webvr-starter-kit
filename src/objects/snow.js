@@ -4,7 +4,7 @@ module.exports = (function () {
 	var materials = require('../materials'),
 		THREE = require('three');
 
-	require('imports?THREE=three!../lib/Snow');
+	// require('imports?THREE=three!../lib/Snow');
 
 	return function snow(parent, options) {
 		var snowObj,
