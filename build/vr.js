@@ -1948,9 +1948,9 @@
 	
 				if (options) {
 					params.forEach(function (param) {
-						var val;
-						if (param !== undefined) {
-							val = parseFloat(param);
+						var val = options[param];
+						if (val !== undefined) {
+							val = parseFloat(val);
 							if (!isNaN(val)) {
 								obj.uniforms[param].value = val;
 							}
@@ -3616,7 +3616,7 @@
 
 	'use strict';
 	
-	var d        = __webpack_require__(36)
+	var d        = __webpack_require__(49)
 	  , callable = __webpack_require__(50)
 	
 	  , apply = Function.prototype.apply, call = Function.prototype.call
@@ -38502,19 +38502,19 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	var map = {
-		"./asphalt.jpg": 37,
-		"./brick-tiles.jpg": 38,
-		"./bricks-normal.jpg": 39,
-		"./bricks-specular.jpg": 40,
-		"./bricks.jpg": 41,
-		"./checkerboard.png": 42,
-		"./grass.jpg": 43,
-		"./metal-floor.jpg": 44,
-		"./metal.jpg": 45,
-		"./stone.jpg": 46,
-		"./tiles.jpg": 47,
-		"./weathered-wood.jpg": 48,
-		"./wood.jpg": 49
+		"./asphalt.jpg": 36,
+		"./brick-tiles.jpg": 37,
+		"./bricks-normal.jpg": 38,
+		"./bricks-specular.jpg": 39,
+		"./bricks.jpg": 40,
+		"./checkerboard.png": 41,
+		"./grass.jpg": 42,
+		"./metal-floor.jpg": 43,
+		"./metal.jpg": 44,
+		"./stone.jpg": 45,
+		"./tiles.jpg": 46,
+		"./weathered-wood.jpg": 47,
+		"./wood.jpg": 48
 	};
 	function webpackContext(req) {
 		return __webpack_require__(webpackContextResolve(req));
@@ -38545,7 +38545,7 @@
 	var arrayEach = __webpack_require__(51),
 	    baseEach = __webpack_require__(52),
 	    bindCallback = __webpack_require__(53),
-	    isArray = __webpack_require__(54);
+	    isArray = __webpack_require__(55);
 	
 	/**
 	 * Iterates over elements of `collection` invoking `iteratee` for each element.
@@ -38594,7 +38594,7 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var baseAssign = __webpack_require__(55),
+	var baseAssign = __webpack_require__(54),
 	    createAssigner = __webpack_require__(56);
 	
 	/**
@@ -39170,6 +39170,84 @@
 /* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
+	module.exports = __webpack_require__.p + "image/asphalt.jpg"
+
+/***/ },
+/* 37 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/brick-tiles.jpg"
+
+/***/ },
+/* 38 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/bricks-normal.jpg"
+
+/***/ },
+/* 39 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/bricks-specular.jpg"
+
+/***/ },
+/* 40 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/bricks.jpg"
+
+/***/ },
+/* 41 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAABlBMVEUsLCzp6enLhVdXAAAAAWJLR0QAiAUdSAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB94KFBIOCP7R3TQAAAA4SURBVGje7dAhEgAACMOw/f/T4Gc5XKqjmlRTBQAAAAAAAAAAAAAA4AiMAQAAAAAAAAAAAADgGSyKafDiEFszywAAAABJRU5ErkJggg=="
+
+/***/ },
+/* 42 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/grass.jpg"
+
+/***/ },
+/* 43 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/metal-floor.jpg"
+
+/***/ },
+/* 44 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/metal.jpg"
+
+/***/ },
+/* 45 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/stone.jpg"
+
+/***/ },
+/* 46 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/tiles.jpg"
+
+/***/ },
+/* 47 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/weathered-wood.jpg"
+
+/***/ },
+/* 48 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__.p + "image/wood.jpg"
+
+/***/ },
+/* 49 */
+/***/ function(module, exports, __webpack_require__) {
+
 	'use strict';
 	
 	var assign        = __webpack_require__(59)
@@ -39236,84 +39314,6 @@
 
 
 /***/ },
-/* 37 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/asphalt.jpg"
-
-/***/ },
-/* 38 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/brick-tiles.jpg"
-
-/***/ },
-/* 39 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/bricks-normal.jpg"
-
-/***/ },
-/* 40 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/bricks-specular.jpg"
-
-/***/ },
-/* 41 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/bricks.jpg"
-
-/***/ },
-/* 42 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAABlBMVEUsLCzp6enLhVdXAAAAAWJLR0QAiAUdSAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB94KFBIOCP7R3TQAAAA4SURBVGje7dAhEgAACMOw/f/T4Gc5XKqjmlRTBQAAAAAAAAAAAAAA4AiMAQAAAAAAAAAAAADgGSyKafDiEFszywAAAABJRU5ErkJggg=="
-
-/***/ },
-/* 43 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/grass.jpg"
-
-/***/ },
-/* 44 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/metal-floor.jpg"
-
-/***/ },
-/* 45 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/metal.jpg"
-
-/***/ },
-/* 46 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/stone.jpg"
-
-/***/ },
-/* 47 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/tiles.jpg"
-
-/***/ },
-/* 48 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/weathered-wood.jpg"
-
-/***/ },
-/* 49 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = __webpack_require__.p + "image/wood.jpg"
-
-/***/ },
 /* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -39374,7 +39374,7 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var keys = __webpack_require__(65);
+	var keys = __webpack_require__(67);
 	
 	/**
 	 * Used as the maximum length of an array-like value.
@@ -39584,6 +39584,55 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
+	var baseCopy = __webpack_require__(65),
+	    keys = __webpack_require__(66);
+	
+	/**
+	 * The base implementation of `_.assign` without support for argument juggling,
+	 * multiple sources, and `this` binding `customizer` functions.
+	 *
+	 * @private
+	 * @param {Object} object The destination object.
+	 * @param {Object} source The source object.
+	 * @param {Function} [customizer] The function to customize assigning values.
+	 * @returns {Object} Returns the destination object.
+	 */
+	function baseAssign(object, source, customizer) {
+	  var props = keys(source);
+	  if (!customizer) {
+	    return baseCopy(source, object, props);
+	  }
+	  var index = -1,
+	      length = props.length
+	
+	  while (++index < length) {
+	    var key = props[index],
+	        value = object[key],
+	        result = customizer(value, source[key], key, object, source);
+	
+	    if ((result === result ? result !== value : value === value) ||
+	        (typeof value == 'undefined' && !(key in object))) {
+	      object[key] = result;
+	    }
+	  }
+	  return object;
+	}
+	
+	module.exports = baseAssign;
+
+
+/***/ },
+/* 55 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
 	
 	/** `Object#toString` result references. */
 	var arrayTag = '[object Array]',
@@ -39734,55 +39783,6 @@
 	}
 	
 	module.exports = isArray;
-
-
-/***/ },
-/* 55 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var baseCopy = __webpack_require__(66),
-	    keys = __webpack_require__(67);
-	
-	/**
-	 * The base implementation of `_.assign` without support for argument juggling,
-	 * multiple sources, and `this` binding `customizer` functions.
-	 *
-	 * @private
-	 * @param {Object} object The destination object.
-	 * @param {Object} source The source object.
-	 * @param {Function} [customizer] The function to customize assigning values.
-	 * @returns {Object} Returns the destination object.
-	 */
-	function baseAssign(object, source, customizer) {
-	  var props = keys(source);
-	  if (!customizer) {
-	    return baseCopy(source, object, props);
-	  }
-	  var index = -1,
-	      length = props.length
-	
-	  while (++index < length) {
-	    var key = props[index],
-	        value = object[key],
-	        result = customizer(value, source[key], key, object, source);
-	
-	    if ((result === result ? result !== value : value === value) ||
-	        (typeof value == 'undefined' && !(key in object))) {
-	      object[key] = result;
-	    }
-	  }
-	  return object;
-	}
-	
-	module.exports = baseAssign;
 
 
 /***/ },
@@ -39975,6 +39975,46 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/**
+	 * Copies the properties of `source` to `object`.
+	 *
+	 * @private
+	 * @param {Object} source The object to copy properties from.
+	 * @param {Object} [object={}] The object to copy properties to.
+	 * @param {Array} props The property names to copy.
+	 * @returns {Object} Returns `object`.
+	 */
+	function baseCopy(source, object, props) {
+	  if (!props) {
+	    props = object;
+	    object = {};
+	  }
+	  var index = -1,
+	      length = props.length;
+	
+	  while (++index < length) {
+	    var key = props[index];
+	    object[key] = source[key];
+	  }
+	  return object;
+	}
+	
+	module.exports = baseCopy;
+
+
+/***/ },
+/* 66 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
 	 * lodash 3.0.2 (Custom Build) <https://lodash.com/>
 	 * Build: `lodash modern modularize exports="npm" -o ./`
 	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
@@ -39983,8 +40023,8 @@
 	 * Available under MIT license <https://lodash.com/license>
 	 */
 	var isArguments = __webpack_require__(72),
-	    isArray = __webpack_require__(54),
-	    isNative = __webpack_require__(73);
+	    isArray = __webpack_require__(73),
+	    isNative = __webpack_require__(74);
 	
 	/** Used for native method references. */
 	var objectProto = Object.prototype;
@@ -40215,46 +40255,6 @@
 
 
 /***/ },
-/* 66 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/**
-	 * Copies the properties of `source` to `object`.
-	 *
-	 * @private
-	 * @param {Object} source The object to copy properties from.
-	 * @param {Object} [object={}] The object to copy properties to.
-	 * @param {Array} props The property names to copy.
-	 * @returns {Object} Returns `object`.
-	 */
-	function baseCopy(source, object, props) {
-	  if (!props) {
-	    props = object;
-	    object = {};
-	  }
-	  var index = -1,
-	      length = props.length;
-	
-	  while (++index < length) {
-	    var key = props[index];
-	    object[key] = source[key];
-	  }
-	  return object;
-	}
-	
-	module.exports = baseCopy;
-
-
-/***/ },
 /* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -40266,8 +40266,8 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var isArguments = __webpack_require__(74),
-	    isArray = __webpack_require__(75),
+	var isArguments = __webpack_require__(75),
+	    isArray = __webpack_require__(55),
 	    isNative = __webpack_require__(76);
 	
 	/** Used for native method references. */
@@ -40788,207 +40788,6 @@
 	 */
 	
 	/** `Object#toString` result references. */
-	var funcTag = '[object Function]';
-	
-	/** Used to detect host constructors (Safari > 5). */
-	var reHostCtor = /^\[object .+?Constructor\]$/;
-	
-	/**
-	 * Used to match `RegExp` special characters.
-	 * See this [article on `RegExp` characters](http://www.regular-expressions.info/characters.html#special)
-	 * for more details.
-	 */
-	var reRegExpChars = /[.*+?^${}()|[\]\/\\]/g,
-	    reHasRegExpChars = RegExp(reRegExpChars.source);
-	
-	/**
-	 * Converts `value` to a string if it is not one. An empty string is returned
-	 * for `null` or `undefined` values.
-	 *
-	 * @private
-	 * @param {*} value The value to process.
-	 * @returns {string} Returns the string.
-	 */
-	function baseToString(value) {
-	  if (typeof value == 'string') {
-	    return value;
-	  }
-	  return value == null ? '' : (value + '');
-	}
-	
-	/**
-	 * Checks if `value` is object-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 */
-	function isObjectLike(value) {
-	  return (value && typeof value == 'object') || false;
-	}
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/** Used to resolve the decompiled source of functions. */
-	var fnToString = Function.prototype.toString;
-	
-	/**
-	 * Used to resolve the `toStringTag` of values.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
-	 * for more details.
-	 */
-	var objToString = objectProto.toString;
-	
-	/** Used to detect if a method is native. */
-	var reNative = RegExp('^' +
-	  escapeRegExp(objToString)
-	  .replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
-	);
-	
-	/**
-	 * Checks if `value` is a native function.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
-	 * @example
-	 *
-	 * _.isNative(Array.prototype.push);
-	 * // => true
-	 *
-	 * _.isNative(_);
-	 * // => false
-	 */
-	function isNative(value) {
-	  if (value == null) {
-	    return false;
-	  }
-	  if (objToString.call(value) == funcTag) {
-	    return reNative.test(fnToString.call(value));
-	  }
-	  return (isObjectLike(value) && reHostCtor.test(value)) || false;
-	}
-	
-	/**
-	 * Escapes the `RegExp` special characters "\", "^", "$", ".", "|", "?", "*",
-	 * "+", "(", ")", "[", "]", "{" and "}" in `string`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category String
-	 * @param {string} [string=''] The string to escape.
-	 * @returns {string} Returns the escaped string.
-	 * @example
-	 *
-	 * _.escapeRegExp('[lodash](https://lodash.com/)');
-	 * // => '\[lodash\]\(https://lodash\.com/\)'
-	 */
-	function escapeRegExp(string) {
-	  string = baseToString(string);
-	  return (string && reHasRegExpChars.test(string))
-	    ? string.replace(reRegExpChars, '\\$&')
-	    : string;
-	}
-	
-	module.exports = isNative;
-
-
-/***/ },
-/* 74 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/** `Object#toString` result references. */
-	var argsTag = '[object Arguments]';
-	
-	/**
-	 * Checks if `value` is object-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 */
-	function isObjectLike(value) {
-	  return (value && typeof value == 'object') || false;
-	}
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/**
-	 * Used to resolve the `toStringTag` of values.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
-	 * for more details.
-	 */
-	var objToString = objectProto.toString;
-	
-	/**
-	 * Used as the maximum length of an array-like value.
-	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
-	 * for more details.
-	 */
-	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
-	
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * Checks if `value` is classified as an `arguments` object.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
-	 * @example
-	 *
-	 * (function() { return _.isArguments(arguments); })();
-	 * // => true
-	 *
-	 * _.isArguments([1, 2, 3]);
-	 * // => false
-	 */
-	function isArguments(value) {
-	  var length = isObjectLike(value) ? value.length : undefined;
-	  return (isLength(length) && objToString.call(value) == argsTag) || false;
-	}
-	
-	module.exports = isArguments;
-
-
-/***/ },
-/* 75 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/** `Object#toString` result references. */
 	var arrayTag = '[object Array]',
 	    funcTag = '[object Function]';
 	
@@ -41137,6 +40936,207 @@
 	}
 	
 	module.exports = isArray;
+
+
+/***/ },
+/* 74 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** `Object#toString` result references. */
+	var funcTag = '[object Function]';
+	
+	/** Used to detect host constructors (Safari > 5). */
+	var reHostCtor = /^\[object .+?Constructor\]$/;
+	
+	/**
+	 * Used to match `RegExp` special characters.
+	 * See this [article on `RegExp` characters](http://www.regular-expressions.info/characters.html#special)
+	 * for more details.
+	 */
+	var reRegExpChars = /[.*+?^${}()|[\]\/\\]/g,
+	    reHasRegExpChars = RegExp(reRegExpChars.source);
+	
+	/**
+	 * Converts `value` to a string if it is not one. An empty string is returned
+	 * for `null` or `undefined` values.
+	 *
+	 * @private
+	 * @param {*} value The value to process.
+	 * @returns {string} Returns the string.
+	 */
+	function baseToString(value) {
+	  if (typeof value == 'string') {
+	    return value;
+	  }
+	  return value == null ? '' : (value + '');
+	}
+	
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return (value && typeof value == 'object') || false;
+	}
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to resolve the decompiled source of functions. */
+	var fnToString = Function.prototype.toString;
+	
+	/**
+	 * Used to resolve the `toStringTag` of values.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
+	 * for more details.
+	 */
+	var objToString = objectProto.toString;
+	
+	/** Used to detect if a method is native. */
+	var reNative = RegExp('^' +
+	  escapeRegExp(objToString)
+	  .replace(/toString|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
+	);
+	
+	/**
+	 * Checks if `value` is a native function.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a native function, else `false`.
+	 * @example
+	 *
+	 * _.isNative(Array.prototype.push);
+	 * // => true
+	 *
+	 * _.isNative(_);
+	 * // => false
+	 */
+	function isNative(value) {
+	  if (value == null) {
+	    return false;
+	  }
+	  if (objToString.call(value) == funcTag) {
+	    return reNative.test(fnToString.call(value));
+	  }
+	  return (isObjectLike(value) && reHostCtor.test(value)) || false;
+	}
+	
+	/**
+	 * Escapes the `RegExp` special characters "\", "^", "$", ".", "|", "?", "*",
+	 * "+", "(", ")", "[", "]", "{" and "}" in `string`.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category String
+	 * @param {string} [string=''] The string to escape.
+	 * @returns {string} Returns the escaped string.
+	 * @example
+	 *
+	 * _.escapeRegExp('[lodash](https://lodash.com/)');
+	 * // => '\[lodash\]\(https://lodash\.com/\)'
+	 */
+	function escapeRegExp(string) {
+	  string = baseToString(string);
+	  return (string && reHasRegExpChars.test(string))
+	    ? string.replace(reRegExpChars, '\\$&')
+	    : string;
+	}
+	
+	module.exports = isNative;
+
+
+/***/ },
+/* 75 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** `Object#toString` result references. */
+	var argsTag = '[object Arguments]';
+	
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return (value && typeof value == 'object') || false;
+	}
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/**
+	 * Used to resolve the `toStringTag` of values.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
+	 * for more details.
+	 */
+	var objToString = objectProto.toString;
+	
+	/**
+	 * Used as the maximum length of an array-like value.
+	 * See the [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength)
+	 * for more details.
+	 */
+	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * Checks if `value` is classified as an `arguments` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * (function() { return _.isArguments(arguments); })();
+	 * // => true
+	 *
+	 * _.isArguments([1, 2, 3]);
+	 * // => false
+	 */
+	function isArguments(value) {
+	  var length = isObjectLike(value) ? value.length : undefined;
+	  return (isLength(length) && objToString.call(value) == argsTag) || false;
+	}
+	
+	module.exports = isArguments;
 
 
 /***/ },
