@@ -13,7 +13,7 @@ module.exports = (function () {
 			'^' +
 
 			// protocol identifier
-			'(?:(?:https?)://)' +
+			'(?:(?:(?:https?):)?//)' +
 
 			// user:pass authentication
 			'(?:\\S+(?::\\S*)?@)?' +
