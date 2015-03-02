@@ -12,17 +12,66 @@ Web VR Starter Kit is a Javascript library for easily creating virtual reality c
 
 ## Getting Started
 
+To create a virtual reality scene, include the WebVR Starter Kit JavaScript file as a script tag in a webpage. The script will bootstrap an empty scene with controls for display and view-tracking options, depending on the hardware available.
+
+WebVR requires a browser with WebGL support. The following device configurations are supported for display and head/view tracking:
+- Oculus Rift - requires [Firefox Nightly](http://mozvr.com) or [WebVR build of Chromium](http://blog.bitops.com/blog/2014/06/26/first-steps-for-vr-on-the-web/)
+- Google Cardboard - Device orientation tracking; split-screen rendering a view for each eye.
+- Mobile phone/tablet - single view, control view with device orientation tracking or touch/drag
+- Desktop browser - single view, control view by dragging with mouse
+
 ### Set up
+
+The quickest way to get started is to load the [empty JS Bin template](http://jsbin.com/wemipo/1/edit?js,output) and start writing commands in the JavaScript panel. As you type, the output panel will automatically reload every time you make a change. You can pop the output panel out into its own window to view in full screen or on an Oculus Rift (if available), or you can load the output page on a mobile device.
+
+Alternatively, you can start with a blank web page hosted on your own server. Include the following script element anywhere in the page.
 
 ```html
 <script src="//povdocs.github.io/webvr-starter-kit/build/vr.js"></script>
 ```
 
-Start from the [empty JS Bin template](http://jsbin.com/wemipo/1/edit?js,output).
+Create another script element containing the JavaScript commands that describe your scene. You can either include the script "inline" right in the same web page, or you can refer to an external JavaScript file. Just make sure this script element is placed *after* the one loading "vr.js".
+
+```html
+<script>
+	VR.floor(); //make a floor
+</script>
+```
 
 ### Creating Objects
 
-### Loading media
+### Loading Media
+
+There are a few different ways that you can load media as part of your VR scene. The panorama and image objects take the URL of an image file. The sound object takes an array of URLs of audio files. There is a library of pre-defined materials (e.g. grass, stone, metal, wood), and you can also specify your own images to use as texture maps.
+
+Texture maps for pre-defined materials are hosted as part of the WebVR Starter Kit, but your own media files need to be hosted elsewhere. You can use your own web server if you have one, but it needs to be configured to use Cross-Origin Resource Sharing headers, which can be tricky to set up.
+
+There are some free services you can use to host your media with the correct server settings.
+
+#### imgur.com
+
+If you have an image you want to use, you can upload it to [imgur.com](http://imgur.com). Once the image is uploaded, follow the link to share it and look for the "direct" image URL. That will link directly to the png or jpg file, and it's the URL to use in your code.
+
+You can also use any image that's already hosted on imgur, but check the copyright terms on the site and on the particular image.
+
+#### Dropbox
+
+If you have a Dropbox account, you can copy your media files into your "Public" folder. Log into Dropbox through their website and browse to the Public folder. Click on the file you want to use for a prompt to view the public URL of that file. Unlike imgur, Dropbox can host audio and video files.
+
+#### Internet Archive
+
+todo: archive.org
+
+### Using three.js
+
+The simplified API is a wrapper for [three.js](https://github.com/mrdoob/three.js), a JavaScript library for creating 3D scenes using WebGL. three.js is more powerful than the WebVR Starter Kit API, but more difficult to use. If you prefer, you can use three.js directly to build your scene, but you will not be able to use the wrapper objects on any objects you create with three.js.
+
+If you prefer to use the simplified API for part of your code and use three.js for a limited set of advanced operations, each object created has a `.object` property that points to its three.js object.
+
+```javascript
+var box = VR.box();
+console.log(box.object instanceof THREE.Mesh); // true
+```
 
 ## API Reference
 
