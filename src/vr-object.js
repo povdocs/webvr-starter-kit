@@ -13,7 +13,7 @@ module.exports = (function () {
 		scratchVector1 = new THREE.Vector3(),
 		scratchVector2 = new THREE.Vector3(),
 
-		allObjects = window.WeakMap ? new WeakMap() : {};
+		allObjects = window.WeakMap ? new window.WeakMap() : {};
 
 	function distance(object, origin) {
 		var geometry;

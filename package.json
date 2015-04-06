@@ -2,12 +2,20 @@
   "name": "webvr-starter-kit",
   "version": "0.0.0",
   "description": "WebVR Starter Kit",
-  "link": "",
+  "keywords": ["webgl", "webvr", "vr", "virtual reality"],
+  "homepage": "https://github.com/povdocs/webvr-starter-kit",
+  "bugs": {
+    "url": "https://github.com/povdocs/webvr-starter-kit/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/povdocs/webvr-starter-kit.git"
+  },
   "main": "build/bundle.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Brian Chirls <brian@chirls.com>",
+  "author": "Brian Chirls <brian@chirls.com> (http://chirls.com)",
   "license": "MIT",
   "devDependencies": {
     "css-loader": "^0.9.1",
@@ -26,8 +34,8 @@
     "lodash.foreach": "^3.0.1",
     "main-bower-files": "^2.5.0",
     "raw-loader": "^0.5.1",
-    "style-loader": "^0.8.3",
-    "three": "^0.69.0",
+    "style-loader": "^0.9.0",
+    "three": "^0.70.0",
     "url-loader": "^0.5.5",
     "webpack": "^1.5.1",
     "webpack-dev-server": "^1.7.0"
