@@ -23,8 +23,11 @@ THREE.VRControls = function ( object, options ) {
 
 		for ( i = 0; i < devices.length; ++i ) {
 			device = devices[i];
-			if ( device instanceof PositionSensorVRDevice &&
-					( !sensorDevice || device.hardwareUnitId !== sensorDevice.hardwareUnitId ) ) {
+			if ( devices[i] instanceof PositionSensorVRDevice ) {
+
+				if ( sensorDevice && devices[i].hardwareUnitId === sensorDevice.hardwareUnitId ) {
+					break;
+				}
 
 				sensorDevice = device;
 				console.log('Using Sensor Device:', sensorDevice.deviceName);
@@ -76,10 +79,12 @@ THREE.VRControls = function ( object, options ) {
 
 		if ( sensorDevice ) {
 			vrState = sensorDevice.getState();
-			if ( vrState && vrState.orientation ) {
-				object.quaternion.copy( vrState.orientation );
+			if ( vrState ) {
+				if ( vrState.orientation && vrState.hasOrientation !== false ) {
+					object.quaternion.copy( vrState.orientation );
+				}
 
-				if ( vrState.position ) {
+				if ( vrState.position && vrState.hasPosition !== false ) {
 					// vrState.position is null if using DK1 or if DK2 camera is not plugged in
 					object.position.copy( vrState.position );
 				}
