@@ -123,11 +123,11 @@
 	
 			//todo: use icons instead of text
 			if (requestFullscreen && fullscreenEnabled) {
-				enableFullscreen = svgButton(__webpack_require__(5), 'fs-enable');
+				enableFullscreen = svgButton(__webpack_require__(8), 'fs-enable');
 				enableFullscreen.setAttribute('title', 'Enable Full Screen');
 				enableFullscreen.addEventListener('click', requestFullscreen.bind(fullScreenElement), false);
 	
-				disableFullscreen = svgButton(__webpack_require__(6), 'fs-disable');
+				disableFullscreen = svgButton(__webpack_require__(9), 'fs-disable');
 				disableFullscreen.setAttribute('title', 'Exit Full Screen');
 				disableFullscreen.addEventListener('click', VR.exitFullscreen, false);
 			}
@@ -142,12 +142,12 @@
 				}
 			});
 	
-			vrButton = svgButton(__webpack_require__(7), 'vr');
+			vrButton = svgButton(__webpack_require__(10), 'vr');
 			vrButton.setAttribute('title', 'Toggle Virtual Reality');
 			vrButton.className = 'unsupported';
 			vrButton.addEventListener('click', VR.requestVR, false);
 	
-			orientationButton = svgButton(__webpack_require__(8), 'orientation');
+			orientationButton = svgButton(__webpack_require__(11), 'orientation');
 			orientationButton.setAttribute('title', 'Toggle Orientation');
 			orientationButton.className = 'unsupported';
 			orientationButton.addEventListener('click', toggleOrientation, false);
@@ -211,7 +211,7 @@
 		//global-ish declarations
 			THREE,
 			eventEmitter,
-			materials = __webpack_require__(9),
+			materials = __webpack_require__(5),
 			nop = function () {},
 			requestFullscreen = nop,
 			exitFullscreen = (
@@ -248,7 +248,7 @@
 		//exported object
 			VR,
 	
-			VRObject = __webpack_require__(11),
+			VRObject = __webpack_require__(6),
 			objectMethods = [
 				'box',
 				'cylinder',
@@ -569,11 +569,11 @@
 		function initRequirements() {
 			//load external requirements
 			THREE = __webpack_require__(30);
-			__webpack_require__(14);
-			__webpack_require__(15);
+			__webpack_require__(24);
+			__webpack_require__(25);
 	
 			//if (typeof __DEV__ !== 'undefined' && __DEV__) {
-				__webpack_require__(16);
+				__webpack_require__(26);
 			//}
 	
 			THREE.ImageUtils.crossOrigin = '';
@@ -581,8 +581,8 @@
 			eventEmitter = __webpack_require__(29);
 	
 			//my VR stuff. todo: move these to a separate repo or two for easy packaging
-			__webpack_require__(17);
-			__webpack_require__(18);
+			__webpack_require__(27);
+			__webpack_require__(28);
 		}
 	
 		function initialize() {
@@ -715,7 +715,7 @@
 		};
 	
 		objectMethods.forEach(function (method) {
-			var creator = __webpack_require__(10)("./" + method);
+			var creator = __webpack_require__(7)("./" + method);
 	
 			VR[method] = function (options) {
 				var obj = new VRObject(scene, creator, body, options);
@@ -751,14 +751,17 @@
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
 	var update = __webpack_require__(4)(content, {});
+	if(content.locals) module.exports = content.locals;
 	// Hot Module Replacement
 	if(false) {
 		// When the styles change, update the <style> tags
-		module.hot.accept("!!/Volumes/WebDept/techfellow/webvr-starter-kit/node_modules/css-loader/index.js!/Volumes/WebDept/techfellow/webvr-starter-kit/src/css/style.css", function() {
-			var newContent = require("!!/Volumes/WebDept/techfellow/webvr-starter-kit/node_modules/css-loader/index.js!/Volumes/WebDept/techfellow/webvr-starter-kit/src/css/style.css");
-			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-			update(newContent);
-		});
+		if(!content.locals) {
+			module.hot.accept("!!./../../node_modules/css-loader/index.js!./style.css", function() {
+				var newContent = require("!!./../../node_modules/css-loader/index.js!./style.css");
+				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+				update(newContent);
+			});
+		}
 		// When the module is disposed, remove the <style> tags
 		module.hot.dispose(function() { update(); });
 	}
@@ -879,6 +882,14 @@
 		return styleElement;
 	}
 	
+	function createLinkElement() {
+		var linkElement = document.createElement("link");
+		var head = getHeadElement();
+		linkElement.rel = "stylesheet";
+		head.appendChild(linkElement);
+		return linkElement;
+	}
+	
 	function addStyle(obj, options) {
 		var styleElement, update, remove;
 	
@@ -887,10 +898,23 @@
 			styleElement = singletonElement || (singletonElement = createStyleElement());
 			update = applyToSingletonTag.bind(null, styleElement, styleIndex, false);
 			remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true);
+		} else if(obj.sourceMap &&
+			typeof URL === "function" &&
+			typeof URL.createObjectURL === "function" &&
+			typeof URL.revokeObjectURL === "function" &&
+			typeof Blob === "function" &&
+			typeof btoa === "function") {
+			styleElement = createLinkElement();
+			update = updateLink.bind(null, styleElement);
+			remove = function() {
+				styleElement.parentNode.removeChild(styleElement);
+				if(styleElement.href)
+					URL.revokeObjectURL(styleElement.href);
+			};
 		} else {
 			styleElement = createStyleElement();
 			update = applyToTag.bind(null, styleElement);
-			remove = function () {
+			remove = function() {
 				styleElement.parentNode.removeChild(styleElement);
 			};
 		}
@@ -908,25 +932,20 @@
 		};
 	}
 	
-	function replaceText(source, id, replacement) {
-		var boundaries = ["/** >>" + id + " **/", "/** " + id + "<< **/"];
-		var start = source.lastIndexOf(boundaries[0]);
-		var wrappedReplacement = replacement
-			? (boundaries[0] + replacement + boundaries[1])
-			: "";
-		if (source.lastIndexOf(boundaries[0]) >= 0) {
-			var end = source.lastIndexOf(boundaries[1]) + boundaries[1].length;
-			return source.slice(0, start) + wrappedReplacement + source.slice(end);
-		} else {
-			return source + wrappedReplacement;
-		}
-	}
+	var replaceText = (function () {
+		var textStore = [];
+	
+		return function (index, replacement) {
+			textStore[index] = replacement;
+			return textStore.filter(Boolean).join('\n');
+		};
+	})();
 	
 	function applyToSingletonTag(styleElement, index, remove, obj) {
 		var css = remove ? "" : obj.css;
 	
-		if(styleElement.styleSheet) {
-			styleElement.styleSheet.cssText = replaceText(styleElement.styleSheet.cssText, index, css);
+		if (styleElement.styleSheet) {
+			styleElement.styleSheet.cssText = replaceText(index, css);
 		} else {
 			var cssNode = document.createTextNode(css);
 			var childNodes = styleElement.childNodes;
@@ -944,13 +963,6 @@
 		var media = obj.media;
 		var sourceMap = obj.sourceMap;
 	
-		if(sourceMap && typeof btoa === "function") {
-			try {
-				css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(JSON.stringify(sourceMap)) + " */";
-				css = "@import url(\"data:text/css;base64," + btoa(css) + "\")";
-			} catch(e) {}
-		}
-	
 		if(media) {
 			styleElement.setAttribute("media", media)
 		}
@@ -964,34 +976,29 @@
 			styleElement.appendChild(document.createTextNode(css));
 		}
 	}
+	
+	function updateLink(linkElement, obj) {
+		var css = obj.css;
+		var media = obj.media;
+		var sourceMap = obj.sourceMap;
+	
+		if(sourceMap) {
+			css += "\n/*# sourceMappingURL=data:application/json;base64," + btoa(JSON.stringify(sourceMap)) + " */";
+		}
+	
+		var blob = new Blob([css], { type: "text/css" });
+	
+		var oldSrc = linkElement.href;
+	
+		linkElement.href = URL.createObjectURL(blob);
+	
+		if(oldSrc)
+			URL.revokeObjectURL(oldSrc);
+	}
 
 
 /***/ },
 /* 5 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M0 0v4l1.5-1.5 1.5 1.5 1-1-1.5-1.5 1.5-1.5h-4zm5 4l-1 1 1.5 1.5-1.5 1.5h4v-4l-1.5 1.5-1.5-1.5z\" />\n</svg>"
-
-/***/ },
-/* 6 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M1 0l-1 1 1.5 1.5-1.5 1.5h4v-4l-1.5 1.5-1.5-1.5zm3 4v4l1.5-1.5 1.5 1.5 1-1-1.5-1.5 1.5-1.5h-4z\" />\n</svg>"
-
-/***/ },
-/* 7 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M4.03 0c-2.53 0-4.03 3-4.03 3s1.5 3 4.03 3c2.47 0 3.97-3 3.97-3s-1.5-3-3.97-3zm-.03 1c1.11 0 2 .9 2 2 0 1.11-.89 2-2 2-1.1 0-2-.89-2-2 0-1.1.9-2 2-2zm0 1c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1c0-.1-.04-.19-.06-.28-.08.16-.24.28-.44.28-.28 0-.5-.22-.5-.5 0-.2.12-.36.28-.44-.09-.03-.18-.06-.28-.06z\"\n  transform=\"translate(0 1)\" />\n</svg>"
-
-/***/ },
-/* 8 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M4 0c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 1c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm2 1l-3 1-1 3 3-1 1-3zm-2 1.5c.28 0 .5.22.5.5s-.22.5-.5.5-.5-.22-.5-.5.22-.5.5-.5z\" />\n</svg>"
-
-/***/ },
-/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = (function () {
@@ -1312,56 +1319,14 @@
 	}());
 
 /***/ },
-/* 10 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var map = {
-		"./box": 19,
-		"./box.js": 19,
-		"./cylinder": 20,
-		"./cylinder.js": 20,
-		"./empty": 12,
-		"./empty.js": 12,
-		"./floor": 21,
-		"./floor.js": 21,
-		"./image": 22,
-		"./image.js": 22,
-		"./panorama": 23,
-		"./panorama.js": 23,
-		"./sky": 24,
-		"./sky.js": 24,
-		"./snow": 25,
-		"./snow.js": 25,
-		"./sound": 26,
-		"./sound.js": 26,
-		"./sphere": 27,
-		"./sphere.js": 27,
-		"./torus": 28,
-		"./torus.js": 28
-	};
-	function webpackContext(req) {
-		return __webpack_require__(webpackContextResolve(req));
-	};
-	function webpackContextResolve(req) {
-		return map[req] || (function() { throw new Error("Cannot find module '" + req + "'.") }());
-	};
-	webpackContext.keys = function webpackContextKeys() {
-		return Object.keys(map);
-	};
-	webpackContext.resolve = webpackContextResolve;
-	module.exports = webpackContext;
-	webpackContext.id = 10;
-
-
-/***/ },
-/* 11 */
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = (function () {
 		'use strict';
 	
 		var	NEAR_DISTANCE = 3,
-			materials = __webpack_require__(9),
+			materials = __webpack_require__(5),
 			THREE = __webpack_require__(30),
 			eventEmitter = __webpack_require__(29),
 	
@@ -1638,13 +1603,79 @@
 	}());
 
 /***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var map = {
+		"./box": 14,
+		"./box.js": 14,
+		"./cylinder": 15,
+		"./cylinder.js": 15,
+		"./empty": 12,
+		"./empty.js": 12,
+		"./floor": 16,
+		"./floor.js": 16,
+		"./image": 17,
+		"./image.js": 17,
+		"./panorama": 18,
+		"./panorama.js": 18,
+		"./sky": 19,
+		"./sky.js": 19,
+		"./snow": 20,
+		"./snow.js": 20,
+		"./sound": 21,
+		"./sound.js": 21,
+		"./sphere": 22,
+		"./sphere.js": 22,
+		"./torus": 23,
+		"./torus.js": 23
+	};
+	function webpackContext(req) {
+		return __webpack_require__(webpackContextResolve(req));
+	};
+	function webpackContextResolve(req) {
+		return map[req] || (function() { throw new Error("Cannot find module '" + req + "'.") }());
+	};
+	webpackContext.keys = function webpackContextKeys() {
+		return Object.keys(map);
+	};
+	webpackContext.resolve = webpackContextResolve;
+	module.exports = webpackContext;
+	webpackContext.id = 7;
+
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M0 0v4l1.5-1.5 1.5 1.5 1-1-1.5-1.5 1.5-1.5h-4zm5 4l-1 1 1.5 1.5-1.5 1.5h4v-4l-1.5 1.5-1.5-1.5z\" />\n</svg>"
+
+/***/ },
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M1 0l-1 1 1.5 1.5-1.5 1.5h4v-4l-1.5 1.5-1.5-1.5zm3 4v4l1.5-1.5 1.5 1.5 1-1-1.5-1.5 1.5-1.5h-4z\" />\n</svg>"
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M4.03 0c-2.53 0-4.03 3-4.03 3s1.5 3 4.03 3c2.47 0 3.97-3 3.97-3s-1.5-3-3.97-3zm-.03 1c1.11 0 2 .9 2 2 0 1.11-.89 2-2 2-1.1 0-2-.89-2-2 0-1.1.9-2 2-2zm0 1c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1c0-.1-.04-.19-.06-.28-.08.16-.24.28-.44.28-.28 0-.5-.22-.5-.5 0-.2.12-.36.28-.44-.09-.03-.18-.06-.28-.06z\"\n  transform=\"translate(0 1)\" />\n</svg>"
+
+/***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\" viewBox=\"0 0 8 8\">\n  <path d=\"M4 0c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 1c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm2 1l-3 1-1 3 3-1 1-3zm-2 1.5c.28 0 .5.22.5.5s-.22.5-.5.5-.5-.22-.5-.5.22-.5.5-.5z\" />\n</svg>"
+
+/***/ },
 /* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = (function () {
 		'use strict';
 	
-		var materials = __webpack_require__(9),
+		var materials = __webpack_require__(5),
 			THREE = __webpack_require__(30);
 	
 		return function empty(parent, options) {
@@ -1662,8 +1693,15 @@
 /* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
+	/*
+		MIT License http://www.opensource.org/licenses/mit-license.php
+		Author Tobias Koppers @sokra
+	*/
+	// css base code, injected by the css-loader
 	module.exports = function() {
 		var list = [];
+	
+		// return the list of modules as css string
 		list.toString = function toString() {
 			var result = [];
 			for(var i = 0; i < this.length; i++) {
@@ -1676,11 +1714,512 @@
 			}
 			return result.join("");
 		};
+	
+		// import a list of modules into the list
+		list.i = function(modules, mediaQuery) {
+			if(typeof modules === "string")
+				modules = [[null, modules, ""]];
+			var alreadyImportedModules = {};
+			for(var i = 0; i < this.length; i++) {
+				var id = this[i][0];
+				if(typeof id === "number")
+					alreadyImportedModules[id] = true;
+			}
+			for(i = 0; i < modules.length; i++) {
+				var item = modules[i];
+				// skip already imported module
+				// this implementation is not 100% perfect for weird media query combinations
+				//  when a module is imported multiple times with different media queries.
+				//  I hope this will never occur (Hey this way we have smaller bundles)
+				if(typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
+					if(mediaQuery && !item[2]) {
+						item[2] = mediaQuery;
+					} else if(mediaQuery) {
+						item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
+					}
+					list.push(item);
+				}
+			}
+		};
 		return list;
-	}
+	};
+
 
 /***/ },
 /* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(5),
+			THREE = __webpack_require__(30);
+	
+		return function box(parent, options) {
+			var geometry,
+				mesh;
+	
+			geometry = new THREE.BoxGeometry( 1, 1, 1 );
+			mesh = new THREE.Mesh(geometry, materials.standard());
+			mesh.name = 'box';
+	
+			parent.add(mesh);
+	
+			return mesh;
+		};
+	}());
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(5),
+			THREE = __webpack_require__(30);
+	
+		function cylinder(parent, options) {
+			var geometry,
+				mesh;
+	
+			geometry = new THREE.CylinderGeometry(
+				options.radiusTop === undefined ? 0.5 : options.radiusTop,
+				options.radiusBottom === undefined ? 0.5 : options.radiusBottom,
+				options.height === undefined ? 1 : options.height,
+				options.radiusSegments === undefined ? 16 : options.radiusSegments,
+				options.heightSegments,
+				options.openEnded
+			);
+			mesh = new THREE.Mesh(geometry, materials.standard());
+			mesh.name = 'cylinder';
+	
+			parent.add(mesh);
+	
+			return mesh;
+		}
+	
+		return cylinder;
+	}());
+
+/***/ },
+/* 16 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(5),
+			THREE = __webpack_require__(30);
+	
+		function floor(parent, options) {
+			var obj,
+				geometry;
+	
+			geometry = new THREE.CircleGeometry( options.radius || 100, options.segments || 16 );
+			geometry.applyMatrix( new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+	
+			obj = new THREE.Mesh(
+				geometry,
+				materials.checkerboard({
+					repeat: 100
+				})
+			);
+			obj.name = 'floor';
+	
+			obj.receiveShadow = true;
+	
+			parent.add(obj);
+	
+			return obj;
+		}
+	
+		return floor;
+	}());
+
+/***/ },
+/* 17 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(5),
+			THREE = __webpack_require__(30);
+	
+		return function image(parent, options) {
+			var geometry,
+				material,
+				mesh,
+				src,
+				tex;
+	
+			if (typeof options === 'string') {
+				src = options;
+			} else if (options) {
+				src = options.src;
+			}
+	
+			if (src) {
+				tex = materials.imageTexture(src, THREE.UVMapping, function (t, image) {
+					geometry.applyMatrix(new THREE.Matrix4().makeScale(1, image.naturalHeight / image.naturalWidth, 1));
+					material.map = tex;
+					material.visible = true;
+					mesh.visible = true;
+					parent.add(mesh);
+				});
+			}
+	
+			geometry = new THREE.PlaneBufferGeometry(1, 1, 8);
+	
+			material = new THREE.MeshBasicMaterial({
+				side: THREE.DoubleSide,
+				transparent: true,
+				map: tex
+			});
+	
+			mesh = new THREE.Mesh( geometry, material );
+	
+			mesh.visible = false;
+	
+			parent.add(mesh);
+	
+			return mesh;
+		};
+	}());
+
+/***/ },
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(5),
+			THREE = __webpack_require__(30);
+	
+		return function panorama(parent, options) {
+			var geometry,
+				material,
+				mesh,
+				src,
+				tex;
+	
+			if (typeof options === 'string') {
+				src = options;
+			} else if (options) {
+				src = options.src;
+			}
+	
+			if (src) {
+				tex = materials.imageTexture(src, THREE.UVMapping);
+			}
+	
+			geometry = new THREE.SphereGeometry( 1000, 60, 60 );
+			geometry.applyMatrix( new THREE.Matrix4().makeScale( -1, 1, 1 ) );
+	
+			material = new THREE.MeshBasicMaterial({
+				side: THREE.DoubleSide,
+				transparent: true,
+				map: tex
+			});
+	
+			mesh = new THREE.Mesh( geometry, material );
+			mesh.rotation.set( 0, -90 * Math.PI / 180, 0 );
+	
+			mesh.name = 'panorama';
+	
+			parent.add(mesh);
+	
+			return mesh;
+		};
+	}());
+
+/***/ },
+/* 19 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(5),
+			THREE = __webpack_require__(30),
+			TAU = Math.PI * 2,
+			HALF_PI = Math.PI / 2,
+	
+			distance = 400000,
+			scratchVector = new THREE.Vector3(),
+	
+			params = [
+				'luminance',
+				'turbidity',
+				'reileigh',
+				'mieCoefficient',
+				'mieDirectionalG'
+			];
+	
+		__webpack_require__(35);
+	
+		return function sky(parent, options) {
+			var obj = new THREE.Sky(),
+				self = this,
+				scene = parent,
+				light,
+				sunPosition,
+				azimuth = Math.PI / 6,
+				altitude = Math.PI / 6;
+	
+			function mod(x, y) {
+				return x - y * Math.floor(x / y);
+			}
+	
+			function update() {
+				var sinTheta,
+					cosTheta,
+					phi,
+					sinPhi,
+					cosPhi;
+	
+				sinTheta = Math.sin(altitude);
+				cosTheta = Math.cos(altitude);
+				phi = -HALF_PI - azimuth;
+				sinPhi = Math.sin(phi);
+				cosPhi = Math.cos(phi);
+	
+				sunPosition.set(
+					distance * cosPhi * cosTheta,
+					distance * sinTheta,
+					distance * sinPhi * cosTheta
+				);
+	
+				if (light) {
+					light.intensity = 1.5 * Math.max(0.0, 1.0 - Math.exp(-((Math.PI / 1.95 - Math.abs(HALF_PI - altitude)) / 1.5)));
+					light.position.copy(sunPosition).normalize().multiplyScalar(100);
+				}
+			}
+	
+			obj.mesh.name = 'sky';
+	
+			parent.add(obj.mesh);
+	
+			while (!(scene instanceof THREE.Scene) && scene.parent) {
+				scene = scene.parent;
+			}
+			light = scene.getObjectByName('directional-light');
+	
+			this.setOptions = function (options) {
+				var needUpdate = false,
+					altitude,
+					azimuth;
+	
+				if (options) {
+					params.forEach(function (param) {
+						var val = options[param];
+						if (val !== undefined) {
+							val = parseFloat(val);
+							if (!isNaN(val)) {
+								obj.uniforms[param].value = val;
+							}
+						}
+					});
+	
+					if (options.sunPosition instanceof THREE.Vector3) {
+						obj.uniforms.sunPosition.value.copy(options.sunPosition);
+					} else if (Array.isArray(options.sunPosition)) {
+						obj.uniforms.sunPosition.value.set(obj.uniforms.sunPosition.value, options.sunPosition);
+					} else {
+						self.altitude = options.altitude;
+						self.azimuth = options.azimuth;
+					}
+				}
+			};
+	
+			Object.defineProperty(this, 'azimuth', {
+				set: function (val) {
+					val = mod(parseFloat(val), TAU);
+					if (!isNaN(val) && val !== azimuth) {
+						azimuth = val;
+						update();
+					}
+				},
+				get: function () {
+					return azimuth;
+				}
+			});
+	
+			Object.defineProperty(this, 'altitude', {
+				set: function (val) {
+					val = mod(parseFloat(val), TAU);
+					if (!isNaN(val) && val !== altitude) {
+						altitude = val;
+						update();
+					}
+				},
+				get: function() {
+					return altitude;
+				}
+			});
+	
+			this.setAltitude = function (val) {
+				self.altitude = val;
+				return this;
+			};
+	
+			this.setAzimuth = function (val) {
+				self.azimuth = val;
+				return this;
+			};
+	
+			sunPosition = obj.uniforms.sunPosition.value;
+			update();
+	
+			this.setOptions(options);
+	
+			return obj.mesh;
+		};
+	}());
+
+/***/ },
+/* 20 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(5),
+			THREE = __webpack_require__(30);
+	
+		// require('imports?THREE=three!../lib/Snow');
+	
+		return function snow(parent, options) {
+			var snowObj,
+				empty,
+				update;
+	
+			snowObj = new THREE.Snow();
+			empty = new THREE.Object3D();
+			empty.name = 'snow';
+	
+			empty.add(snowObj.particles);
+	
+			parent.add(empty);
+	
+			update = this.update;
+			this.update = function (time) {
+				snowObj.time(time * 0.04);
+				update();
+			};
+	
+			return empty;
+		};
+	}());
+
+/***/ },
+/* 21 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(5),
+			THREE = __webpack_require__(30);
+	
+		__webpack_require__(34);
+	
+		return function sound(parent, options) {
+			var obj,
+				src,
+				listener,
+				scene = parent;
+	
+			if (typeof options === 'string' || Array.isArray(options)) {
+				src = options;
+			} else if (options) {
+				src = options.src;
+			}
+	
+			while (!(scene instanceof THREE.Scene) && scene.parent) {
+				scene = scene.parent;
+			}
+	
+			listener = scene.getObjectByName('audio-listener');
+			obj = new THREE.Audio(listener);
+			// obj.setLoop(true);
+			obj.load(src);
+	
+			this.start = obj.start.bind(obj);
+			this.volume = obj.volume.bind(obj);
+	
+			parent.add(obj);
+	
+			return obj;
+		};
+	}());
+
+/***/ },
+/* 22 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(5),
+			THREE = __webpack_require__(30);
+	
+		return function box(parent, options) {
+			var geometry,
+				mesh;
+	
+			geometry = new THREE.SphereGeometry(
+				options.radius === undefined ? 0.5 : options.radius,
+				options.widthSegments === undefined ? 16 : options.widthSegments,
+				options.heightSegments === undefined ? 12 : options.heightSegments,
+				options.phiStart,
+				options.phiLength,
+				options.thetaStart,
+				options.thetaLength
+			);
+			mesh = new THREE.Mesh(geometry, materials.standard());
+			mesh.name = 'sphere';
+	
+			parent.add(mesh);
+	
+			return mesh;
+		};
+	}());
+
+/***/ },
+/* 23 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(5),
+			THREE = __webpack_require__(30);
+	
+		return function torus(parent, options) {
+			var geometry,
+				mesh;
+	
+			geometry = new THREE.TorusGeometry(
+				options.radius === undefined ? 0.5 : options.radius,
+				options.tube === undefined ? 0.125 : options.tube,
+				options.radialSegments === undefined ? 12 : options.radialSegments,
+				options.tubularSegments === undefined ? 16 : options.tubularSegments,
+				options.arc
+			);
+			mesh = new THREE.Mesh(geometry, materials.standard());
+			mesh.name = 'torus';
+	
+			parent.add(mesh);
+	
+			return mesh;
+		};
+	}());
+
+/***/ },
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
@@ -1782,7 +2321,7 @@
 
 
 /***/ },
-/* 15 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
@@ -2471,7 +3010,7 @@
 
 
 /***/ },
-/* 16 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
@@ -2597,7 +3136,7 @@
 	} )();
 
 /***/ },
-/* 17 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
@@ -3036,7 +3575,7 @@
 
 
 /***/ },
-/* 18 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
@@ -3189,479 +3728,6 @@
 	
 	THREE.VRControls.prototype = Object.create( THREE.EventDispatcher.prototype );
 
-
-/***/ },
-/* 19 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(9),
-			THREE = __webpack_require__(30);
-	
-		return function box(parent, options) {
-			var geometry,
-				mesh;
-	
-			geometry = new THREE.BoxGeometry( 1, 1, 1 );
-			mesh = new THREE.Mesh(geometry, materials.standard());
-			mesh.name = 'box';
-	
-			parent.add(mesh);
-	
-			return mesh;
-		};
-	}());
-
-/***/ },
-/* 20 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(9),
-			THREE = __webpack_require__(30);
-	
-		function cylinder(parent, options) {
-			var geometry,
-				mesh;
-	
-			geometry = new THREE.CylinderGeometry(
-				options.radiusTop === undefined ? 0.5 : options.radiusTop,
-				options.radiusBottom === undefined ? 0.5 : options.radiusBottom,
-				options.height === undefined ? 1 : options.height,
-				options.radiusSegments === undefined ? 16 : options.radiusSegments,
-				options.heightSegments,
-				options.openEnded
-			);
-			mesh = new THREE.Mesh(geometry, materials.standard());
-			mesh.name = 'cylinder';
-	
-			parent.add(mesh);
-	
-			return mesh;
-		}
-	
-		return cylinder;
-	}());
-
-/***/ },
-/* 21 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(9),
-			THREE = __webpack_require__(30);
-	
-		function floor(parent, options) {
-			var obj,
-				geometry;
-	
-			geometry = new THREE.CircleGeometry( options.radius || 100, options.segments || 16 );
-			geometry.applyMatrix( new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-	
-			obj = new THREE.Mesh(
-				geometry,
-				materials.checkerboard({
-					repeat: 100
-				})
-			);
-			obj.name = 'floor';
-	
-			obj.receiveShadow = true;
-	
-			parent.add(obj);
-	
-			return obj;
-		}
-	
-		return floor;
-	}());
-
-/***/ },
-/* 22 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(9),
-			THREE = __webpack_require__(30);
-	
-		return function image(parent, options) {
-			var geometry,
-				material,
-				mesh,
-				src,
-				tex;
-	
-			if (typeof options === 'string') {
-				src = options;
-			} else if (options) {
-				src = options.src;
-			}
-	
-			if (src) {
-				tex = materials.imageTexture(src, THREE.UVMapping, function (t, image) {
-					geometry.applyMatrix(new THREE.Matrix4().makeScale(1, image.naturalHeight / image.naturalWidth, 1));
-					material.map = tex;
-					material.visible = true;
-					mesh.visible = true;
-					parent.add(mesh);
-				});
-			}
-	
-			geometry = new THREE.PlaneBufferGeometry(1, 1, 8);
-	
-			material = new THREE.MeshBasicMaterial({
-				side: THREE.DoubleSide,
-				transparent: true,
-				map: tex
-			});
-	
-			mesh = new THREE.Mesh( geometry, material );
-	
-			mesh.visible = false;
-	
-			parent.add(mesh);
-	
-			return mesh;
-		};
-	}());
-
-/***/ },
-/* 23 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(9),
-			THREE = __webpack_require__(30);
-	
-		return function panorama(parent, options) {
-			var geometry,
-				material,
-				mesh,
-				src,
-				tex;
-	
-			if (typeof options === 'string') {
-				src = options;
-			} else if (options) {
-				src = options.src;
-			}
-	
-			if (src) {
-				tex = materials.imageTexture(src, THREE.UVMapping);
-			}
-	
-			geometry = new THREE.SphereGeometry( 1000, 60, 60 );
-			geometry.applyMatrix( new THREE.Matrix4().makeScale( -1, 1, 1 ) );
-	
-			material = new THREE.MeshBasicMaterial({
-				side: THREE.DoubleSide,
-				transparent: true,
-				map: tex
-			});
-	
-			mesh = new THREE.Mesh( geometry, material );
-			mesh.rotation.set( 0, -90 * Math.PI / 180, 0 );
-	
-			mesh.name = 'panorama';
-	
-			parent.add(mesh);
-	
-			return mesh;
-		};
-	}());
-
-/***/ },
-/* 24 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(9),
-			THREE = __webpack_require__(30),
-			TAU = Math.PI * 2,
-			HALF_PI = Math.PI / 2,
-	
-			distance = 400000,
-			scratchVector = new THREE.Vector3(),
-	
-			params = [
-				'luminance',
-				'turbidity',
-				'reileigh',
-				'mieCoefficient',
-				'mieDirectionalG'
-			];
-	
-		__webpack_require__(35);
-	
-		return function sky(parent, options) {
-			var obj = new THREE.Sky(),
-				self = this,
-				scene = parent,
-				light,
-				sunPosition,
-				azimuth = Math.PI / 6,
-				altitude = Math.PI / 6;
-	
-			function mod(x, y) {
-				return x - y * Math.floor(x / y);
-			}
-	
-			function update() {
-				var sinTheta,
-					cosTheta,
-					phi,
-					sinPhi,
-					cosPhi;
-	
-				sinTheta = Math.sin(altitude);
-				cosTheta = Math.cos(altitude);
-				phi = -HALF_PI - azimuth;
-				sinPhi = Math.sin(phi);
-				cosPhi = Math.cos(phi);
-	
-				sunPosition.set(
-					distance * cosPhi * cosTheta,
-					distance * sinTheta,
-					distance * sinPhi * cosTheta
-				);
-	
-				if (light) {
-					light.intensity = 1.5 * Math.max(0.0, 1.0 - Math.exp(-((Math.PI / 1.95 - Math.abs(HALF_PI - altitude)) / 1.5)));
-					light.position.copy(sunPosition).normalize().multiplyScalar(100);
-				}
-			}
-	
-			obj.mesh.name = 'sky';
-	
-			parent.add(obj.mesh);
-	
-			while (!(scene instanceof THREE.Scene) && scene.parent) {
-				scene = scene.parent;
-			}
-			light = scene.getObjectByName('directional-light');
-	
-			this.setOptions = function (options) {
-				var needUpdate = false,
-					altitude,
-					azimuth;
-	
-				if (options) {
-					params.forEach(function (param) {
-						var val = options[param];
-						if (val !== undefined) {
-							val = parseFloat(val);
-							if (!isNaN(val)) {
-								obj.uniforms[param].value = val;
-							}
-						}
-					});
-	
-					if (options.sunPosition instanceof THREE.Vector3) {
-						obj.uniforms.sunPosition.value.copy(options.sunPosition);
-					} else if (Array.isArray(options.sunPosition)) {
-						obj.uniforms.sunPosition.value.set(obj.uniforms.sunPosition.value, options.sunPosition);
-					} else {
-						self.altitude = options.altitude;
-						self.azimuth = options.azimuth;
-					}
-				}
-			};
-	
-			Object.defineProperty(this, 'azimuth', {
-				set: function (val) {
-					val = mod(parseFloat(val), TAU);
-					if (!isNaN(val) && val !== azimuth) {
-						azimuth = val;
-						update();
-					}
-				},
-				get: function () {
-					return azimuth;
-				}
-			});
-	
-			Object.defineProperty(this, 'altitude', {
-				set: function (val) {
-					val = mod(parseFloat(val), TAU);
-					if (!isNaN(val) && val !== altitude) {
-						altitude = val;
-						update();
-					}
-				},
-				get: function() {
-					return altitude;
-				}
-			});
-	
-			this.setAltitude = function (val) {
-				self.altitude = val;
-				return this;
-			};
-	
-			this.setAzimuth = function (val) {
-				self.azimuth = val;
-				return this;
-			};
-	
-			sunPosition = obj.uniforms.sunPosition.value;
-			update();
-	
-			this.setOptions(options);
-	
-			return obj.mesh;
-		};
-	}());
-
-/***/ },
-/* 25 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(9),
-			THREE = __webpack_require__(30);
-	
-		// require('imports?THREE=three!../lib/Snow');
-	
-		return function snow(parent, options) {
-			var snowObj,
-				empty,
-				update;
-	
-			snowObj = new THREE.Snow();
-			empty = new THREE.Object3D();
-			empty.name = 'snow';
-	
-			empty.add(snowObj.particles);
-	
-			parent.add(empty);
-	
-			update = this.update;
-			this.update = function (time) {
-				snowObj.time(time * 0.04);
-				update();
-			};
-	
-			return empty;
-		};
-	}());
-
-/***/ },
-/* 26 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(9),
-			THREE = __webpack_require__(30);
-	
-		__webpack_require__(34);
-	
-		return function sound(parent, options) {
-			var obj,
-				src,
-				listener,
-				scene = parent;
-	
-			if (typeof options === 'string' || Array.isArray(options)) {
-				src = options;
-			} else if (options) {
-				src = options.src;
-			}
-	
-			while (!(scene instanceof THREE.Scene) && scene.parent) {
-				scene = scene.parent;
-			}
-	
-			listener = scene.getObjectByName('audio-listener');
-			obj = new THREE.Audio(listener);
-			// obj.setLoop(true);
-			obj.load(src);
-	
-			this.start = obj.start.bind(obj);
-			this.volume = obj.volume.bind(obj);
-	
-			parent.add(obj);
-	
-			return obj;
-		};
-	}());
-
-/***/ },
-/* 27 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(9),
-			THREE = __webpack_require__(30);
-	
-		return function box(parent, options) {
-			var geometry,
-				mesh;
-	
-			geometry = new THREE.SphereGeometry(
-				options.radius === undefined ? 0.5 : options.radius,
-				options.widthSegments === undefined ? 16 : options.widthSegments,
-				options.heightSegments === undefined ? 12 : options.heightSegments,
-				options.phiStart,
-				options.phiLength,
-				options.thetaStart,
-				options.thetaLength
-			);
-			mesh = new THREE.Mesh(geometry, materials.standard());
-			mesh.name = 'sphere';
-	
-			parent.add(mesh);
-	
-			return mesh;
-		};
-	}());
-
-/***/ },
-/* 28 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(9),
-			THREE = __webpack_require__(30);
-	
-		return function torus(parent, options) {
-			var geometry,
-				mesh;
-	
-			geometry = new THREE.TorusGeometry(
-				options.radius === undefined ? 0.5 : options.radius,
-				options.tube === undefined ? 0.125 : options.tube,
-				options.radialSegments === undefined ? 12 : options.radialSegments,
-				options.tubularSegments === undefined ? 16 : options.tubularSegments,
-				options.arc
-			);
-			mesh = new THREE.Mesh(geometry, materials.standard());
-			mesh.name = 'torus';
-	
-			parent.add(mesh);
-	
-			return mesh;
-		};
-	}());
 
 /***/ },
 /* 29 */
@@ -39000,8 +39066,8 @@
 	 */
 	var arrayEach = __webpack_require__(51),
 	    baseEach = __webpack_require__(52),
-	    bindCallback = __webpack_require__(54),
-	    isArray = __webpack_require__(53);
+	    bindCallback = __webpack_require__(53),
+	    isArray = __webpack_require__(54);
 	
 	/**
 	 * Creates a function for `_.forEach` or `_.forEachRight`.
@@ -39068,8 +39134,8 @@
 	 */
 	var baseAssign = __webpack_require__(55),
 	    createAssigner = __webpack_require__(56),
-	    isNative = __webpack_require__(58),
-	    keys = __webpack_require__(57);
+	    isNative = __webpack_require__(57),
+	    keys = __webpack_require__(58);
 	
 	/** Used for native method references. */
 	var arrayProto = Array.prototype;
@@ -39965,7 +40031,7 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var keys = __webpack_require__(67);
+	var keys = __webpack_require__(65);
 	
 	/**
 	 * Used as the [maximum length](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
@@ -40145,6 +40211,77 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
+	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/**
+	 * A specialized version of `baseCallback` which only supports `this` binding
+	 * and specifying the number of arguments to provide to `func`.
+	 *
+	 * @private
+	 * @param {Function} func The function to bind.
+	 * @param {*} thisArg The `this` binding of `func`.
+	 * @param {number} [argCount] The number of arguments to provide to `func`.
+	 * @returns {Function} Returns the callback.
+	 */
+	function bindCallback(func, thisArg, argCount) {
+	  if (typeof func != 'function') {
+	    return identity;
+	  }
+	  if (thisArg === undefined) {
+	    return func;
+	  }
+	  switch (argCount) {
+	    case 1: return function(value) {
+	      return func.call(thisArg, value);
+	    };
+	    case 3: return function(value, index, collection) {
+	      return func.call(thisArg, value, index, collection);
+	    };
+	    case 4: return function(accumulator, value, index, collection) {
+	      return func.call(thisArg, accumulator, value, index, collection);
+	    };
+	    case 5: return function(value, other, key, object, source) {
+	      return func.call(thisArg, value, other, key, object, source);
+	    };
+	  }
+	  return function() {
+	    return func.apply(thisArg, arguments);
+	  };
+	}
+	
+	/**
+	 * This method returns the first argument provided to it.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Utility
+	 * @param {*} value Any value.
+	 * @returns {*} Returns `value`.
+	 * @example
+	 *
+	 * var object = { 'user': 'fred' };
+	 *
+	 * _.identity(object) === object;
+	 * // => true
+	 */
+	function identity(value) {
+	  return value;
+	}
+	
+	module.exports = bindCallback;
+
+
+/***/ },
+/* 54 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
 	 * lodash 3.0.2 (Custom Build) <https://lodash.com/>
 	 * Build: `lodash modern modularize exports="npm" -o ./`
 	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
@@ -40305,77 +40442,6 @@
 
 
 /***/ },
-/* 54 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/**
-	 * A specialized version of `baseCallback` which only supports `this` binding
-	 * and specifying the number of arguments to provide to `func`.
-	 *
-	 * @private
-	 * @param {Function} func The function to bind.
-	 * @param {*} thisArg The `this` binding of `func`.
-	 * @param {number} [argCount] The number of arguments to provide to `func`.
-	 * @returns {Function} Returns the callback.
-	 */
-	function bindCallback(func, thisArg, argCount) {
-	  if (typeof func != 'function') {
-	    return identity;
-	  }
-	  if (thisArg === undefined) {
-	    return func;
-	  }
-	  switch (argCount) {
-	    case 1: return function(value) {
-	      return func.call(thisArg, value);
-	    };
-	    case 3: return function(value, index, collection) {
-	      return func.call(thisArg, value, index, collection);
-	    };
-	    case 4: return function(accumulator, value, index, collection) {
-	      return func.call(thisArg, accumulator, value, index, collection);
-	    };
-	    case 5: return function(value, other, key, object, source) {
-	      return func.call(thisArg, value, other, key, object, source);
-	    };
-	  }
-	  return function() {
-	    return func.apply(thisArg, arguments);
-	  };
-	}
-	
-	/**
-	 * This method returns the first argument provided to it.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Utility
-	 * @param {*} value Any value.
-	 * @returns {*} Returns `value`.
-	 * @example
-	 *
-	 * var object = { 'user': 'fred' };
-	 *
-	 * _.identity(object) === object;
-	 * // => true
-	 */
-	function identity(value) {
-	  return value;
-	}
-	
-	module.exports = bindCallback;
-
-
-/***/ },
 /* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -40387,9 +40453,9 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var baseCopy = __webpack_require__(68),
-	    isNative = __webpack_require__(58),
-	    keys = __webpack_require__(57);
+	var baseCopy = __webpack_require__(66),
+	    isNative = __webpack_require__(57),
+	    keys = __webpack_require__(58);
 	
 	/** Native method references. */
 	var getOwnPropertySymbols = isNative(getOwnPropertySymbols = Object.getOwnPropertySymbols) && getOwnPropertySymbols,
@@ -40512,9 +40578,9 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var bindCallback = __webpack_require__(69),
-	    isIterateeCall = __webpack_require__(70),
-	    restParam = __webpack_require__(71);
+	var bindCallback = __webpack_require__(67),
+	    isIterateeCall = __webpack_require__(69),
+	    restParam = __webpack_require__(68);
 	
 	/**
 	 * Creates a function that assigns properties of source object(s) to a given
@@ -40560,251 +40626,6 @@
 
 /***/ },
 /* 57 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.6 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var isArguments = __webpack_require__(72),
-	    isArray = __webpack_require__(73),
-	    isNative = __webpack_require__(58);
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/** Used to check objects for own properties. */
-	var hasOwnProperty = objectProto.hasOwnProperty;
-	
-	/** Native method references. */
-	var propertyIsEnumerable = objectProto.propertyIsEnumerable;
-	
-	/* Native method references for those with the same name as other `lodash` methods. */
-	var nativeKeys = isNative(nativeKeys = Object.keys) && nativeKeys;
-	
-	/**
-	 * Used as the [maximum length](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
-	 * of an array-like value.
-	 */
-	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
-	
-	/**
-	 * An object environment feature flags.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @type Object
-	 */
-	var support = {};
-	
-	(function(x) {
-	  var Ctor = function() { this.x = x; },
-	      object = { '0': x, 'length': x },
-	      props = [];
-	
-	  Ctor.prototype = { 'valueOf': x, 'y': x };
-	  for (var key in new Ctor) { props.push(key); }
-	
-	  /**
-	   * Detect if `arguments` object indexes are non-enumerable.
-	   *
-	   * In Firefox < 4, IE < 9, PhantomJS, and Safari < 5.1 `arguments` object
-	   * indexes are non-enumerable. Chrome < 25 and Node.js < 0.11.0 treat
-	   * `arguments` object indexes as non-enumerable and fail `hasOwnProperty`
-	   * checks for indexes that exceed the number of function parameters and
-	   * whose associated argument values are `0`.
-	   *
-	   * @memberOf _.support
-	   * @type boolean
-	   */
-	  try {
-	    support.nonEnumArgs = !propertyIsEnumerable.call(arguments, 1);
-	  } catch(e) {
-	    support.nonEnumArgs = true;
-	  }
-	}(1, 0));
-	
-	/**
-	 * Checks if `value` is a valid array-like index.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
-	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
-	 */
-	function isIndex(value, length) {
-	  value = +value;
-	  length = length == null ? MAX_SAFE_INTEGER : length;
-	  return value > -1 && value % 1 == 0 && value < length;
-	}
-	
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * **Note:** This function is based on [`ToLength`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength).
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * A fallback implementation of `Object.keys` which creates an array of the
-	 * own enumerable property names of `object`.
-	 *
-	 * @private
-	 * @param {Object} object The object to query.
-	 * @returns {Array} Returns the array of property names.
-	 */
-	function shimKeys(object) {
-	  var props = keysIn(object),
-	      propsLength = props.length,
-	      length = propsLength && object.length;
-	
-	  var allowIndexes = length && isLength(length) &&
-	    (isArray(object) || (support.nonEnumArgs && isArguments(object)));
-	
-	  var index = -1,
-	      result = [];
-	
-	  while (++index < propsLength) {
-	    var key = props[index];
-	    if ((allowIndexes && isIndex(key, length)) || hasOwnProperty.call(object, key)) {
-	      result.push(key);
-	    }
-	  }
-	  return result;
-	}
-	
-	/**
-	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
-	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
-	 * @example
-	 *
-	 * _.isObject({});
-	 * // => true
-	 *
-	 * _.isObject([1, 2, 3]);
-	 * // => true
-	 *
-	 * _.isObject(1);
-	 * // => false
-	 */
-	function isObject(value) {
-	  // Avoid a V8 JIT bug in Chrome 19-20.
-	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
-	  var type = typeof value;
-	  return type == 'function' || (!!value && type == 'object');
-	}
-	
-	/**
-	 * Creates an array of the own enumerable property names of `object`.
-	 *
-	 * **Note:** Non-object values are coerced to objects. See the
-	 * [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.keys)
-	 * for more details.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Object
-	 * @param {Object} object The object to query.
-	 * @returns {Array} Returns the array of property names.
-	 * @example
-	 *
-	 * function Foo() {
-	 *   this.a = 1;
-	 *   this.b = 2;
-	 * }
-	 *
-	 * Foo.prototype.c = 3;
-	 *
-	 * _.keys(new Foo);
-	 * // => ['a', 'b'] (iteration order is not guaranteed)
-	 *
-	 * _.keys('hi');
-	 * // => ['0', '1']
-	 */
-	var keys = !nativeKeys ? shimKeys : function(object) {
-	  if (object) {
-	    var Ctor = object.constructor,
-	        length = object.length;
-	  }
-	  if ((typeof Ctor == 'function' && Ctor.prototype === object) ||
-	      (typeof object != 'function' && isLength(length))) {
-	    return shimKeys(object);
-	  }
-	  return isObject(object) ? nativeKeys(object) : [];
-	};
-	
-	/**
-	 * Creates an array of the own and inherited enumerable property names of `object`.
-	 *
-	 * **Note:** Non-object values are coerced to objects.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Object
-	 * @param {Object} object The object to query.
-	 * @returns {Array} Returns the array of property names.
-	 * @example
-	 *
-	 * function Foo() {
-	 *   this.a = 1;
-	 *   this.b = 2;
-	 * }
-	 *
-	 * Foo.prototype.c = 3;
-	 *
-	 * _.keysIn(new Foo);
-	 * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
-	 */
-	function keysIn(object) {
-	  if (object == null) {
-	    return [];
-	  }
-	  if (!isObject(object)) {
-	    object = Object(object);
-	  }
-	  var length = object.length;
-	  length = (length && isLength(length) &&
-	    (isArray(object) || (support.nonEnumArgs && isArguments(object))) && length) || 0;
-	
-	  var Ctor = object.constructor,
-	      index = -1,
-	      isProto = typeof Ctor == 'function' && Ctor.prototype === object,
-	      result = Array(length),
-	      skipIndexes = length > 0;
-	
-	  while (++index < length) {
-	    result[index] = (index + '');
-	  }
-	  for (var key in object) {
-	    if (!(skipIndexes && isIndex(key, length)) &&
-	        !(key == 'constructor' && (isProto || !hasOwnProperty.call(object, key)))) {
-	      result.push(key);
-	    }
-	  }
-	  return result;
-	}
-	
-	module.exports = keys;
-
-
-/***/ },
-/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -40925,133 +40746,7 @@
 
 
 /***/ },
-/* 59 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var forEach = Array.prototype.forEach, create = Object.create;
-	
-	var process = function (src, obj) {
-		var key;
-		for (key in src) obj[key] = src[key];
-	};
-	
-	module.exports = function (options/*, …options*/) {
-		var result = create(null);
-		forEach.call(arguments, function (options) {
-			if (options == null) return;
-			process(Object(options), result);
-		});
-		return result;
-	};
-
-
-/***/ },
-/* 60 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// Deprecated
-	
-	'use strict';
-	
-	module.exports = function (obj) { return typeof obj === 'function'; };
-
-
-/***/ },
-/* 61 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = __webpack_require__(63)()
-		? Object.assign
-		: __webpack_require__(64);
-
-
-/***/ },
-/* 62 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = __webpack_require__(65)()
-		? String.prototype.contains
-		: __webpack_require__(66);
-
-
-/***/ },
-/* 63 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	module.exports = function () {
-		var assign = Object.assign, obj;
-		if (typeof assign !== 'function') return false;
-		obj = { foo: 'raz' };
-		assign(obj, { bar: 'dwa' }, { trzy: 'trzy' });
-		return (obj.foo + obj.bar + obj.trzy) === 'razdwatrzy';
-	};
-
-
-/***/ },
-/* 64 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var keys  = __webpack_require__(75)
-	  , value = __webpack_require__(74)
-	
-	  , max = Math.max;
-	
-	module.exports = function (dest, src/*, …srcn*/) {
-		var error, i, l = max(arguments.length, 2), assign;
-		dest = Object(value(dest));
-		assign = function (key) {
-			try { dest[key] = src[key]; } catch (e) {
-				if (!error) error = e;
-			}
-		};
-		for (i = 1; i < l; ++i) {
-			src = arguments[i];
-			keys(src).forEach(assign);
-		}
-		if (error !== undefined) throw error;
-		return dest;
-	};
-
-
-/***/ },
-/* 65 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var str = 'razdwatrzy';
-	
-	module.exports = function () {
-		if (typeof str.contains !== 'function') return false;
-		return ((str.contains('dwa') === true) && (str.contains('foo') === false));
-	};
-
-
-/***/ },
-/* 66 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var indexOf = String.prototype.indexOf;
-	
-	module.exports = function (searchString/*, position*/) {
-		return indexOf.call(this, searchString, arguments[1]) > -1;
-	};
-
-
-/***/ },
-/* 67 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -41062,9 +40757,9 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var isArguments = __webpack_require__(79),
-	    isArray = __webpack_require__(53),
-	    isNative = __webpack_require__(78);
+	var isArguments = __webpack_require__(70),
+	    isArray = __webpack_require__(72),
+	    isNative = __webpack_require__(57);
 	
 	/** Used for native method references. */
 	var objectProto = Object.prototype;
@@ -41296,7 +40991,351 @@
 
 
 /***/ },
-/* 68 */
+/* 59 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var forEach = Array.prototype.forEach, create = Object.create;
+	
+	var process = function (src, obj) {
+		var key;
+		for (key in src) obj[key] = src[key];
+	};
+	
+	module.exports = function (options/*, …options*/) {
+		var result = create(null);
+		forEach.call(arguments, function (options) {
+			if (options == null) return;
+			process(Object(options), result);
+		});
+		return result;
+	};
+
+
+/***/ },
+/* 60 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// Deprecated
+	
+	'use strict';
+	
+	module.exports = function (obj) { return typeof obj === 'function'; };
+
+
+/***/ },
+/* 61 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = __webpack_require__(63)()
+		? Object.assign
+		: __webpack_require__(64);
+
+
+/***/ },
+/* 62 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = __webpack_require__(71)()
+		? String.prototype.contains
+		: __webpack_require__(73);
+
+
+/***/ },
+/* 63 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = function () {
+		var assign = Object.assign, obj;
+		if (typeof assign !== 'function') return false;
+		obj = { foo: 'raz' };
+		assign(obj, { bar: 'dwa' }, { trzy: 'trzy' });
+		return (obj.foo + obj.bar + obj.trzy) === 'razdwatrzy';
+	};
+
+
+/***/ },
+/* 64 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var keys  = __webpack_require__(75)
+	  , value = __webpack_require__(74)
+	
+	  , max = Math.max;
+	
+	module.exports = function (dest, src/*, …srcn*/) {
+		var error, i, l = max(arguments.length, 2), assign;
+		dest = Object(value(dest));
+		assign = function (key) {
+			try { dest[key] = src[key]; } catch (e) {
+				if (!error) error = e;
+			}
+		};
+		for (i = 1; i < l; ++i) {
+			src = arguments[i];
+			keys(src).forEach(assign);
+		}
+		if (error !== undefined) throw error;
+		return dest;
+	};
+
+
+/***/ },
+/* 65 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.6 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var isArguments = __webpack_require__(76),
+	    isArray = __webpack_require__(54),
+	    isNative = __webpack_require__(77);
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/** Used to check objects for own properties. */
+	var hasOwnProperty = objectProto.hasOwnProperty;
+	
+	/** Native method references. */
+	var propertyIsEnumerable = objectProto.propertyIsEnumerable;
+	
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeKeys = isNative(nativeKeys = Object.keys) && nativeKeys;
+	
+	/**
+	 * Used as the [maximum length](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
+	
+	/**
+	 * An object environment feature flags.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @type Object
+	 */
+	var support = {};
+	
+	(function(x) {
+	  var Ctor = function() { this.x = x; },
+	      object = { '0': x, 'length': x },
+	      props = [];
+	
+	  Ctor.prototype = { 'valueOf': x, 'y': x };
+	  for (var key in new Ctor) { props.push(key); }
+	
+	  /**
+	   * Detect if `arguments` object indexes are non-enumerable.
+	   *
+	   * In Firefox < 4, IE < 9, PhantomJS, and Safari < 5.1 `arguments` object
+	   * indexes are non-enumerable. Chrome < 25 and Node.js < 0.11.0 treat
+	   * `arguments` object indexes as non-enumerable and fail `hasOwnProperty`
+	   * checks for indexes that exceed the number of function parameters and
+	   * whose associated argument values are `0`.
+	   *
+	   * @memberOf _.support
+	   * @type boolean
+	   */
+	  try {
+	    support.nonEnumArgs = !propertyIsEnumerable.call(arguments, 1);
+	  } catch(e) {
+	    support.nonEnumArgs = true;
+	  }
+	}(1, 0));
+	
+	/**
+	 * Checks if `value` is a valid array-like index.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+	 * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+	 */
+	function isIndex(value, length) {
+	  value = +value;
+	  length = length == null ? MAX_SAFE_INTEGER : length;
+	  return value > -1 && value % 1 == 0 && value < length;
+	}
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on [`ToLength`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength).
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * A fallback implementation of `Object.keys` which creates an array of the
+	 * own enumerable property names of `object`.
+	 *
+	 * @private
+	 * @param {Object} object The object to query.
+	 * @returns {Array} Returns the array of property names.
+	 */
+	function shimKeys(object) {
+	  var props = keysIn(object),
+	      propsLength = props.length,
+	      length = propsLength && object.length;
+	
+	  var allowIndexes = length && isLength(length) &&
+	    (isArray(object) || (support.nonEnumArgs && isArguments(object)));
+	
+	  var index = -1,
+	      result = [];
+	
+	  while (++index < propsLength) {
+	    var key = props[index];
+	    if ((allowIndexes && isIndex(key, length)) || hasOwnProperty.call(object, key)) {
+	      result.push(key);
+	    }
+	  }
+	  return result;
+	}
+	
+	/**
+	 * Checks if `value` is the [language type](https://es5.github.io/#x8) of `Object`.
+	 * (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is an object, else `false`.
+	 * @example
+	 *
+	 * _.isObject({});
+	 * // => true
+	 *
+	 * _.isObject([1, 2, 3]);
+	 * // => true
+	 *
+	 * _.isObject(1);
+	 * // => false
+	 */
+	function isObject(value) {
+	  // Avoid a V8 JIT bug in Chrome 19-20.
+	  // See https://code.google.com/p/v8/issues/detail?id=2291 for more details.
+	  var type = typeof value;
+	  return type == 'function' || (!!value && type == 'object');
+	}
+	
+	/**
+	 * Creates an array of the own enumerable property names of `object`.
+	 *
+	 * **Note:** Non-object values are coerced to objects. See the
+	 * [ES spec](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.keys)
+	 * for more details.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Object
+	 * @param {Object} object The object to query.
+	 * @returns {Array} Returns the array of property names.
+	 * @example
+	 *
+	 * function Foo() {
+	 *   this.a = 1;
+	 *   this.b = 2;
+	 * }
+	 *
+	 * Foo.prototype.c = 3;
+	 *
+	 * _.keys(new Foo);
+	 * // => ['a', 'b'] (iteration order is not guaranteed)
+	 *
+	 * _.keys('hi');
+	 * // => ['0', '1']
+	 */
+	var keys = !nativeKeys ? shimKeys : function(object) {
+	  if (object) {
+	    var Ctor = object.constructor,
+	        length = object.length;
+	  }
+	  if ((typeof Ctor == 'function' && Ctor.prototype === object) ||
+	      (typeof object != 'function' && isLength(length))) {
+	    return shimKeys(object);
+	  }
+	  return isObject(object) ? nativeKeys(object) : [];
+	};
+	
+	/**
+	 * Creates an array of the own and inherited enumerable property names of `object`.
+	 *
+	 * **Note:** Non-object values are coerced to objects.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Object
+	 * @param {Object} object The object to query.
+	 * @returns {Array} Returns the array of property names.
+	 * @example
+	 *
+	 * function Foo() {
+	 *   this.a = 1;
+	 *   this.b = 2;
+	 * }
+	 *
+	 * Foo.prototype.c = 3;
+	 *
+	 * _.keysIn(new Foo);
+	 * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
+	 */
+	function keysIn(object) {
+	  if (object == null) {
+	    return [];
+	  }
+	  if (!isObject(object)) {
+	    object = Object(object);
+	  }
+	  var length = object.length;
+	  length = (length && isLength(length) &&
+	    (isArray(object) || (support.nonEnumArgs && isArguments(object))) && length) || 0;
+	
+	  var Ctor = object.constructor,
+	      index = -1,
+	      isProto = typeof Ctor == 'function' && Ctor.prototype === object,
+	      result = Array(length),
+	      skipIndexes = length > 0;
+	
+	  while (++index < length) {
+	    result[index] = (index + '');
+	  }
+	  for (var key in object) {
+	    if (!(skipIndexes && isIndex(key, length)) &&
+	        !(key == 'constructor' && (isProto || !hasOwnProperty.call(object, key)))) {
+	      result.push(key);
+	    }
+	  }
+	  return result;
+	}
+	
+	module.exports = keys;
+
+
+/***/ },
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -41334,7 +41373,7 @@
 
 
 /***/ },
-/* 69 */
+/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -41405,7 +41444,80 @@
 
 
 /***/ },
-/* 70 */
+/* 68 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.6.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** Used as the `TypeError` message for "Functions" methods. */
+	var FUNC_ERROR_TEXT = 'Expected a function';
+	
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeMax = Math.max;
+	
+	/**
+	 * Creates a function that invokes `func` with the `this` binding of the
+	 * created function and arguments from `start` and beyond provided as an array.
+	 *
+	 * **Note:** This method is based on the [rest parameter](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/rest_parameters).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Function
+	 * @param {Function} func The function to apply a rest parameter to.
+	 * @param {number} [start=func.length-1] The start position of the rest parameter.
+	 * @returns {Function} Returns the new function.
+	 * @example
+	 *
+	 * var say = _.restParam(function(what, names) {
+	 *   return what + ' ' + _.initial(names).join(', ') +
+	 *     (_.size(names) > 1 ? ', & ' : '') + _.last(names);
+	 * });
+	 *
+	 * say('hello', 'fred', 'barney', 'pebbles');
+	 * // => 'hello fred, barney, & pebbles'
+	 */
+	function restParam(func, start) {
+	  if (typeof func != 'function') {
+	    throw new TypeError(FUNC_ERROR_TEXT);
+	  }
+	  start = nativeMax(start === undefined ? (func.length - 1) : (+start || 0), 0);
+	  return function() {
+	    var args = arguments,
+	        index = -1,
+	        length = nativeMax(args.length - start, 0),
+	        rest = Array(length);
+	
+	    while (++index < length) {
+	      rest[index] = args[start + index];
+	    }
+	    switch (start) {
+	      case 0: return func.call(this, rest);
+	      case 1: return func.call(this, args[0], rest);
+	      case 2: return func.call(this, args[0], args[1], rest);
+	    }
+	    var otherArgs = Array(start + 1);
+	    index = -1;
+	    while (++index < start) {
+	      otherArgs[index] = args[index];
+	    }
+	    otherArgs[start] = rest;
+	    return func.apply(this, otherArgs);
+	  };
+	}
+	
+	module.exports = restParam;
+
+
+/***/ },
+/* 69 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -41533,80 +41645,7 @@
 
 
 /***/ },
-/* 71 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.6.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/** Used as the `TypeError` message for "Functions" methods. */
-	var FUNC_ERROR_TEXT = 'Expected a function';
-	
-	/* Native method references for those with the same name as other `lodash` methods. */
-	var nativeMax = Math.max;
-	
-	/**
-	 * Creates a function that invokes `func` with the `this` binding of the
-	 * created function and arguments from `start` and beyond provided as an array.
-	 *
-	 * **Note:** This method is based on the [rest parameter](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/rest_parameters).
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Function
-	 * @param {Function} func The function to apply a rest parameter to.
-	 * @param {number} [start=func.length-1] The start position of the rest parameter.
-	 * @returns {Function} Returns the new function.
-	 * @example
-	 *
-	 * var say = _.restParam(function(what, names) {
-	 *   return what + ' ' + _.initial(names).join(', ') +
-	 *     (_.size(names) > 1 ? ', & ' : '') + _.last(names);
-	 * });
-	 *
-	 * say('hello', 'fred', 'barney', 'pebbles');
-	 * // => 'hello fred, barney, & pebbles'
-	 */
-	function restParam(func, start) {
-	  if (typeof func != 'function') {
-	    throw new TypeError(FUNC_ERROR_TEXT);
-	  }
-	  start = nativeMax(start === undefined ? (func.length - 1) : (+start || 0), 0);
-	  return function() {
-	    var args = arguments,
-	        index = -1,
-	        length = nativeMax(args.length - start, 0),
-	        rest = Array(length);
-	
-	    while (++index < length) {
-	      rest[index] = args[start + index];
-	    }
-	    switch (start) {
-	      case 0: return func.call(this, rest);
-	      case 1: return func.call(this, args[0], rest);
-	      case 2: return func.call(this, args[0], args[1], rest);
-	    }
-	    var otherArgs = Array(start + 1);
-	    index = -1;
-	    while (++index < start) {
-	      otherArgs[index] = args[index];
-	    }
-	    otherArgs[start] = rest;
-	    return func.apply(this, otherArgs);
-	  };
-	}
-	
-	module.exports = restParam;
-
-
-/***/ },
-/* 72 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -41685,7 +41724,21 @@
 
 
 /***/ },
-/* 73 */
+/* 71 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var str = 'razdwatrzy';
+	
+	module.exports = function () {
+		if (typeof str.contains !== 'function') return false;
+		return ((str.contains('dwa') === true) && (str.contains('foo') === false));
+	};
+
+
+/***/ },
+/* 72 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -41849,6 +41902,19 @@
 
 
 /***/ },
+/* 73 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var indexOf = String.prototype.indexOf;
+	
+	module.exports = function (searchString/*, position*/) {
+		return indexOf.call(this, searchString, arguments[1]) > -1;
+	};
+
+
+/***/ },
 /* 74 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -41866,40 +41932,92 @@
 
 	'use strict';
 	
-	module.exports = __webpack_require__(76)()
+	module.exports = __webpack_require__(78)()
 		? Object.keys
-		: __webpack_require__(77);
+		: __webpack_require__(79);
 
 
 /***/ },
 /* 76 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
+	/**
+	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.2 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
 	
-	module.exports = function () {
-		try {
-			Object.keys('primitive');
-			return true;
-		} catch (e) { return false; }
-	};
+	/** `Object#toString` result references. */
+	var argsTag = '[object Arguments]';
+	
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return !!value && typeof value == 'object';
+	}
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/**
+	 * Used to resolve the [`toStringTag`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
+	 * of values.
+	 */
+	var objToString = objectProto.toString;
+	
+	/**
+	 * Used as the [maximum length](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on [`ToLength`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength).
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * Checks if `value` is classified as an `arguments` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isArguments(function() { return arguments; }());
+	 * // => true
+	 *
+	 * _.isArguments([1, 2, 3]);
+	 * // => false
+	 */
+	function isArguments(value) {
+	  var length = isObjectLike(value) ? value.length : undefined;
+	  return isLength(length) && objToString.call(value) == argsTag;
+	}
+	
+	module.exports = isArguments;
 
 
 /***/ },
 /* 77 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var keys = Object.keys;
-	
-	module.exports = function (object) {
-		return keys(object == null ? object : Object(object));
-	};
-
-
-/***/ },
-/* 78 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -42020,82 +42138,30 @@
 
 
 /***/ },
+/* 78 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	module.exports = function () {
+		try {
+			Object.keys('primitive');
+			return true;
+		} catch (e) { return false; }
+	};
+
+
+/***/ },
 /* 79 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/**
-	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.2 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
+	'use strict';
 	
-	/** `Object#toString` result references. */
-	var argsTag = '[object Arguments]';
+	var keys = Object.keys;
 	
-	/**
-	 * Checks if `value` is object-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 */
-	function isObjectLike(value) {
-	  return !!value && typeof value == 'object';
-	}
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/**
-	 * Used to resolve the [`toStringTag`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
-	 * of values.
-	 */
-	var objToString = objectProto.toString;
-	
-	/**
-	 * Used as the [maximum length](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
-	 * of an array-like value.
-	 */
-	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
-	
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * **Note:** This function is based on [`ToLength`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength).
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * Checks if `value` is classified as an `arguments` object.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
-	 * @example
-	 *
-	 * _.isArguments(function() { return arguments; }());
-	 * // => true
-	 *
-	 * _.isArguments([1, 2, 3]);
-	 * // => false
-	 */
-	function isArguments(value) {
-	  var length = isObjectLike(value) ? value.length : undefined;
-	  return isLength(length) && objToString.call(value) == argsTag;
-	}
-	
-	module.exports = isArguments;
+	module.exports = function (object) {
+		return keys(object == null ? object : Object(object));
+	};
 
 
 /***/ }
