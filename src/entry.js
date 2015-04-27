@@ -2,7 +2,8 @@
 	'use strict';
 
 	//global-ish declarations
-	var VR;
+	var VR,
+		NoSleep = require('nosleep').NoSleep;
 
 	function initRequirements() {
 		//load styles
@@ -18,6 +19,8 @@
 			vrButton,
 			orientationButton,
 			element,
+
+			noSleep = new NoSleep(),
 
 			fullScreenElement = document.body,
 
@@ -93,6 +96,13 @@
 			} else {
 				disableFullscreen.style.display = '';
 				enableFullscreen.style.display = '';
+			}
+
+			//disable sleep on mobile devices in VR mode
+			if (VR.vrMode()) {
+				noSleep.enable();
+			} else {
+				noSleep.disable();
 			}
 		});
 

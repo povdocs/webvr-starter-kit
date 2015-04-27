@@ -27,6 +27,7 @@
     "OrbitControls": "http://threejs.org/examples/js/controls/OrbitControls.js",
     "SkyShader": "http://threejs.org/examples/js/SkyShader.js",
     "AugmentedConsole": "https://raw.githubusercontent.com/spite/THREE.AugmentedConsole.js/master/src/THREE.AugmentedConsole.js",
-    "open-iconic": "~1.1.1"
+    "open-iconic": "~1.1.1",
+    "nosleep": "~0.5.0"
   }
 }
