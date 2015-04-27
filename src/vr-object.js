@@ -223,7 +223,7 @@ module.exports = (function () {
 				material = material();
 			} else if (typeof material === 'string' && materials[material]) {
 				material = materials[material](options);
-			} else if (material && !material instanceof THREE.Material && typeof material !== 'number') {
+			} else if (material && !(material instanceof THREE.Material) && typeof material !== 'number') {
 				try {
 					material = materials(material);
 				} catch (e) {}
