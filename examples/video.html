@@ -1,0 +1,65 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>WebVR Starter Kit - Video Example</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    </head>
+    <body>
+        <script type="text/javascript" src="../build/vr.js" charset="utf-8"></script>
+        <script type="text/javascript">
+            VR.floor();
+
+            var box = VR.box({
+                color: 0x1111DD,
+                x: 2,
+                y: 1,
+                z: 0
+            });
+
+            //video from http://imgur.com/t/animated/uSQE2zI
+            var video = VR.video([
+                'http://i.imgur.com/uSQE2zI.webm',
+                'http://i.imgur.com/uSQE2zI.mp4'
+            ])
+                .moveTo(-1, 2, 1)
+                .setScale(3)
+                .rotateY(Math.PI / 6)
+                .play();
+
+
+            //create a timer object to show current time of video
+            var timer = video.box({
+                color: 'darkred'
+            }).setScale(0.05).hide();
+
+            /*
+            Video plane object is automatically scaled to video aspect ratio.
+            We don't know the dimensions until the metadata is loaded. Once it
+            happens, we can set the position of the timer object.
+            */
+            video.on('loadedmetadata', function (evt) {
+                timer.moveTo(-0.5, -0.5 * video.height / video.width, 0.05);
+                timer.show();
+            });
+
+            video.on('error', function (evt) {
+                console.log('video error', evt);
+            });
+
+            //update the position of the timer object on every frame
+            VR.animate(function () {
+                var x = video.currentTime / video.duration - 0.5;
+                timer.moveTo(x);
+            });
+
+            VR.on('shake', function () {
+                if (video.paused) {
+                    video.play();
+                } else {
+                    video.pause();
+                }
+            });
+            document.body.appendChild(video.element);
+        </script>
+    </body>
+</html>

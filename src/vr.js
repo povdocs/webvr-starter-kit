@@ -56,7 +56,8 @@
 			'floor',
 			'sky',
 			'panorama',
-			'image'
+			'image',
+			'video'
 		],
 
 		//todo: use a weak map or set instead

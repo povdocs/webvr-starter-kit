@@ -19,6 +19,7 @@ module.exports = (function () {
 
 		if (src) {
 			tex = materials.imageTexture(src, THREE.UVMapping, function (t, image) {
+				//todo: don't do any of this if object has been deleted
 				geometry.applyMatrix(new THREE.Matrix4().makeScale(1, image.naturalHeight / image.naturalWidth, 1));
 				material.map = tex;
 				material.visible = true;
