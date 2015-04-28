@@ -31,13 +31,14 @@ module.exports = (function () {
 				var parse,
 					source;
 
-				parse = urlRegex.exec(src);
-				if (!parse) {
+				if (!src) {
 					return;
 				}
 
-				if (parse[1] && parse[1] !== window.location.hostname ||
-						parse[2] && parse[2] !== window.location.port) {
+				parse = urlRegex.exec(src);
+				if (parse &&
+						(parse[1] && parse[1] !== window.location.hostname ||
+							parse[2] && parse[2] !== window.location.port)) {
 
 					if (vid.crossOrigin !== undefined) {
 						vid.crossOrigin = 'anonymous';
