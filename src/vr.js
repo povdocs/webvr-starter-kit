@@ -512,7 +512,8 @@
 	};
 
 	objectMethods.forEach(function (method) {
-		var creator = require('./objects/' + method);
+		var creator = require('./objects/' + method),
+			key;
 
 		VR[method] = function (options) {
 			var obj = new VRObject(scene, creator, body, options);
@@ -525,6 +526,13 @@
 			vrObjects.push(obj);
 			return obj;
 		};
+
+		for (key in creator) {
+			if (creator.hasOwnProperty(key) && typeof creator[key] === 'function') {
+				VR[method][key] = creator[key];
+				VRObject.prototype[method][key] = creator[key];
+			}
+		}
 	});
 
 	eventEmitter(VR);
