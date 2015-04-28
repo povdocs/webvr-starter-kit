@@ -8,6 +8,7 @@ Web VR Starter Kit is a Javascript library for easily creating virtual reality c
 - [Animation](http://povdocs.github.io/webvr-starter-kit/examples/animation.html) - Simple animation, moving and rotating objects
 - [Sky](http://povdocs.github.io/webvr-starter-kit/examples/sky.html) - A realistic daytime sky with movable sun and lighting
 - [Sound](http://povdocs.github.io/webvr-starter-kit/examples/sound.html) - Audio sources in 3D space, triggered by looking at objects
+- [Video](http://povdocs.github.io/webvr-starter-kit/examples/video.html) - A video playing on a flat surface.
 - [Near and Far](http://povdocs.github.io/webvr-starter-kit/examples/near.html) - Fire events when an object moves close to or far away from the viewer
 
 ## Getting Started
@@ -42,7 +43,7 @@ Create another script element containing the JavaScript commands that describe y
 
 ### Loading Media
 
-There are a few different ways that you can load media as part of your VR scene. The panorama and image objects take the URL of an image file. The sound object takes an array of URLs of audio files. There is a library of pre-defined materials (e.g. grass, stone, metal, wood), and you can also specify your own images to use as texture maps.
+There are a few different ways that you can load media as part of your VR scene. The `panorama` and `image` objects take the URL of an image file. The `sound` object takes an array of URLs of audio files, and the `video` object takes an array of URLs of video files. There is a library of pre-defined materials (e.g. grass, stone, metal, wood), and you can also specify your own images to use as texture maps.
 
 Texture maps for pre-defined materials are hosted as part of the WebVR Starter Kit, but your own media files need to be hosted elsewhere. You can use your own web server if you have one, but it needs to be configured to use Cross-Origin Resource Sharing headers, which can be tricky to set up.
 
@@ -144,6 +145,60 @@ A plane displaying an image.
 ##### Options
 
 - `src` - A url pointing to the image file
+
+#### VR.video()
+
+A plane displaying a video.
+
+##### Options
+
+- `src` - A url or array of urls pointing to the video file(s). Provide multiple sources for different formats to support all browsers.
+
+##### Methods and Properties
+
+Video objects have some unique methods and properties for inspecting and controlling the state of the video.
+
+###### play()
+
+Play the video.
+
+###### pause()
+
+Pause the video.
+
+###### canPlayType(type)
+
+Pass a mime type (e.g. `"video/webm"`) to determine whether the video can play a given format.
+
+###### currentTime
+
+The current time within the video (in seconds) of the play head. (Read only)
+
+###### duration
+
+The total duration of the video in seconds. This value is not known until the video starts loading. (Read only)
+
+###### volume
+
+The volume level of the video. It can be set to any value between 0 and 1.
+
+###### height
+
+The height in pixels of the video source. This value is not known until the video starts loading. (Read only)
+
+###### width
+
+The width in pixels of the video source. This value is not known until the video starts loading. (Read only)
+
+###### paused
+
+A boolean value that reports whether the video is paused (true) or playing (false). (Read only)
+
+##### Notes on compatibility
+
+Safari and Internet Explorer cannot display cross-origin videos, i.e. files served from a different web server than the web page. So you must host the web page on your own server if you want to use video on all browsers. JSBin will not work.
+
+Mobile Safari is only capable of playing one video at a time.
 
 #### VR.panorama()
 
