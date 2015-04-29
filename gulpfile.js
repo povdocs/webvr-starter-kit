@@ -27,6 +27,7 @@ gulp.task('build', function(callback) {
 	var rename = require('gulp-rename');
 	var header = require('gulp-header');
 	var pkg = require('./package.json');
+	var filter = require('gulp-filter');
 
 	var banner = [
 		'/**',
@@ -53,6 +54,7 @@ gulp.task('build', function(callback) {
 		gulpWebpack(productionConfig),
 		header(banner, { pkg : pkg } ),
 		gulp.dest('build/'),
+		filter('**/*.js'),
 		uglify(),
 		header(banner, { pkg : pkg } ),
 		rename({
