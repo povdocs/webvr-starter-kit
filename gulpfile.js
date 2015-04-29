@@ -5,6 +5,7 @@ var gutil = require('gulp-util');
 var webpack = require('webpack');
 var WebpackDevServer = require('webpack-dev-server');
 var webpackConfig = require('./webpack.config.js');
+var combiner = require('stream-combiner2');
 
 // Build and watch cycle (another option for development)
 // Advantage: No server required, can run app from filesystem
@@ -47,16 +48,22 @@ gulp.task('build', function(callback) {
 		new webpack.optimize.DedupePlugin()
 	);
 
-	return gulp.src('src/entry.js')
-		.pipe(gulpWebpack(productionConfig))
-		.pipe(header(banner, { pkg : pkg } ))
-		.pipe(gulp.dest('build/'))
-		.pipe(uglify())
-		.pipe(header(banner, { pkg : pkg } ))
-		.pipe(rename({
+	var combined = combiner.obj([
+		gulp.src('src/entry.js'),
+		gulpWebpack(productionConfig),
+		header(banner, { pkg : pkg } ),
+		gulp.dest('build/'),
+		uglify(),
+		header(banner, { pkg : pkg } ),
+		rename({
 			suffix: '.min'
-		}))
-		.pipe(gulp.dest('build/'));
+		}),
+		gulp.dest('build/')
+	]);
+
+	combined.on('error', console.error.bind(console));
+
+	return combined;
 });
 
 // The development server (the recommended option for development)

@@ -2,7 +2,12 @@
   "name": "webvr-starter-kit",
   "version": "0.0.0",
   "description": "WebVR Starter Kit",
-  "keywords": ["webgl", "webvr", "vr", "virtual reality"],
+  "keywords": [
+    "webgl",
+    "webvr",
+    "vr",
+    "virtual reality"
+  ],
   "homepage": "https://github.com/povdocs/webvr-starter-kit",
   "bugs": {
     "url": "https://github.com/povdocs/webvr-starter-kit/issues"
@@ -24,7 +29,7 @@
     "gulp": "^3.8.10",
     "gulp-header": "^1.2.2",
     "gulp-rename": "^1.2.0",
-    "gulp-uglify": "^1.1.0",
+    "gulp-uglify": "^1.2.0",
     "gulp-util": "^3.0.2",
     "gulp-webpack": "^1.1.2",
     "imports-loader": "^0.6.3",
@@ -34,6 +39,7 @@
     "lodash.foreach": "^3.0.1",
     "main-bower-files": "^2.5.0",
     "raw-loader": "^0.5.1",
+    "stream-combiner2": "^1.0.2",
     "style-loader": "^0.12.0",
     "three": "^0.71.0",
     "url-loader": "^0.5.5",
