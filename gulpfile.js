@@ -55,11 +55,11 @@ gulp.task('build', function(callback) {
 		header(banner, { pkg : pkg } ),
 		gulp.dest('build/'),
 		filter('**/*.js'),
+		rename(function (path) {
+			path.basename = path.basename.replace(/(\.dev)?$/, '');
+		}),
 		uglify(),
 		header(banner, { pkg : pkg } ),
-		rename({
-			suffix: '.min'
-		}),
 		gulp.dest('build/')
 	]);
 

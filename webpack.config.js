@@ -3,7 +3,7 @@ module.exports = {
     entry: './src/entry.js',
     output: {
         path: __dirname + '/build/',
-        filename: 'vr.js'
+        filename: 'vr.dev.js'
     },
     module: {
         preLoaders: [
