@@ -21,17 +21,25 @@ module.exports = (function () {
 			tex = materials.imageTexture(src, THREE.UVMapping);
 		}
 
-		geometry = new THREE.SphereGeometry( 1000, 60, 60 );
-		geometry.applyMatrix( new THREE.Matrix4().makeScale( -1, 1, 1 ) );
+		geometry = new THREE.SphereGeometry(1000, 60, 60);
+		geometry.applyMatrix(new THREE.Matrix4().makeScale(-1, 1, 1));
+		geometry.applyMatrix(new THREE.Matrix4().makeRotationY(- Math.PI / 2));
 
 		material = new THREE.MeshBasicMaterial({
-			side: THREE.DoubleSide,
 			transparent: true,
 			map: tex
 		});
 
 		mesh = new THREE.Mesh( geometry, material );
-		mesh.rotation.set( 0, -90 * Math.PI / 180, 0 );
+
+		if (options && options.stereo) {
+			if (options.stereo === 'vertical') {
+				tex.repeat.y = 0.5;
+			} else {
+				tex.repeat.x = 0.5;
+			}
+			mesh.userData.stereo = options.stereo;
+		}
 
 		mesh.name = 'panorama';
 

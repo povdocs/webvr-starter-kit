@@ -206,9 +206,12 @@ A very large sphere with an image displayed on the inside. This is useful for lo
 
 Spherical photos can be taken with the [Android Camera](https://www.youtube.com/watch?v=NPs3eIiWRaw) or a [similar app](https://itunes.apple.com/us/app/photo-sphere-camera/id904418768?mt=8) on an iPhone. They can also be made [manually](https://photographylife.com/panoramic-photography-howto).
 
+Stereoscopic (3D) panoramas can be displayed by setting the `stereo` option, if the left and right eye views are included side-by-side or vertically in the same image file.
+
 ##### Options
 
 - `src` - A url pointing to the image file
+- `stereo` - a string, either "horizontal" or "vertical" (optional).
 
 #### VR.empty()
 
