@@ -458,7 +458,7 @@
 			//need a scene to put all our objects in
 			scene = new THREE.Scene();
 	
-			bodyWrapper = new VRObject(scene, __webpack_require__(13), null, {
+			bodyWrapper = new VRObject(scene, __webpack_require__(12), null, {
 				name: 'body'
 			}).moveTo(0, 1.5, 4);
 			body = bodyWrapper.object;
@@ -580,20 +580,20 @@
 		function initRequirements() {
 			//load external requirements
 			THREE = __webpack_require__(31);
-			__webpack_require__(14);
-			__webpack_require__(15);
+			__webpack_require__(25);
+			__webpack_require__(26);
 	
 			//if (typeof __DEV__ !== 'undefined' && __DEV__) {
-				__webpack_require__(16);
+				__webpack_require__(27);
 			//}
 	
 			THREE.ImageUtils.crossOrigin = '';
 	
-			eventEmitter = __webpack_require__(29);
+			eventEmitter = __webpack_require__(30);
 	
 			//my VR stuff. todo: move these to a separate repo or two for easy packaging
-			__webpack_require__(17);
-			__webpack_require__(18);
+			__webpack_require__(28);
+			__webpack_require__(29);
 		}
 	
 		function initialize() {
@@ -726,7 +726,7 @@
 		};
 	
 		objectMethods.forEach(function (method) {
-			var creator = __webpack_require__(12)("./" + method),
+			var creator = __webpack_require__(13)("./" + method),
 				key;
 	
 			VR[method] = function (options) {
@@ -789,7 +789,7 @@
 /* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(30)();
+	exports = module.exports = __webpack_require__(14)();
 	exports.push([module.id, "body {\n\tfont-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;\n\tcolor: #eee;\n\toverflow: hidden;\n\tbackground: rgb(40, 40, 40);\n\n\theight: 100%;\n\twidth: 100%;\n\tmargin: 0px;\n\tpadding: 0px;\n}\n\ncanvas {\n\twidth: 100% !important;\n\theight: 100% !important;\n\t/*position: absolute;*/\n\ttop: 0;\n\tleft: 0;\n}\n\n#buttons {\n\tposition: absolute;\n\tbottom: 0;\n\tleft: 0;\n\tpadding: 12px;\n\tmargin: 8px;\n\tborder-radius: 8px;\n\tbackground-color: rgba(128, 128, 128, 0.6);\n}\n\n#buttons > * {\n\tmargin: 0 10px;\n\tdisplay: inline-block;\n\twidth: 18px;\n\theight: 18px;\n\tcursor: pointer;\n}\n\n#buttons > *:first-child {\n\tmargin-left: 0;\n}\n\n#buttons > .unsupported {\n\tdisplay: none;\n}\n\n#fs-disable {\n\tdisplay: none;\n}", ""]);
 
 /***/ },
@@ -1130,7 +1130,7 @@
 	
 			// https://gist.github.com/dperini/729294
 			//urlRegex = /^(?:(?:https?|ftp):\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\uffff]{2,})))(?::\d{2,5})?(?:\/\S*)?$/i,
-			urlRegex = __webpack_require__(33),
+			urlRegex = __webpack_require__(32),
 	
 			dataUri = /^data:image\/(?:png|jpe?g|gif);/,
 			assetPath = ("http://pov-tc.pbs.org/pov/flv/2015/webvr-starter-kit/"),
@@ -1256,7 +1256,7 @@
 			texture = new THREE.Texture(undefined, mapping);
 	
 			if (image.naturalWidth || isDataUri) {
-				imageLoaded();
+				setTimeout(imageLoaded, 1);
 			} else {
 				image.addEventListener('load', imageLoaded);
 			}
@@ -1346,7 +1346,7 @@
 				options = options || {};
 	
 				return function (opts) {
-					var texture = imageTexture(imagePath(__webpack_require__(32)("./" + file)));
+					var texture = imageTexture(imagePath(__webpack_require__(33)("./" + file)));
 	
 					opts = assign({}, options, opts);
 	
@@ -1401,7 +1401,7 @@
 		var	NEAR_DISTANCE = 3,
 			materials = __webpack_require__(10),
 			THREE = __webpack_require__(31),
-			eventEmitter = __webpack_require__(29),
+			eventEmitter = __webpack_require__(30),
 	
 			xAxis = new THREE.Vector3(1, 0, 0),
 			yAxis = new THREE.Vector3(0, 1, 0),
@@ -1679,48 +1679,6 @@
 /* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var map = {
-		"./box": 19,
-		"./box.js": 19,
-		"./cylinder": 20,
-		"./cylinder.js": 20,
-		"./empty": 13,
-		"./empty.js": 13,
-		"./floor": 21,
-		"./floor.js": 21,
-		"./image": 22,
-		"./image.js": 22,
-		"./panorama": 23,
-		"./panorama.js": 23,
-		"./sky": 24,
-		"./sky.js": 24,
-		"./sound": 25,
-		"./sound.js": 25,
-		"./sphere": 26,
-		"./sphere.js": 26,
-		"./torus": 27,
-		"./torus.js": 27,
-		"./video": 28,
-		"./video.js": 28
-	};
-	function webpackContext(req) {
-		return __webpack_require__(webpackContextResolve(req));
-	};
-	function webpackContextResolve(req) {
-		return map[req] || (function() { throw new Error("Cannot find module '" + req + "'.") }());
-	};
-	webpackContext.keys = function webpackContextKeys() {
-		return Object.keys(map);
-	};
-	webpackContext.resolve = webpackContextResolve;
-	module.exports = webpackContext;
-	webpackContext.id = 12;
-
-
-/***/ },
-/* 13 */
-/***/ function(module, exports, __webpack_require__) {
-
 	module.exports = (function () {
 		'use strict';
 	
@@ -1739,7 +1697,757 @@
 	}());
 
 /***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var map = {
+		"./box": 15,
+		"./box.js": 15,
+		"./cylinder": 16,
+		"./cylinder.js": 16,
+		"./empty": 12,
+		"./empty.js": 12,
+		"./floor": 17,
+		"./floor.js": 17,
+		"./image": 18,
+		"./image.js": 18,
+		"./panorama": 19,
+		"./panorama.js": 19,
+		"./sky": 20,
+		"./sky.js": 20,
+		"./sound": 21,
+		"./sound.js": 21,
+		"./sphere": 22,
+		"./sphere.js": 22,
+		"./torus": 23,
+		"./torus.js": 23,
+		"./video": 24,
+		"./video.js": 24
+	};
+	function webpackContext(req) {
+		return __webpack_require__(webpackContextResolve(req));
+	};
+	function webpackContextResolve(req) {
+		return map[req] || (function() { throw new Error("Cannot find module '" + req + "'.") }());
+	};
+	webpackContext.keys = function webpackContextKeys() {
+		return Object.keys(map);
+	};
+	webpackContext.resolve = webpackContextResolve;
+	module.exports = webpackContext;
+	webpackContext.id = 13;
+
+
+/***/ },
 /* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/*
+		MIT License http://www.opensource.org/licenses/mit-license.php
+		Author Tobias Koppers @sokra
+	*/
+	// css base code, injected by the css-loader
+	module.exports = function() {
+		var list = [];
+	
+		// return the list of modules as css string
+		list.toString = function toString() {
+			var result = [];
+			for(var i = 0; i < this.length; i++) {
+				var item = this[i];
+				if(item[2]) {
+					result.push("@media " + item[2] + "{" + item[1] + "}");
+				} else {
+					result.push(item[1]);
+				}
+			}
+			return result.join("");
+		};
+	
+		// import a list of modules into the list
+		list.i = function(modules, mediaQuery) {
+			if(typeof modules === "string")
+				modules = [[null, modules, ""]];
+			var alreadyImportedModules = {};
+			for(var i = 0; i < this.length; i++) {
+				var id = this[i][0];
+				if(typeof id === "number")
+					alreadyImportedModules[id] = true;
+			}
+			for(i = 0; i < modules.length; i++) {
+				var item = modules[i];
+				// skip already imported module
+				// this implementation is not 100% perfect for weird media query combinations
+				//  when a module is imported multiple times with different media queries.
+				//  I hope this will never occur (Hey this way we have smaller bundles)
+				if(typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
+					if(mediaQuery && !item[2]) {
+						item[2] = mediaQuery;
+					} else if(mediaQuery) {
+						item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
+					}
+					list.push(item);
+				}
+			}
+		};
+		return list;
+	};
+
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(31);
+	
+		return function box(parent, options) {
+			var geometry,
+				mesh;
+	
+			geometry = new THREE.BoxGeometry( 1, 1, 1 );
+			mesh = new THREE.Mesh(geometry, materials.standard());
+			mesh.name = 'box';
+	
+			parent.add(mesh);
+	
+			return mesh;
+		};
+	}());
+
+/***/ },
+/* 16 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(31);
+	
+		function cylinder(parent, options) {
+			var geometry,
+				mesh;
+	
+			geometry = new THREE.CylinderGeometry(
+				options.radiusTop === undefined ? 0.5 : options.radiusTop,
+				options.radiusBottom === undefined ? 0.5 : options.radiusBottom,
+				options.height === undefined ? 1 : options.height,
+				options.radiusSegments === undefined ? 16 : options.radiusSegments,
+				options.heightSegments,
+				options.openEnded
+			);
+			mesh = new THREE.Mesh(geometry, materials.standard());
+			mesh.name = 'cylinder';
+	
+			parent.add(mesh);
+	
+			return mesh;
+		}
+	
+		return cylinder;
+	}());
+
+/***/ },
+/* 17 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(31);
+	
+		function floor(parent, options) {
+			var obj,
+				geometry;
+	
+			geometry = new THREE.CircleGeometry( options.radius || 100, options.segments || 16 );
+			geometry.applyMatrix( new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+	
+			obj = new THREE.Mesh(
+				geometry,
+				materials.checkerboard({
+					repeat: 100
+				})
+			);
+			obj.name = 'floor';
+	
+			obj.receiveShadow = true;
+	
+			parent.add(obj);
+	
+			return obj;
+		}
+	
+		return floor;
+	}());
+
+/***/ },
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(31);
+	
+		return function image(parent, options) {
+			var geometry,
+				material,
+				mesh,
+				src,
+				tex;
+	
+			if (typeof options === 'string') {
+				src = options;
+			} else if (options) {
+				src = options.src;
+			}
+	
+			if (src) {
+				tex = materials.imageTexture(src, THREE.UVMapping, function (t, image) {
+					//todo: don't do any of this if object has been deleted
+					geometry.applyMatrix(new THREE.Matrix4().makeScale(1, image.naturalHeight / image.naturalWidth, 1));
+					material.map = tex;
+					material.visible = true;
+					mesh.visible = true;
+					parent.add(mesh);
+				});
+			}
+	
+			geometry = new THREE.PlaneBufferGeometry(1, 1, 8);
+	
+			material = new THREE.MeshBasicMaterial({
+				side: THREE.DoubleSide,
+				transparent: true,
+				map: tex
+			});
+	
+			mesh = new THREE.Mesh( geometry, material );
+	
+			mesh.visible = false;
+	
+			parent.add(mesh);
+	
+			return mesh;
+		};
+	}());
+
+/***/ },
+/* 19 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(31);
+	
+		return function panorama(parent, options) {
+			var geometry,
+				material,
+				mesh,
+				src,
+				tex;
+	
+			if (typeof options === 'string') {
+				src = options;
+			} else if (options) {
+				src = options.src;
+			}
+	
+			if (src) {
+				tex = materials.imageTexture(src, THREE.UVMapping);
+			}
+	
+			geometry = new THREE.SphereGeometry( 1000, 60, 60 );
+			geometry.applyMatrix( new THREE.Matrix4().makeScale( -1, 1, 1 ) );
+	
+			material = new THREE.MeshBasicMaterial({
+				side: THREE.DoubleSide,
+				transparent: true,
+				map: tex
+			});
+	
+			mesh = new THREE.Mesh( geometry, material );
+			mesh.rotation.set( 0, -90 * Math.PI / 180, 0 );
+	
+			mesh.name = 'panorama';
+	
+			parent.add(mesh);
+	
+			return mesh;
+		};
+	}());
+
+/***/ },
+/* 20 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(31),
+			TAU = Math.PI * 2,
+			HALF_PI = Math.PI / 2,
+	
+			distance = 400000,
+			scratchVector = new THREE.Vector3(),
+	
+			params = [
+				'luminance',
+				'turbidity',
+				'reileigh',
+				'mieCoefficient',
+				'mieDirectionalG'
+			];
+	
+		__webpack_require__(37);
+	
+		return function sky(parent, options) {
+			var obj = new THREE.Sky(),
+				self = this,
+				scene = parent,
+				light,
+				sunPosition,
+				azimuth = Math.PI / 6,
+				altitude = Math.PI / 6;
+	
+			function mod(x, y) {
+				return x - y * Math.floor(x / y);
+			}
+	
+			function update() {
+				var sinTheta,
+					cosTheta,
+					phi,
+					sinPhi,
+					cosPhi;
+	
+				sinTheta = Math.sin(altitude);
+				cosTheta = Math.cos(altitude);
+				phi = -HALF_PI - azimuth;
+				sinPhi = Math.sin(phi);
+				cosPhi = Math.cos(phi);
+	
+				sunPosition.set(
+					distance * cosPhi * cosTheta,
+					distance * sinTheta,
+					distance * sinPhi * cosTheta
+				);
+	
+				if (light) {
+					light.intensity = 1.5 * Math.max(0.0, 1.0 - Math.exp(-((Math.PI / 1.95 - Math.abs(HALF_PI - altitude)) / 1.5)));
+					light.position.copy(sunPosition).normalize().multiplyScalar(100);
+				}
+			}
+	
+			obj.mesh.name = 'sky';
+	
+			parent.add(obj.mesh);
+	
+			while (!(scene instanceof THREE.Scene) && scene.parent) {
+				scene = scene.parent;
+			}
+			light = scene.getObjectByName('directional-light');
+	
+			this.setOptions = function (options) {
+				var needUpdate = false,
+					altitude,
+					azimuth;
+	
+				if (options) {
+					params.forEach(function (param) {
+						var val = options[param];
+						if (val !== undefined) {
+							val = parseFloat(val);
+							if (!isNaN(val)) {
+								obj.uniforms[param].value = val;
+							}
+						}
+					});
+	
+					if (options.sunPosition instanceof THREE.Vector3) {
+						obj.uniforms.sunPosition.value.copy(options.sunPosition);
+					} else if (Array.isArray(options.sunPosition)) {
+						obj.uniforms.sunPosition.value.set(obj.uniforms.sunPosition.value, options.sunPosition);
+					} else {
+						self.altitude = options.altitude;
+						self.azimuth = options.azimuth;
+					}
+				}
+			};
+	
+			Object.defineProperty(this, 'azimuth', {
+				set: function (val) {
+					val = mod(parseFloat(val), TAU);
+					if (!isNaN(val) && val !== azimuth) {
+						azimuth = val;
+						update();
+					}
+				},
+				get: function () {
+					return azimuth;
+				}
+			});
+	
+			Object.defineProperty(this, 'altitude', {
+				set: function (val) {
+					val = mod(parseFloat(val), TAU);
+					if (!isNaN(val) && val !== altitude) {
+						altitude = val;
+						update();
+					}
+				},
+				get: function() {
+					return altitude;
+				}
+			});
+	
+			this.setAltitude = function (val) {
+				self.altitude = val;
+				return this;
+			};
+	
+			this.setAzimuth = function (val) {
+				self.azimuth = val;
+				return this;
+			};
+	
+			sunPosition = obj.uniforms.sunPosition.value;
+			update();
+	
+			this.setOptions(options);
+	
+			return obj.mesh;
+		};
+	}());
+
+/***/ },
+/* 21 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(31);
+	
+		__webpack_require__(36);
+	
+		return function sound(parent, options) {
+			var obj,
+				src,
+				listener,
+				scene = parent;
+	
+			if (typeof options === 'string' || Array.isArray(options)) {
+				src = options;
+			} else if (options) {
+				src = options.src;
+			}
+	
+			while (!(scene instanceof THREE.Scene) && scene.parent) {
+				scene = scene.parent;
+			}
+	
+			listener = scene.getObjectByName('audio-listener');
+			obj = new THREE.Audio(listener);
+			// obj.setLoop(true);
+			obj.load(src);
+	
+			this.start = obj.start.bind(obj);
+			this.volume = obj.volume.bind(obj);
+	
+			parent.add(obj);
+	
+			return obj;
+		};
+	}());
+
+/***/ },
+/* 22 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(31);
+	
+		return function box(parent, options) {
+			var geometry,
+				mesh;
+	
+			geometry = new THREE.SphereGeometry(
+				options.radius === undefined ? 0.5 : options.radius,
+				options.widthSegments === undefined ? 16 : options.widthSegments,
+				options.heightSegments === undefined ? 12 : options.heightSegments,
+				options.phiStart,
+				options.phiLength,
+				options.thetaStart,
+				options.thetaLength
+			);
+			mesh = new THREE.Mesh(geometry, materials.standard());
+			mesh.name = 'sphere';
+	
+			parent.add(mesh);
+	
+			return mesh;
+		};
+	}());
+
+/***/ },
+/* 23 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var materials = __webpack_require__(10),
+			THREE = __webpack_require__(31);
+	
+		return function torus(parent, options) {
+			var geometry,
+				mesh;
+	
+			geometry = new THREE.TorusGeometry(
+				options.radius === undefined ? 0.5 : options.radius,
+				options.tube === undefined ? 0.125 : options.tube,
+				options.radialSegments === undefined ? 12 : options.radialSegments,
+				options.tubularSegments === undefined ? 16 : options.tubularSegments,
+				options.arc
+			);
+			mesh = new THREE.Mesh(geometry, materials.standard());
+			mesh.name = 'torus';
+	
+			parent.add(mesh);
+	
+			return mesh;
+		};
+	}());
+
+/***/ },
+/* 24 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = (function () {
+		'use strict';
+	
+		var THREE = __webpack_require__(31),
+			urlRegex = __webpack_require__(32),
+			video;
+	
+		video = function (parent, options) {
+			var geometry,
+				material,
+				mesh,
+				vid,
+				tex,
+				playing = false,
+				self = this;
+	
+			function loadedMetadata() {
+				//todo: don't do any of this if object has been deleted
+	
+				geometry.applyMatrix(new THREE.Matrix4().makeScale(1, vid.videoHeight / vid.videoWidth, 1));
+				material.map = tex;
+				material.visible = true;
+				mesh.visible = true;
+				if (playing) {
+					vid.play();
+				}
+			}
+	
+			function setSource(sources) {
+				sources.forEach(function (src) {
+					var parse,
+						source;
+	
+					if (!src) {
+						return;
+					}
+	
+					parse = urlRegex.exec(src);
+					if (parse &&
+							(parse[1] && parse[1] !== window.location.hostname ||
+								parse[2] && parse[2] !== window.location.port)) {
+	
+						if (vid.crossOrigin !== undefined) {
+							vid.crossOrigin = 'anonymous';
+						} else {
+							console.warn('Browser does not support cross-origin video');
+							return;
+						}
+					}
+					source = document.createElement('source');
+					source.src = src;
+					vid.appendChild(source);
+				});
+			}
+	
+			/*
+			Pause the video when this browser tab is in the background or minimized.
+			Resume when it comes back in focus, but only if the user didn't pause manually.
+			*/
+			function visibilityChange() {
+				if (document.hidden || document.mozHidden || document.msHidden || document.webkitHidden) {
+					vid.pause();
+				} else if (playing) {
+					vid.play();
+				}
+			}
+	
+			vid = document.createElement('video');
+			vid.loop = true;
+			vid.addEventListener('loadedmetadata', loadedMetadata, false);
+	
+			if (Array.isArray(options)) {
+				setSource(options);
+			} if (typeof options === 'string') {
+				setSource([options]);
+			} else if (typeof options.src === 'string') {
+				setSource([options.src]);
+			} else if (Array.isArray(options.src)) {
+				setSource(options.src);
+			}
+	
+			vid.load();
+	
+			tex = new THREE.VideoTexture(vid);
+			tex.minFilter = THREE.LinearFilter;
+			tex.format = THREE.RGBFormat;
+			tex.generateMipmaps = false;
+	
+			geometry = new THREE.PlaneBufferGeometry(1, 1, 8);
+	
+			material = new THREE.MeshBasicMaterial({
+				side: THREE.DoubleSide,
+				map: tex
+			});
+	
+			mesh = new THREE.Mesh( geometry, material );
+	
+			mesh.visible = false;
+			if (vid.readyState) {
+				loadedMetadata();
+			}
+	
+			this.play = function play() {
+				playing = true;
+				vid.play();
+				return this;
+			};
+	
+			this.pause = function pause() {
+				playing = false;
+				vid.pause();
+				return this;
+			};
+	
+			this.canPlayType = video.canPlayType;
+	
+			Object.defineProperty(this, 'width', {
+				get: function () {
+					return vid.videoWidth;
+				}
+			});
+	
+			Object.defineProperty(this, 'height', {
+				get: function () {
+					return vid.videoHeight;
+				}
+			});
+	
+			Object.defineProperty(this, 'paused', {
+				get: function () {
+					return !playing;
+				}
+			});
+	
+			Object.defineProperty(this, 'volume', {
+				get: function () {
+					return vid.volume;
+				},
+				set: function (vol) {
+					vid.volume = vol;
+				}
+			});
+	
+			Object.defineProperty(this, 'muted', {
+				get: function () {
+					return vid.muted;
+				},
+				set: function (muted) {
+					vid.muted = muted;
+				}
+			});
+	
+			Object.defineProperty(this, 'duration', {
+				get: function () {
+					return vid.duration || 0;
+				}
+			});
+	
+			Object.defineProperty(this, 'currentTime', {
+				get: function () {
+					return vid.currentTime;
+				},
+				set: function (currentTime) {
+					if (vid.readyState && currentTime < vid.duration && currentTime >= 0) {
+						vid.currentTime = currentTime;
+					}
+				}
+			});
+	
+			[
+				'loadedmetadata',
+				'play',
+				'pause',
+				'loaded',
+				'error'
+			].forEach(function registerMediaEvent(event) {
+				vid.addEventListener(event, self.emit.bind(self, event));
+			});
+	
+			this.element = vid;
+	
+			window.addEventListener('touchstart', function touchStart() {
+				if (playing) {
+					vid.play();
+				} else {
+					vid.load();
+				}
+				window.removeEventListener('touchstart', touchStart, true);
+			}, true);
+	
+			//pause when window is hidden
+			document.addEventListener('visibilitychange', visibilityChange);
+			document.addEventListener('mozvisibilitychange', visibilityChange);
+			document.addEventListener('msvisibilitychange', visibilityChange);
+			document.addEventListener('webkitvisibilitychange', visibilityChange);
+	
+			parent.add(mesh);
+	
+			return mesh;
+		};
+	
+		video.canPlayType = function canPlayType(type) {
+			var element = document.createElement('video');
+			return element.canPlayType(type);
+		};
+	
+		return video;
+	}());
+
+/***/ },
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
@@ -1841,7 +2549,7 @@
 
 
 /***/ },
-/* 15 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
@@ -2201,10 +2909,6 @@
 	
 		function onMouseDown( event ) {
 	
-			if (event.button !== THREE.MOUSE.LEFT) {
-				return;
-			}
-	
 			if ( scope.enabled === false ) return;
 			event.preventDefault();
 	
@@ -2232,8 +2936,8 @@
 			}
 	
 			if ( state !== STATE.NONE ) {
-				window.addEventListener( 'mousemove', onMouseMove, false );
-				window.addEventListener( 'mouseup', onMouseUp, false );
+				document.addEventListener( 'mousemove', onMouseMove, false );
+				document.addEventListener( 'mouseup', onMouseUp, false );
 				scope.dispatchEvent( startEvent );
 			}
 	
@@ -2302,8 +3006,8 @@
 	
 			if ( scope.enabled === false ) return;
 	
-			//window.removeEventListener( 'mousemove', onMouseMove, false );
-			window.removeEventListener( 'mouseup', onMouseUp, false );
+			document.removeEventListener( 'mousemove', onMouseMove, false );
+			document.removeEventListener( 'mouseup', onMouseUp, false );
 			scope.dispatchEvent( endEvent );
 			state = STATE.NONE;
 	
@@ -2508,7 +3212,7 @@
 	
 		}
 	
-		//this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
+		this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
 		this.domElement.addEventListener( 'mousedown', onMouseDown, false );
 		this.domElement.addEventListener( 'mousewheel', onMouseWheel, false );
 		this.domElement.addEventListener( 'DOMMouseScroll', onMouseWheel, false ); // firefox
@@ -2519,7 +3223,6 @@
 	
 		window.addEventListener( 'keydown', onKeyDown, false );
 	
-	//window.addEventListener( 'mousemove', onMouseMove, true );
 		// force an update at start
 		this.update();
 	
@@ -2530,7 +3233,7 @@
 
 
 /***/ },
-/* 16 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
@@ -2656,7 +3359,7 @@
 	} )();
 
 /***/ },
-/* 17 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
@@ -3110,7 +3813,7 @@
 
 
 /***/ },
-/* 18 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*** IMPORTS FROM imports-loader ***/
@@ -3265,659 +3968,7 @@
 
 
 /***/ },
-/* 19 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(31);
-	
-		return function box(parent, options) {
-			var geometry,
-				mesh;
-	
-			geometry = new THREE.BoxGeometry( 1, 1, 1 );
-			mesh = new THREE.Mesh(geometry, materials.standard());
-			mesh.name = 'box';
-	
-			parent.add(mesh);
-	
-			return mesh;
-		};
-	}());
-
-/***/ },
-/* 20 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(31);
-	
-		function cylinder(parent, options) {
-			var geometry,
-				mesh;
-	
-			geometry = new THREE.CylinderGeometry(
-				options.radiusTop === undefined ? 0.5 : options.radiusTop,
-				options.radiusBottom === undefined ? 0.5 : options.radiusBottom,
-				options.height === undefined ? 1 : options.height,
-				options.radiusSegments === undefined ? 16 : options.radiusSegments,
-				options.heightSegments,
-				options.openEnded
-			);
-			mesh = new THREE.Mesh(geometry, materials.standard());
-			mesh.name = 'cylinder';
-	
-			parent.add(mesh);
-	
-			return mesh;
-		}
-	
-		return cylinder;
-	}());
-
-/***/ },
-/* 21 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(31);
-	
-		function floor(parent, options) {
-			var obj,
-				geometry;
-	
-			geometry = new THREE.CircleGeometry( options.radius || 100, options.segments || 16 );
-			geometry.applyMatrix( new THREE.Matrix4().makeRotationX(-Math.PI / 2));
-	
-			obj = new THREE.Mesh(
-				geometry,
-				materials.checkerboard({
-					repeat: 100
-				})
-			);
-			obj.name = 'floor';
-	
-			obj.receiveShadow = true;
-	
-			parent.add(obj);
-	
-			return obj;
-		}
-	
-		return floor;
-	}());
-
-/***/ },
-/* 22 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(31);
-	
-		return function image(parent, options) {
-			var geometry,
-				material,
-				mesh,
-				src,
-				tex;
-	
-			if (typeof options === 'string') {
-				src = options;
-			} else if (options) {
-				src = options.src;
-			}
-	
-			if (src) {
-				tex = materials.imageTexture(src, THREE.UVMapping, function (t, image) {
-					//todo: don't do any of this if object has been deleted
-					geometry.applyMatrix(new THREE.Matrix4().makeScale(1, image.naturalHeight / image.naturalWidth, 1));
-					material.map = tex;
-					material.visible = true;
-					mesh.visible = true;
-					parent.add(mesh);
-				});
-			}
-	
-			geometry = new THREE.PlaneBufferGeometry(1, 1, 8);
-	
-			material = new THREE.MeshBasicMaterial({
-				side: THREE.DoubleSide,
-				transparent: true,
-				map: tex
-			});
-	
-			mesh = new THREE.Mesh( geometry, material );
-	
-			mesh.visible = false;
-	
-			parent.add(mesh);
-	
-			return mesh;
-		};
-	}());
-
-/***/ },
-/* 23 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(31);
-	
-		return function panorama(parent, options) {
-			var geometry,
-				material,
-				mesh,
-				src,
-				tex;
-	
-			if (typeof options === 'string') {
-				src = options;
-			} else if (options) {
-				src = options.src;
-			}
-	
-			if (src) {
-				tex = materials.imageTexture(src, THREE.UVMapping);
-			}
-	
-			geometry = new THREE.SphereGeometry( 1000, 60, 60 );
-			geometry.applyMatrix( new THREE.Matrix4().makeScale( -1, 1, 1 ) );
-	
-			material = new THREE.MeshBasicMaterial({
-				side: THREE.DoubleSide,
-				transparent: true,
-				map: tex
-			});
-	
-			mesh = new THREE.Mesh( geometry, material );
-			mesh.rotation.set( 0, -90 * Math.PI / 180, 0 );
-	
-			mesh.name = 'panorama';
-	
-			parent.add(mesh);
-	
-			return mesh;
-		};
-	}());
-
-/***/ },
-/* 24 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(31),
-			TAU = Math.PI * 2,
-			HALF_PI = Math.PI / 2,
-	
-			distance = 400000,
-			scratchVector = new THREE.Vector3(),
-	
-			params = [
-				'luminance',
-				'turbidity',
-				'reileigh',
-				'mieCoefficient',
-				'mieDirectionalG'
-			];
-	
-		__webpack_require__(37);
-	
-		return function sky(parent, options) {
-			var obj = new THREE.Sky(),
-				self = this,
-				scene = parent,
-				light,
-				sunPosition,
-				azimuth = Math.PI / 6,
-				altitude = Math.PI / 6;
-	
-			function mod(x, y) {
-				return x - y * Math.floor(x / y);
-			}
-	
-			function update() {
-				var sinTheta,
-					cosTheta,
-					phi,
-					sinPhi,
-					cosPhi;
-	
-				sinTheta = Math.sin(altitude);
-				cosTheta = Math.cos(altitude);
-				phi = -HALF_PI - azimuth;
-				sinPhi = Math.sin(phi);
-				cosPhi = Math.cos(phi);
-	
-				sunPosition.set(
-					distance * cosPhi * cosTheta,
-					distance * sinTheta,
-					distance * sinPhi * cosTheta
-				);
-	
-				if (light) {
-					light.intensity = 1.5 * Math.max(0.0, 1.0 - Math.exp(-((Math.PI / 1.95 - Math.abs(HALF_PI - altitude)) / 1.5)));
-					light.position.copy(sunPosition).normalize().multiplyScalar(100);
-				}
-			}
-	
-			obj.mesh.name = 'sky';
-	
-			parent.add(obj.mesh);
-	
-			while (!(scene instanceof THREE.Scene) && scene.parent) {
-				scene = scene.parent;
-			}
-			light = scene.getObjectByName('directional-light');
-	
-			this.setOptions = function (options) {
-				var needUpdate = false,
-					altitude,
-					azimuth;
-	
-				if (options) {
-					params.forEach(function (param) {
-						var val = options[param];
-						if (val !== undefined) {
-							val = parseFloat(val);
-							if (!isNaN(val)) {
-								obj.uniforms[param].value = val;
-							}
-						}
-					});
-	
-					if (options.sunPosition instanceof THREE.Vector3) {
-						obj.uniforms.sunPosition.value.copy(options.sunPosition);
-					} else if (Array.isArray(options.sunPosition)) {
-						obj.uniforms.sunPosition.value.set(obj.uniforms.sunPosition.value, options.sunPosition);
-					} else {
-						self.altitude = options.altitude;
-						self.azimuth = options.azimuth;
-					}
-				}
-			};
-	
-			Object.defineProperty(this, 'azimuth', {
-				set: function (val) {
-					val = mod(parseFloat(val), TAU);
-					if (!isNaN(val) && val !== azimuth) {
-						azimuth = val;
-						update();
-					}
-				},
-				get: function () {
-					return azimuth;
-				}
-			});
-	
-			Object.defineProperty(this, 'altitude', {
-				set: function (val) {
-					val = mod(parseFloat(val), TAU);
-					if (!isNaN(val) && val !== altitude) {
-						altitude = val;
-						update();
-					}
-				},
-				get: function() {
-					return altitude;
-				}
-			});
-	
-			this.setAltitude = function (val) {
-				self.altitude = val;
-				return this;
-			};
-	
-			this.setAzimuth = function (val) {
-				self.azimuth = val;
-				return this;
-			};
-	
-			sunPosition = obj.uniforms.sunPosition.value;
-			update();
-	
-			this.setOptions(options);
-	
-			return obj.mesh;
-		};
-	}());
-
-/***/ },
-/* 25 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(31);
-	
-		__webpack_require__(36);
-	
-		return function sound(parent, options) {
-			var obj,
-				src,
-				listener,
-				scene = parent;
-	
-			if (typeof options === 'string' || Array.isArray(options)) {
-				src = options;
-			} else if (options) {
-				src = options.src;
-			}
-	
-			while (!(scene instanceof THREE.Scene) && scene.parent) {
-				scene = scene.parent;
-			}
-	
-			listener = scene.getObjectByName('audio-listener');
-			obj = new THREE.Audio(listener);
-			// obj.setLoop(true);
-			obj.load(src);
-	
-			this.start = obj.start.bind(obj);
-			this.volume = obj.volume.bind(obj);
-	
-			parent.add(obj);
-	
-			return obj;
-		};
-	}());
-
-/***/ },
-/* 26 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(31);
-	
-		return function box(parent, options) {
-			var geometry,
-				mesh;
-	
-			geometry = new THREE.SphereGeometry(
-				options.radius === undefined ? 0.5 : options.radius,
-				options.widthSegments === undefined ? 16 : options.widthSegments,
-				options.heightSegments === undefined ? 12 : options.heightSegments,
-				options.phiStart,
-				options.phiLength,
-				options.thetaStart,
-				options.thetaLength
-			);
-			mesh = new THREE.Mesh(geometry, materials.standard());
-			mesh.name = 'sphere';
-	
-			parent.add(mesh);
-	
-			return mesh;
-		};
-	}());
-
-/***/ },
-/* 27 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var materials = __webpack_require__(10),
-			THREE = __webpack_require__(31);
-	
-		return function torus(parent, options) {
-			var geometry,
-				mesh;
-	
-			geometry = new THREE.TorusGeometry(
-				options.radius === undefined ? 0.5 : options.radius,
-				options.tube === undefined ? 0.125 : options.tube,
-				options.radialSegments === undefined ? 12 : options.radialSegments,
-				options.tubularSegments === undefined ? 16 : options.tubularSegments,
-				options.arc
-			);
-			mesh = new THREE.Mesh(geometry, materials.standard());
-			mesh.name = 'torus';
-	
-			parent.add(mesh);
-	
-			return mesh;
-		};
-	}());
-
-/***/ },
-/* 28 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = (function () {
-		'use strict';
-	
-		var THREE = __webpack_require__(31),
-			urlRegex = __webpack_require__(33),
-			video;
-	
-		video = function (parent, options) {
-			var geometry,
-				material,
-				mesh,
-				vid,
-				tex,
-				playing = false,
-				self = this;
-	
-			function loadedMetadata() {
-				//todo: don't do any of this if object has been deleted
-	
-				geometry.applyMatrix(new THREE.Matrix4().makeScale(1, vid.videoHeight / vid.videoWidth, 1));
-				material.map = tex;
-				material.visible = true;
-				mesh.visible = true;
-				if (playing) {
-					vid.play();
-				}
-			}
-	
-			function setSource(sources) {
-				sources.forEach(function (src) {
-					var parse,
-						source;
-	
-					if (!src) {
-						return;
-					}
-	
-					parse = urlRegex.exec(src);
-					if (parse &&
-							(parse[1] && parse[1] !== window.location.hostname ||
-								parse[2] && parse[2] !== window.location.port)) {
-	
-						if (vid.crossOrigin !== undefined) {
-							vid.crossOrigin = 'anonymous';
-						} else {
-							console.warn('Browser does not support cross-origin video');
-							return;
-						}
-					}
-					source = document.createElement('source');
-					source.src = src;
-					vid.appendChild(source);
-				});
-			}
-	
-			/*
-			Pause the video when this browser tab is in the background or minimized.
-			Resume when it comes back in focus, but only if the user didn't pause manually.
-			*/
-			function visibilityChange() {
-				if (document.hidden || document.mozHidden || document.msHidden || document.webkitHidden) {
-					vid.pause();
-				} else if (playing) {
-					vid.play();
-				}
-			}
-	
-			vid = document.createElement('video');
-			vid.loop = true;
-			vid.addEventListener('loadedmetadata', loadedMetadata, false);
-	
-			if (Array.isArray(options)) {
-				setSource(options);
-			} if (typeof options === 'string') {
-				setSource([options]);
-			} else if (typeof options.src === 'string') {
-				setSource([options.src]);
-			} else if (Array.isArray(options.src)) {
-				setSource(options.src);
-			}
-	
-			vid.load();
-	
-			tex = new THREE.VideoTexture(vid);
-			tex.minFilter = THREE.LinearFilter;
-			tex.format = THREE.RGBFormat;
-			tex.generateMipmaps = false;
-	
-			geometry = new THREE.PlaneBufferGeometry(1, 1, 8);
-	
-			material = new THREE.MeshBasicMaterial({
-				side: THREE.DoubleSide,
-				map: tex
-			});
-	
-			mesh = new THREE.Mesh( geometry, material );
-	
-			mesh.visible = false;
-			if (vid.readyState) {
-				loadedMetadata();
-			}
-	
-			this.play = function play() {
-				playing = true;
-				vid.play();
-				return this;
-			};
-	
-			this.pause = function pause() {
-				playing = false;
-				vid.pause();
-				return this;
-			};
-	
-			this.canPlayType = video.canPlayType;
-	
-			Object.defineProperty(this, 'width', {
-				get: function () {
-					return vid.videoWidth;
-				}
-			});
-	
-			Object.defineProperty(this, 'height', {
-				get: function () {
-					return vid.videoHeight;
-				}
-			});
-	
-			Object.defineProperty(this, 'paused', {
-				get: function () {
-					return !playing;
-				}
-			});
-	
-			Object.defineProperty(this, 'volume', {
-				get: function () {
-					return vid.volume;
-				},
-				set: function (vol) {
-					vid.volume = vol;
-				}
-			});
-	
-			Object.defineProperty(this, 'muted', {
-				get: function () {
-					return vid.muted;
-				},
-				set: function (muted) {
-					vid.muted = muted;
-				}
-			});
-	
-			Object.defineProperty(this, 'duration', {
-				get: function () {
-					return vid.duration || 0;
-				}
-			});
-	
-			Object.defineProperty(this, 'currentTime', {
-				get: function () {
-					return vid.currentTime;
-				},
-				set: function (currentTime) {
-					if (vid.readyState && currentTime < vid.duration && currentTime >= 0) {
-						vid.currentTime = currentTime;
-					}
-				}
-			});
-	
-			[
-				'loadedmetadata',
-				'play',
-				'pause',
-				'loaded',
-				'error'
-			].forEach(function registerMediaEvent(event) {
-				vid.addEventListener(event, self.emit.bind(self, event));
-			});
-	
-			this.element = vid;
-	
-			window.addEventListener('touchstart', function touchStart() {
-				if (playing) {
-					vid.play();
-				} else {
-					vid.load();
-				}
-				window.removeEventListener('touchstart', touchStart, true);
-			}, true);
-	
-			//pause when window is hidden
-			document.addEventListener('visibilitychange', visibilityChange);
-			document.addEventListener('mozvisibilitychange', visibilityChange);
-			document.addEventListener('msvisibilitychange', visibilityChange);
-			document.addEventListener('webkitvisibilitychange', visibilityChange);
-	
-			parent.add(mesh);
-	
-			return mesh;
-		};
-	
-		video.canPlayType = function canPlayType(type) {
-			var element = document.createElement('video');
-			return element.canPlayType(type);
-		};
-	
-		return video;
-	}());
-
-/***/ },
-/* 29 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -4052,62 +4103,6 @@
 		return (o == null) ? create(base) : defineProperties(Object(o), descriptors);
 	};
 	exports.methods = methods;
-
-
-/***/ },
-/* 30 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/*
-		MIT License http://www.opensource.org/licenses/mit-license.php
-		Author Tobias Koppers @sokra
-	*/
-	// css base code, injected by the css-loader
-	module.exports = function() {
-		var list = [];
-	
-		// return the list of modules as css string
-		list.toString = function toString() {
-			var result = [];
-			for(var i = 0; i < this.length; i++) {
-				var item = this[i];
-				if(item[2]) {
-					result.push("@media " + item[2] + "{" + item[1] + "}");
-				} else {
-					result.push(item[1]);
-				}
-			}
-			return result.join("");
-		};
-	
-		// import a list of modules into the list
-		list.i = function(modules, mediaQuery) {
-			if(typeof modules === "string")
-				modules = [[null, modules, ""]];
-			var alreadyImportedModules = {};
-			for(var i = 0; i < this.length; i++) {
-				var id = this[i][0];
-				if(typeof id === "number")
-					alreadyImportedModules[id] = true;
-			}
-			for(i = 0; i < modules.length; i++) {
-				var item = modules[i];
-				// skip already imported module
-				// this implementation is not 100% perfect for weird media query combinations
-				//  when a module is imported multiple times with different media queries.
-				//  I hope this will never occur (Hey this way we have smaller bundles)
-				if(typeof item[0] !== "number" || !alreadyImportedModules[item[0]]) {
-					if(mediaQuery && !item[2]) {
-						item[2] = mediaQuery;
-					} else if(mediaQuery) {
-						item[2] = "(" + item[2] + ") and (" + mediaQuery + ")";
-					}
-					list.push(item);
-				}
-			}
-		};
-		return list;
-	};
 
 
 /***/ },
@@ -39266,39 +39261,6 @@
 /* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var map = {
-		"./asphalt.jpg": 39,
-		"./brick-tiles.jpg": 40,
-		"./bricks-normal.jpg": 41,
-		"./bricks-specular.jpg": 42,
-		"./bricks.jpg": 43,
-		"./checkerboard.png": 44,
-		"./grass.jpg": 45,
-		"./metal-floor.jpg": 46,
-		"./metal.jpg": 47,
-		"./stone.jpg": 48,
-		"./tiles.jpg": 49,
-		"./weathered-wood.jpg": 50,
-		"./wood.jpg": 51
-	};
-	function webpackContext(req) {
-		return __webpack_require__(webpackContextResolve(req));
-	};
-	function webpackContextResolve(req) {
-		return map[req] || (function() { throw new Error("Cannot find module '" + req + "'.") }());
-	};
-	webpackContext.keys = function webpackContextKeys() {
-		return Object.keys(map);
-	};
-	webpackContext.resolve = webpackContextResolve;
-	module.exports = webpackContext;
-	webpackContext.id = 32;
-
-
-/***/ },
-/* 33 */
-/***/ function(module, exports, __webpack_require__) {
-
 	module.exports = new RegExp(
 		'^' +
 	
@@ -39348,6 +39310,39 @@
 
 
 /***/ },
+/* 33 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var map = {
+		"./asphalt.jpg": 39,
+		"./brick-tiles.jpg": 40,
+		"./bricks-normal.jpg": 41,
+		"./bricks-specular.jpg": 42,
+		"./bricks.jpg": 43,
+		"./checkerboard.png": 44,
+		"./grass.jpg": 45,
+		"./metal-floor.jpg": 46,
+		"./metal.jpg": 47,
+		"./stone.jpg": 48,
+		"./tiles.jpg": 49,
+		"./weathered-wood.jpg": 50,
+		"./wood.jpg": 51
+	};
+	function webpackContext(req) {
+		return __webpack_require__(webpackContextResolve(req));
+	};
+	function webpackContextResolve(req) {
+		return map[req] || (function() { throw new Error("Cannot find module '" + req + "'.") }());
+	};
+	webpackContext.keys = function webpackContextKeys() {
+		return Object.keys(map);
+	};
+	webpackContext.resolve = webpackContextResolve;
+	module.exports = webpackContext;
+	webpackContext.id = 33;
+
+
+/***/ },
 /* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -39359,8 +39354,8 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var arrayEach = __webpack_require__(53),
-	    baseEach = __webpack_require__(54),
+	var arrayEach = __webpack_require__(54),
+	    baseEach = __webpack_require__(53),
 	    bindCallback = __webpack_require__(55),
 	    isArray = __webpack_require__(56);
 	
@@ -39428,8 +39423,8 @@
 	 * Available under MIT license <https://lodash.com/license>
 	 */
 	var baseAssign = __webpack_require__(57),
-	    createAssigner = __webpack_require__(59),
-	    isNative = __webpack_require__(58),
+	    createAssigner = __webpack_require__(58),
+	    isNative = __webpack_require__(59),
 	    keys = __webpack_require__(60);
 	
 	/** Used for native method references. */
@@ -40282,43 +40277,6 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
-	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/**
-	 * A specialized version of `_.forEach` for arrays without support for callback
-	 * shorthands or `this` binding.
-	 *
-	 * @private
-	 * @param {Array} array The array to iterate over.
-	 * @param {Function} iteratee The function invoked per iteration.
-	 * @returns {Array} Returns `array`.
-	 */
-	function arrayEach(array, iteratee) {
-	  var index = -1,
-	      length = array.length;
-	
-	  while (++index < length) {
-	    if (iteratee(array[index], index, array) === false) {
-	      break;
-	    }
-	  }
-	  return array;
-	}
-	
-	module.exports = arrayEach;
-
-
-/***/ },
-/* 54 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
 	 * lodash 3.0.3 (Custom Build) <https://lodash.com/>
 	 * Build: `lodash modern modularize exports="npm" -o ./`
 	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
@@ -40326,7 +40284,7 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var keys = __webpack_require__(70);
+	var keys = __webpack_require__(69);
 	
 	/**
 	 * Used as the [maximum length](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
@@ -40499,6 +40457,43 @@
 	}
 	
 	module.exports = baseEach;
+
+
+/***/ },
+/* 54 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.7.0 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/**
+	 * A specialized version of `_.forEach` for arrays without support for callback
+	 * shorthands or `this` binding.
+	 *
+	 * @private
+	 * @param {Array} array The array to iterate over.
+	 * @param {Function} iteratee The function invoked per iteration.
+	 * @returns {Array} Returns `array`.
+	 */
+	function arrayEach(array, iteratee) {
+	  var index = -1,
+	      length = array.length;
+	
+	  while (++index < length) {
+	    if (iteratee(array[index], index, array) === false) {
+	      break;
+	    }
+	  }
+	  return array;
+	}
+	
+	module.exports = arrayEach;
 
 
 /***/ },
@@ -40748,8 +40743,8 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var baseCopy = __webpack_require__(67),
-	    isNative = __webpack_require__(58),
+	var baseCopy = __webpack_require__(73),
+	    isNative = __webpack_require__(59),
 	    keys = __webpack_require__(60);
 	
 	/** Native method references. */
@@ -40863,6 +40858,64 @@
 
 /***/ },
 /* 58 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.1.0 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	var bindCallback = __webpack_require__(70),
+	    isIterateeCall = __webpack_require__(71),
+	    restParam = __webpack_require__(72);
+	
+	/**
+	 * Creates a function that assigns properties of source object(s) to a given
+	 * destination object.
+	 *
+	 * **Note:** This function is used to create `_.assign`, `_.defaults`, and `_.merge`.
+	 *
+	 * @private
+	 * @param {Function} assigner The function to assign values.
+	 * @returns {Function} Returns the new assigner function.
+	 */
+	function createAssigner(assigner) {
+	  return restParam(function(object, sources) {
+	    var index = -1,
+	        length = object == null ? 0 : sources.length,
+	        customizer = length > 2 && sources[length - 2],
+	        guard = length > 2 && sources[2],
+	        thisArg = length > 1 && sources[length - 1];
+	
+	    if (typeof customizer == 'function') {
+	      customizer = bindCallback(customizer, thisArg, 5);
+	      length -= 2;
+	    } else {
+	      customizer = typeof thisArg == 'function' ? thisArg : null;
+	      length -= (customizer ? 1 : 0);
+	    }
+	    if (guard && isIterateeCall(sources[0], sources[1], guard)) {
+	      customizer = length < 3 ? null : customizer;
+	      length = 1;
+	    }
+	    while (++index < length) {
+	      var source = sources[index];
+	      if (source) {
+	        assigner(object, source, customizer);
+	      }
+	    }
+	    return object;
+	  });
+	}
+	
+	module.exports = createAssigner;
+
+
+/***/ },
+/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -40983,64 +41036,6 @@
 
 
 /***/ },
-/* 59 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.1.0 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	var bindCallback = __webpack_require__(69),
-	    isIterateeCall = __webpack_require__(72),
-	    restParam = __webpack_require__(75);
-	
-	/**
-	 * Creates a function that assigns properties of source object(s) to a given
-	 * destination object.
-	 *
-	 * **Note:** This function is used to create `_.assign`, `_.defaults`, and `_.merge`.
-	 *
-	 * @private
-	 * @param {Function} assigner The function to assign values.
-	 * @returns {Function} Returns the new assigner function.
-	 */
-	function createAssigner(assigner) {
-	  return restParam(function(object, sources) {
-	    var index = -1,
-	        length = object == null ? 0 : sources.length,
-	        customizer = length > 2 && sources[length - 2],
-	        guard = length > 2 && sources[2],
-	        thisArg = length > 1 && sources[length - 1];
-	
-	    if (typeof customizer == 'function') {
-	      customizer = bindCallback(customizer, thisArg, 5);
-	      length -= 2;
-	    } else {
-	      customizer = typeof thisArg == 'function' ? thisArg : null;
-	      length -= (customizer ? 1 : 0);
-	    }
-	    if (guard && isIterateeCall(sources[0], sources[1], guard)) {
-	      customizer = length < 3 ? null : customizer;
-	      length = 1;
-	    }
-	    while (++index < length) {
-	      var source = sources[index];
-	      if (source) {
-	        assigner(object, source, customizer);
-	      }
-	    }
-	    return object;
-	  });
-	}
-	
-	module.exports = createAssigner;
-
-
-/***/ },
 /* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -41052,9 +41047,9 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var isArguments = __webpack_require__(73),
-	    isArray = __webpack_require__(74),
-	    isNative = __webpack_require__(58);
+	var isArguments = __webpack_require__(74),
+	    isArray = __webpack_require__(75),
+	    isNative = __webpack_require__(59);
 	
 	/** Used for native method references. */
 	var objectProto = Object.prototype;
@@ -41336,9 +41331,9 @@
 
 	'use strict';
 	
-	module.exports = __webpack_require__(68)()
+	module.exports = __webpack_require__(67)()
 		? String.prototype.contains
-		: __webpack_require__(71);
+		: __webpack_require__(68);
 
 
 /***/ },
@@ -41388,44 +41383,6 @@
 /* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/**
-	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/**
-	 * Copies properties of `source` to `object`.
-	 *
-	 * @private
-	 * @param {Object} source The object to copy properties from.
-	 * @param {Array} props The property names to copy.
-	 * @param {Object} [object={}] The object to copy properties to.
-	 * @returns {Object} Returns `object`.
-	 */
-	function baseCopy(source, props, object) {
-	  object || (object = {});
-	
-	  var index = -1,
-	      length = props.length;
-	
-	  while (++index < length) {
-	    var key = props[index];
-	    object[key] = source[key];
-	  }
-	  return object;
-	}
-	
-	module.exports = baseCopy;
-
-
-/***/ },
-/* 68 */
-/***/ function(module, exports, __webpack_require__) {
-
 	'use strict';
 	
 	var str = 'razdwatrzy';
@@ -41437,78 +41394,20 @@
 
 
 /***/ },
-/* 69 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/**
-	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
+	'use strict';
 	
-	/**
-	 * A specialized version of `baseCallback` which only supports `this` binding
-	 * and specifying the number of arguments to provide to `func`.
-	 *
-	 * @private
-	 * @param {Function} func The function to bind.
-	 * @param {*} thisArg The `this` binding of `func`.
-	 * @param {number} [argCount] The number of arguments to provide to `func`.
-	 * @returns {Function} Returns the callback.
-	 */
-	function bindCallback(func, thisArg, argCount) {
-	  if (typeof func != 'function') {
-	    return identity;
-	  }
-	  if (thisArg === undefined) {
-	    return func;
-	  }
-	  switch (argCount) {
-	    case 1: return function(value) {
-	      return func.call(thisArg, value);
-	    };
-	    case 3: return function(value, index, collection) {
-	      return func.call(thisArg, value, index, collection);
-	    };
-	    case 4: return function(accumulator, value, index, collection) {
-	      return func.call(thisArg, accumulator, value, index, collection);
-	    };
-	    case 5: return function(value, other, key, object, source) {
-	      return func.call(thisArg, value, other, key, object, source);
-	    };
-	  }
-	  return function() {
-	    return func.apply(thisArg, arguments);
-	  };
-	}
+	var indexOf = String.prototype.indexOf;
 	
-	/**
-	 * This method returns the first argument provided to it.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Utility
-	 * @param {*} value Any value.
-	 * @returns {*} Returns `value`.
-	 * @example
-	 *
-	 * var object = { 'user': 'fred' };
-	 *
-	 * _.identity(object) === object;
-	 * // => true
-	 */
-	function identity(value) {
-	  return value;
-	}
-	
-	module.exports = bindCallback;
+	module.exports = function (searchString/*, position*/) {
+		return indexOf.call(this, searchString, arguments[1]) > -1;
+	};
 
 
 /***/ },
-/* 70 */
+/* 69 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -41519,9 +41418,9 @@
 	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 	 * Available under MIT license <https://lodash.com/license>
 	 */
-	var isArguments = __webpack_require__(79),
+	var isArguments = __webpack_require__(78),
 	    isArray = __webpack_require__(56),
-	    isNative = __webpack_require__(78);
+	    isNative = __webpack_require__(79);
 	
 	/** Used for native method references. */
 	var objectProto = Object.prototype;
@@ -41753,20 +41652,78 @@
 
 
 /***/ },
-/* 71 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
+	/**
+	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
 	
-	var indexOf = String.prototype.indexOf;
+	/**
+	 * A specialized version of `baseCallback` which only supports `this` binding
+	 * and specifying the number of arguments to provide to `func`.
+	 *
+	 * @private
+	 * @param {Function} func The function to bind.
+	 * @param {*} thisArg The `this` binding of `func`.
+	 * @param {number} [argCount] The number of arguments to provide to `func`.
+	 * @returns {Function} Returns the callback.
+	 */
+	function bindCallback(func, thisArg, argCount) {
+	  if (typeof func != 'function') {
+	    return identity;
+	  }
+	  if (thisArg === undefined) {
+	    return func;
+	  }
+	  switch (argCount) {
+	    case 1: return function(value) {
+	      return func.call(thisArg, value);
+	    };
+	    case 3: return function(value, index, collection) {
+	      return func.call(thisArg, value, index, collection);
+	    };
+	    case 4: return function(accumulator, value, index, collection) {
+	      return func.call(thisArg, accumulator, value, index, collection);
+	    };
+	    case 5: return function(value, other, key, object, source) {
+	      return func.call(thisArg, value, other, key, object, source);
+	    };
+	  }
+	  return function() {
+	    return func.apply(thisArg, arguments);
+	  };
+	}
 	
-	module.exports = function (searchString/*, position*/) {
-		return indexOf.call(this, searchString, arguments[1]) > -1;
-	};
+	/**
+	 * This method returns the first argument provided to it.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Utility
+	 * @param {*} value Any value.
+	 * @returns {*} Returns `value`.
+	 * @example
+	 *
+	 * var object = { 'user': 'fred' };
+	 *
+	 * _.identity(object) === object;
+	 * // => true
+	 */
+	function identity(value) {
+	  return value;
+	}
+	
+	module.exports = bindCallback;
 
 
 /***/ },
-/* 72 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -41894,7 +41851,118 @@
 
 
 /***/ },
+/* 72 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.6.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** Used as the `TypeError` message for "Functions" methods. */
+	var FUNC_ERROR_TEXT = 'Expected a function';
+	
+	/* Native method references for those with the same name as other `lodash` methods. */
+	var nativeMax = Math.max;
+	
+	/**
+	 * Creates a function that invokes `func` with the `this` binding of the
+	 * created function and arguments from `start` and beyond provided as an array.
+	 *
+	 * **Note:** This method is based on the [rest parameter](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/rest_parameters).
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Function
+	 * @param {Function} func The function to apply a rest parameter to.
+	 * @param {number} [start=func.length-1] The start position of the rest parameter.
+	 * @returns {Function} Returns the new function.
+	 * @example
+	 *
+	 * var say = _.restParam(function(what, names) {
+	 *   return what + ' ' + _.initial(names).join(', ') +
+	 *     (_.size(names) > 1 ? ', & ' : '') + _.last(names);
+	 * });
+	 *
+	 * say('hello', 'fred', 'barney', 'pebbles');
+	 * // => 'hello fred, barney, & pebbles'
+	 */
+	function restParam(func, start) {
+	  if (typeof func != 'function') {
+	    throw new TypeError(FUNC_ERROR_TEXT);
+	  }
+	  start = nativeMax(start === undefined ? (func.length - 1) : (+start || 0), 0);
+	  return function() {
+	    var args = arguments,
+	        index = -1,
+	        length = nativeMax(args.length - start, 0),
+	        rest = Array(length);
+	
+	    while (++index < length) {
+	      rest[index] = args[start + index];
+	    }
+	    switch (start) {
+	      case 0: return func.call(this, rest);
+	      case 1: return func.call(this, args[0], rest);
+	      case 2: return func.call(this, args[0], args[1], rest);
+	    }
+	    var otherArgs = Array(start + 1);
+	    index = -1;
+	    while (++index < start) {
+	      otherArgs[index] = args[index];
+	    }
+	    otherArgs[start] = rest;
+	    return func.apply(this, otherArgs);
+	  };
+	}
+	
+	module.exports = restParam;
+
+
+/***/ },
 /* 73 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/**
+	 * Copies properties of `source` to `object`.
+	 *
+	 * @private
+	 * @param {Object} source The object to copy properties from.
+	 * @param {Array} props The property names to copy.
+	 * @param {Object} [object={}] The object to copy properties to.
+	 * @returns {Object} Returns `object`.
+	 */
+	function baseCopy(source, props, object) {
+	  object || (object = {});
+	
+	  var index = -1,
+	      length = props.length;
+	
+	  while (++index < length) {
+	    var key = props[index];
+	    object[key] = source[key];
+	  }
+	  return object;
+	}
+	
+	module.exports = baseCopy;
+
+
+/***/ },
+/* 74 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -41973,7 +42041,7 @@
 
 
 /***/ },
-/* 74 */
+/* 75 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -42137,79 +42205,6 @@
 
 
 /***/ },
-/* 75 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.6.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/** Used as the `TypeError` message for "Functions" methods. */
-	var FUNC_ERROR_TEXT = 'Expected a function';
-	
-	/* Native method references for those with the same name as other `lodash` methods. */
-	var nativeMax = Math.max;
-	
-	/**
-	 * Creates a function that invokes `func` with the `this` binding of the
-	 * created function and arguments from `start` and beyond provided as an array.
-	 *
-	 * **Note:** This method is based on the [rest parameter](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/rest_parameters).
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Function
-	 * @param {Function} func The function to apply a rest parameter to.
-	 * @param {number} [start=func.length-1] The start position of the rest parameter.
-	 * @returns {Function} Returns the new function.
-	 * @example
-	 *
-	 * var say = _.restParam(function(what, names) {
-	 *   return what + ' ' + _.initial(names).join(', ') +
-	 *     (_.size(names) > 1 ? ', & ' : '') + _.last(names);
-	 * });
-	 *
-	 * say('hello', 'fred', 'barney', 'pebbles');
-	 * // => 'hello fred, barney, & pebbles'
-	 */
-	function restParam(func, start) {
-	  if (typeof func != 'function') {
-	    throw new TypeError(FUNC_ERROR_TEXT);
-	  }
-	  start = nativeMax(start === undefined ? (func.length - 1) : (+start || 0), 0);
-	  return function() {
-	    var args = arguments,
-	        index = -1,
-	        length = nativeMax(args.length - start, 0),
-	        rest = Array(length);
-	
-	    while (++index < length) {
-	      rest[index] = args[start + index];
-	    }
-	    switch (start) {
-	      case 0: return func.call(this, rest);
-	      case 1: return func.call(this, args[0], rest);
-	      case 2: return func.call(this, args[0], args[1], rest);
-	    }
-	    var otherArgs = Array(start + 1);
-	    index = -1;
-	    while (++index < start) {
-	      otherArgs[index] = args[index];
-	    }
-	    otherArgs[start] = rest;
-	    return func.apply(this, otherArgs);
-	  };
-	}
-	
-	module.exports = restParam;
-
-
-/***/ },
 /* 76 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -42234,6 +42229,85 @@
 
 /***/ },
 /* 78 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
+	 * Build: `lodash modern modularize exports="npm" -o ./`
+	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
+	 * Based on Underscore.js 1.8.2 <http://underscorejs.org/LICENSE>
+	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 * Available under MIT license <https://lodash.com/license>
+	 */
+	
+	/** `Object#toString` result references. */
+	var argsTag = '[object Arguments]';
+	
+	/**
+	 * Checks if `value` is object-like.
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
+	 */
+	function isObjectLike(value) {
+	  return !!value && typeof value == 'object';
+	}
+	
+	/** Used for native method references. */
+	var objectProto = Object.prototype;
+	
+	/**
+	 * Used to resolve the [`toStringTag`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
+	 * of values.
+	 */
+	var objToString = objectProto.toString;
+	
+	/**
+	 * Used as the [maximum length](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
+	 * of an array-like value.
+	 */
+	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
+	
+	/**
+	 * Checks if `value` is a valid array-like length.
+	 *
+	 * **Note:** This function is based on [`ToLength`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength).
+	 *
+	 * @private
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
+	 */
+	function isLength(value) {
+	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
+	}
+	
+	/**
+	 * Checks if `value` is classified as an `arguments` object.
+	 *
+	 * @static
+	 * @memberOf _
+	 * @category Lang
+	 * @param {*} value The value to check.
+	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
+	 * @example
+	 *
+	 * _.isArguments(function() { return arguments; }());
+	 * // => true
+	 *
+	 * _.isArguments([1, 2, 3]);
+	 * // => false
+	 */
+	function isArguments(value) {
+	  var length = isObjectLike(value) ? value.length : undefined;
+	  return isLength(length) && objToString.call(value) == argsTag;
+	}
+	
+	module.exports = isArguments;
+
+
+/***/ },
+/* 79 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -42351,85 +42425,6 @@
 	}
 	
 	module.exports = isNative;
-
-
-/***/ },
-/* 79 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * lodash 3.0.1 (Custom Build) <https://lodash.com/>
-	 * Build: `lodash modern modularize exports="npm" -o ./`
-	 * Copyright 2012-2015 The Dojo Foundation <http://dojofoundation.org/>
-	 * Based on Underscore.js 1.8.2 <http://underscorejs.org/LICENSE>
-	 * Copyright 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
-	 * Available under MIT license <https://lodash.com/license>
-	 */
-	
-	/** `Object#toString` result references. */
-	var argsTag = '[object Arguments]';
-	
-	/**
-	 * Checks if `value` is object-like.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 */
-	function isObjectLike(value) {
-	  return !!value && typeof value == 'object';
-	}
-	
-	/** Used for native method references. */
-	var objectProto = Object.prototype;
-	
-	/**
-	 * Used to resolve the [`toStringTag`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.prototype.tostring)
-	 * of values.
-	 */
-	var objToString = objectProto.toString;
-	
-	/**
-	 * Used as the [maximum length](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-number.max_safe_integer)
-	 * of an array-like value.
-	 */
-	var MAX_SAFE_INTEGER = Math.pow(2, 53) - 1;
-	
-	/**
-	 * Checks if `value` is a valid array-like length.
-	 *
-	 * **Note:** This function is based on [`ToLength`](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength).
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a valid length, else `false`.
-	 */
-	function isLength(value) {
-	  return typeof value == 'number' && value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER;
-	}
-	
-	/**
-	 * Checks if `value` is classified as an `arguments` object.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is correctly classified, else `false`.
-	 * @example
-	 *
-	 * _.isArguments(function() { return arguments; }());
-	 * // => true
-	 *
-	 * _.isArguments([1, 2, 3]);
-	 * // => false
-	 */
-	function isArguments(value) {
-	  var length = isObjectLike(value) ? value.length : undefined;
-	  return isLength(length) && objToString.call(value) == argsTag;
-	}
-	
-	module.exports = isArguments;
 
 
 /***/ },

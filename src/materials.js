@@ -135,7 +135,7 @@ module.exports = (function () {
 		texture = new THREE.Texture(undefined, mapping);
 
 		if (image.naturalWidth || isDataUri) {
-			imageLoaded();
+			setTimeout(imageLoaded, 1);
 		} else {
 			image.addEventListener('load', imageLoaded);
 		}
