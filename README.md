@@ -200,7 +200,7 @@ A boolean value that reports whether the video is paused (true) or playing (fals
 
 Safari and Internet Explorer cannot display cross-origin videos, i.e. files served from a different web server than the web page. So you must host the web page on your own server if you want to use video on all browsers. JSBin will not work.
 
-Mobile Safari is only capable of playing one video at a time.
+Mobile Safari is only capable of playing one video at a time, and only on iPad.
 
 #### VR.panorama()
 
