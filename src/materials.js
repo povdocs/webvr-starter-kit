@@ -196,7 +196,7 @@ module.exports = (function () {
 		}
 
 		if (!urlRegex.test(url)) {
-			return url.replace(/[a-z\-]+\.js$/i, '');
+			return url.replace(/[a-z\-\.]+\.js$/i, '');
 		}
 
 		return __ASSET_PATH__;
