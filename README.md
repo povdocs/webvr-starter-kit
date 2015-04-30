@@ -10,6 +10,7 @@ Web VR Starter Kit is a Javascript library for easily creating virtual reality c
 - [Sound](http://povdocs.github.io/webvr-starter-kit/examples/sound.html) - Audio sources in 3D space, triggered by looking at objects
 - [Video](http://povdocs.github.io/webvr-starter-kit/examples/video.html) - A video playing on a flat surface.
 - [Near and Far](http://povdocs.github.io/webvr-starter-kit/examples/near.html) - Fire events when an object moves close to or far away from the viewer
+- [3D Panorama](http://povdocs.github.io/webvr-starter-kit/examples/panorama3d.html) - Loading a stereoscopic spherical panoramic photo
 
 ## Getting Started
 
