@@ -46,14 +46,12 @@ module.exports = (function () {
 			'metal-floor': {
 				type: 'phong',
 				shininess: 100,
-				metal: true,
 
 				repeat: 2
 			},
 			'metal': {
 				type: 'phong',
 				shininess: 100,
-				metal: true,
 				shading: THREE.SmoothShading,
 
 				repeat: 2
