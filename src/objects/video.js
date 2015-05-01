@@ -12,6 +12,7 @@ module.exports = (function () {
 			mesh,
 			vid,
 			tex,
+			aspectRatio = 1,
 			playing = false,
 			self = this;
 
@@ -21,9 +22,12 @@ module.exports = (function () {
 
 		function loadedMetadata() {
 			//todo: don't do any of this if object has been deleted
+
+			var newAspectRatio = vid.videoWidth / vid.videoHeight;
 			if (!options || !options.sphere) {
-				geometry.applyMatrix(new THREE.Matrix4().makeScale(1, vid.videoHeight / vid.videoWidth, 1));
+				geometry.applyMatrix(new THREE.Matrix4().makeScale(1, aspectRatio / newAspectRatio, 1));
 			}
+			aspectRatio = newAspectRatio;
 
 			if (vid.videoWidth === vid.videoHeight &&
 					isPowerOfTwo(vid.videoWidth) && isPowerOfTwo(vid.videoHeight)) {
@@ -37,7 +41,6 @@ module.exports = (function () {
 
 			material.map = tex;
 			material.visible = true;
-			mesh.visible = true;
 
 			if (playing) {
 				vid.play();
@@ -125,7 +128,8 @@ module.exports = (function () {
 
 		material = new THREE.MeshBasicMaterial({
 			side: THREE.DoubleSide,
-			map: tex
+			map: tex,
+			visible: false
 		});
 
 		mesh = new THREE.Mesh(geometry, material);
@@ -138,8 +142,6 @@ module.exports = (function () {
 			}
 			mesh.userData.stereo = options.stereo;
 		}
-
-		mesh.visible = false;
 
 		if (vid.readyState) {
 			loadedMetadata();
@@ -224,13 +226,14 @@ module.exports = (function () {
 
 		//sometimes video fails to play because it's too big. remove it and try again
 		vid.addEventListener('error', function (evt) {
-			if (vid.error.code === window.MediaError.MEDIA_ERR_DECODE && vid.firstChild) {
+			if (vid.error.code === window.MediaError.MEDIA_ERR_DECODE && vid.childNodes.length > 1) {
+				material.visible = false;
 				vid.removeChild(vid.firstChild);
 				vid.load();
 			}
 
 			self.emit(event, evt);
-		});
+		}, true);
 
 		this.element = vid;
 
