@@ -216,7 +216,8 @@ module.exports = (function () {
 			'loadedmetadata',
 			'play',
 			'pause',
-			'loaded'
+			'playing',
+			'progress'
 		].forEach(function registerMediaEvent(event) {
 			vid.addEventListener(event, self.emit.bind(self, event));
 		});
