@@ -34,16 +34,56 @@ module.exports = (function () {
 			return Math.pow(2, Math.ceil(Math.log(n) / log2));
 		}
 
+		function Line(word) {
+			this.spaceWidth = ctx.measureText(' ').width;
+			this.totalWidth = 0;
+			this.wordsWidth = 0;
+			this.words = [];
+			this.wrap = false;
+			if (word) {
+				this.add(word);
+			}
+		}
+
+		Line.prototype.text = function () {
+			return this.words.join(' ');
+		};
+
+		Line.prototype.add = function(word) {
+			var wordWidth;
+			if (this.words.length) {
+				this.totalWidth += this.spaceWidth;
+			}
+			this.words.push(word);
+			wordWidth = Line.measure(word);
+			this.totalWidth += wordWidth;
+			this.wordsWidth += wordWidth;
+		};
+
+		Line.prototype.measure = function(word) {
+			var width = this.totalWidth;
+			if (word) {
+				width += Line.measure(word);
+				if (this.words.length) {
+					width += this.spaceWidth;
+				}
+			}
+			return width;
+		};
+
+		Line.measure = function(word) {
+			return ctx.measureText(word).width;
+		};
+
 		function update() {
 			//text stuffs
 			var text,
 				word = '',
 				letter,
 				isSpace,
-				line = '',
+				line,
 				lines = [],
 				parse,
-				word,
 
 				//layout
 				direction = getComputedStyle(document.body).direction,
@@ -55,7 +95,7 @@ module.exports = (function () {
 
 				//measurements
 				lineHeight,
-				i, x, y, measure,
+				i, start, y, measure,
 				width,
 				height = 0;
 
@@ -71,29 +111,34 @@ module.exports = (function () {
 
 			lineHeight = fontSize * 1.5;
 
+			line = new Line();
+
 			text = props.text === 0 ? '0' : String(props.text || '');
 			if (wrap) {
 				text = text.trim() + ' ';
 				for (i = 0; i < text.length; i++) {
 					letter = text.charAt(i);
 					if (newLineRegex.test(letter)) {
-						lines.push((line ? line + ' ' : '') + word);
-						line = word = '';
+						line.add(word);
+						word = '';
+						line = new Line();
 					} else if (spaceRegex.test(letter)) {
-						measure = ctx.measureText(line + ' ' + word).width;
+						measure = line.measure(word);
 						if (measure < width) {
 							if (line) {
-								line += ' ' + word;
+								line.add(word);
 							} else {
-								line = word;
+								line = new Line(word);
 							}
-						} else if (!line && ctx.measureText(word).width >= width) {
+						} else if (!line && Line.measure(word) >= width) {
 							//one very long word
-							lines.push(word);
-							line = word = '';
+							lines.push(new Line(word));
+							word = '';
+							line = new Line();
 						} else {
+							line.wrap = true;
 							lines.push(line);
-							line = word;
+							line = new Line(word);
 						}
 						word = '';
 					} else {
@@ -102,14 +147,13 @@ module.exports = (function () {
 				}
 				if (line) {
 					lines.push(line);
-					//lines.push((line ? line + ' ' : '') + word);
 				}
 			} else {
-				lines.push(text);
+				lines.push(new Line(text));
 			}
 			if (!width) {
 				width = lines.reduce(function (previous, line) {
-					return Math.max(previous, ctx.measureText(line).width);
+					return Math.max(previous, line.totalWidth);
 				});
 			}
 			width = Math.min(width, 2048);
@@ -141,23 +185,34 @@ module.exports = (function () {
 
 			inherit = (ctx.direction === '' || ctx.direction === 'inherit');
 			if (ctx.textAlign === 'center') {
-				x = canvas.width / 2;
+				start = canvas.width / 2;
 			} else if (ctx.textAlign === 'right' ||
 				ctx.textAlign === 'end' && (ctx.direction === 'ltr' || inherit && direction === 'ltr') ||
 				ctx.textAlign === 'start' && (ctx.direction === 'rtl' || inherit && direction === 'rtl')) {
 
-				x = canvas.width - padding;
+				start = canvas.width - padding;
 			} else {
-				x = padding;
+				start = padding;
 			}
 
-			for (i = 0; i < lines.length; i++) {
-				ctx.fillText(lines[i], x, y);
+			lines.forEach(function (line) {
+				var x,
+					space;
+				if (props.textAlign === 'justify' && line.wrap && line.words.length > 1) {
+					x = start;
+					space = (width - line.wordsWidth) / (line.words.length - 1);
+					line.words.forEach(function (word) {
+						ctx.fillText(word, x, y);
+						x += space + Line.measure(word);
+					});
+				} else {
+					ctx.fillText(line.text(), start, y);
+				}
 				y += lineHeight;
-			}
+			});
 
 			textWidth = width / resolution;
-			textHeight = (y) / resolution;
+			textHeight = lines.length * lineHeight / resolution;
 
 			tex.needsUpdate = true;
 		}

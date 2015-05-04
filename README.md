@@ -224,7 +224,7 @@ Creates two-dimensional text. Observes new-line characters.
 
 - `text` - a string representing the text to render
 - `font` - a string, the font style, size and family
-- `textAlign` - 'left', 'right', 'center', 'start' or 'end'
+- `textAlign` - 'left', 'right', 'center', 'justify', 'start' or 'end'
 - `textBaseline` - 'top', 'hanging', 'middle', 'alphabetic', 'ideographic' or 'bottom'
 - `direction` - 'ltr' (left to right) or 'rtl' (right to left)
 - `fillStyle` - same as the [2d canvas property](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/fillStyle)
