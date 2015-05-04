@@ -2,7 +2,7 @@
 	'use strict';
 
 	//constants
-	var NEAR = 1,
+	var NEAR = 0.1,
 		FAR = 1000000,
 
 	//global-ish declarations
@@ -57,7 +57,8 @@
 			'sky',
 			'panorama',
 			'image',
-			'video'
+			'video',
+			'text'
 		],
 
 		//todo: use a weak map or set instead

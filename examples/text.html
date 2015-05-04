@@ -1,0 +1,58 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>WebVR Starter Kit - Text Example</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    </head>
+    <body>
+        <script type="text/javascript" src="../build/vr.dev.js" charset="utf-8"></script>
+        <script type="text/javascript">
+        (function () {
+            VR.floor();
+
+            var container = VR.empty()
+                .moveTo(2, 3, 1)
+                .rotateY(-Math.PI / 6);
+
+            container.text({
+                text: 'italic 40pt sans-serif',
+                font: 'italic 40pt sans-serif'
+            });
+
+            container.text({
+                text: 'bold 30pt "Courier New"',
+                font: 'bold 30pt "Courier New"'
+            }).moveY(-0.4);
+
+            container.text({
+                text: '24pt "Comic Sans MS"',
+                font: '24pt "Comic Sans MS"'
+            }).moveY(-0.8);
+
+            VR.text({
+                    wrap: 2,
+                    font: '20pt Times New Roman',
+                    textAlign: 'left',
+                    text: 'This is a relatively long chunk of text placed here to demonstrate word wrapping. Use the "wrap" parameter to specify the maximum width of the text. Any lines longer than that will wrap to the next line.\n\nYou can also force a new line.'
+                })
+            .moveTo(-1.5, 1.5, 3)
+            .rotateY(Math.PI / 3);
+
+            var objects = [
+                VR.box({ color: 'red' }),
+                VR.sphere({ color: 'green' }),
+                VR.cylinder({ color: 'blue' })
+            ];
+
+            objects.forEach(function (object, i) {
+                var text = object.text(object.name).moveUp(1),
+                    angle = ((i + 0.5) / objects.length) * Math.PI,
+                    x = -2 * Math.cos(angle),
+                    z = -2 * Math.sin(angle) + 1;
+
+                object.moveTo(x, 0.5, z);
+            });
+        }())
+        </script>
+    </body>
+</html>

@@ -215,6 +215,31 @@ Stereoscopic (3D) panoramas can be displayed by setting the `stereo` option, if 
 - `src` - A url pointing to the image file
 - `stereo` - a string, either "horizontal" or "vertical" (optional).
 
+#### VR.text()
+
+Creates two-dimensional text. Observes new-line characters.
+
+##### Options
+
+- `text` - a string representing the text to render
+- `font` - a string, the font style, size and family
+- `textAlign` - 'left', 'right', 'center', 'start' or 'end'
+- `textBaseline` - 'top', 'hanging', 'middle', 'alphabetic', 'ideographic' or 'bottom'
+- `direction` - 'ltr' (left to right) or 'rtl' (right to left)
+- `fillStyle` - same as the [2d canvas property](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/fillStyle)
+- `wrap` - the maximum width of the text object in meters. Any text longer than this will wrap to the next line.
+- `resolution` - the number of "pixels" equivalent to 1 meter in 3D space. Making this number higher will increase the fidelity of the text but will also require making the font size proportionally larger. (default is 256)
+
+##### Properties
+
+###### width
+
+The width of the object containing the text. This will depend on the length of the text, the font size and the `wrap` setting.
+
+###### height
+
+The height of the object containing the text. This will depend on the length of the text, the number of lines and the font size.
+
 #### VR.empty()
 
 An empty object, not displayed. Can be used to group other objects.

@@ -26,11 +26,18 @@
                 .rotateY(Math.PI / 6)
                 .play();
 
-
             //create a timer object to show current time of video
             var timer = video.box({
                 color: 'darkred'
             }).setScale(0.05).hide();
+
+            var touch = video.text({
+                    text: 'Touch to play',
+                    font: '40px sans-serif',
+                    textBaseline: 'bottom'
+                })
+                .setScale(1 / 3)
+                .moveTo(0, 0, 0.05);
 
             /*
             Video plane object is automatically scaled to video aspect ratio.
@@ -40,6 +47,10 @@
             video.on('loadedmetadata', function (evt) {
                 timer.moveTo(-0.5, -0.5 * video.height / video.width, 0.05);
                 timer.show();
+            });
+
+            video.on('progress', function (evt) {
+                touch.hide();
             });
 
             video.on('error', function (evt) {
