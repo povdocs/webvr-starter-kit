@@ -151,11 +151,10 @@ module.exports = (function () {
 			} else {
 				lines.push(new Line(text));
 			}
-			if (!width) {
-				width = lines.reduce(function (previous, line) {
-					return Math.max(previous, line.totalWidth);
-				});
-			}
+
+			width = lines.reduce(function (previous, line) {
+				return Math.max(previous, line.totalWidth);
+			}, 0);
 			width = Math.min(width, 2048);
 
 			height = lines.length * lineHeight;
@@ -215,6 +214,8 @@ module.exports = (function () {
 			textHeight = lines.length * lineHeight / resolution;
 
 			tex.needsUpdate = true;
+
+			mesh.name = text.trim();
 		}
 
 		canvas = document.createElement('canvas');
