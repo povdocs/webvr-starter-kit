@@ -163,8 +163,15 @@ module.exports = (function () {
 			width = Math.min(width, 2048);
 
 			height = lines.length * lineHeight;
-			canvas.width = nextPowerOfTwo(width);
-			canvas.height = nextPowerOfTwo(height);
+
+			if (options && options.mipmap === false) {
+				canvas.width = width;
+				canvas.height = height;
+			} else {
+				canvas.width = nextPowerOfTwo(width);
+				canvas.height = nextPowerOfTwo(height);
+			}
+
 			mesh.scale.set(canvas.width / resolution, canvas.height / resolution, 1);
 
 			//debug
@@ -226,8 +233,13 @@ module.exports = (function () {
 		canvas = document.createElement('canvas');
 		ctx = canvas.getContext('2d');
 		tex = new THREE.Texture(canvas);
-		tex.minFilter = THREE.LinearMipMapLinearFilter;
-		tex.generateMipmaps = true;
+
+		if (canvas.width === nextPowerOfTwo(canvas.width) &&
+			canvas.height === nextPowerOfTwo(canvas.height)) {
+
+			tex.minFilter = THREE.LinearMipMapLinearFilter;
+			tex.generateMipmaps = true;
+		}
 
 		geometry = new THREE.PlaneBufferGeometry(1, 1);
 
@@ -276,6 +288,8 @@ module.exports = (function () {
 				return textHeight;
 			}
 		});
+
+		this.material = material;
 
 		return container;
 	};
