@@ -90,6 +90,7 @@ module.exports = (function () {
 				inherit,
 				resolution = parseFloat(props.resolution) || 256,
 				wrap,
+				wrapped = false,
 				fontSize,
 				padding,
 
@@ -135,10 +136,12 @@ module.exports = (function () {
 							lines.push(new Line(word));
 							word = '';
 							line = new Line();
+							wrapped = true;
 						} else {
 							line.wrap = true;
 							lines.push(line);
 							line = new Line(word);
+							wrapped = true;
 						}
 						word = '';
 					} else {
@@ -152,9 +155,11 @@ module.exports = (function () {
 				lines.push(new Line(text));
 			}
 
-			width = lines.reduce(function (previous, line) {
-				return Math.max(previous, line.totalWidth);
-			}, 0);
+			if (!width || !wrapped) {
+				width = lines.reduce(function (previous, line) {
+					return Math.max(previous, line.totalWidth);
+				}, 0);
+			}
 			width = Math.min(width, 2048);
 
 			height = lines.length * lineHeight;

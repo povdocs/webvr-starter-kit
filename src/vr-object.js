@@ -176,6 +176,10 @@ module.exports = (function () {
 		return this;
 	};
 	VRObject.prototype.moveUp = VRObject.prototype.moveY;
+	VRObject.prototype.moveDown = function (distance) {
+		this.moveY(-distance);
+		return this;
+	};
 
 	VRObject.prototype.moveZ = function (distance) {
 		this.object.translateZ(distance);

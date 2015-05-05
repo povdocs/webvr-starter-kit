@@ -16,7 +16,7 @@
     "type": "git",
     "url": "git://github.com/povdocs/webvr-starter-kit.git"
   },
-  "main": "build/bundle.js",
+  "main": "build/vr.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
