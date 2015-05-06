@@ -121,6 +121,7 @@ module.exports = (function () {
 					letter = text.charAt(i);
 					if (newLineRegex.test(letter)) {
 						line.add(word);
+						lines.push(line);
 						word = '';
 						line = new Line();
 					} else if (spaceRegex.test(letter)) {
