@@ -4,8 +4,7 @@ var gulp = require('gulp');
 var gutil = require('gulp-util');
 var webpack = require('webpack');
 var WebpackDevServer = require('webpack-dev-server');
-var webpackConfig = require('./webpack.config.js');
-var combiner = require('stream-combiner2');
+var config = require('./config');
 
 // Build and watch cycle (another option for development)
 // Advantage: No server required, can run app from filesystem
@@ -20,67 +19,21 @@ gulp.task('default', ['webpack:build-dev']);
 
 // Production build
 gulp.task('build', function(callback) {
-	// build two production versions - one minified, one not
-
-	var gulpWebpack = require('gulp-webpack');
-	var uglify = require('gulp-uglify');
-	var rename = require('gulp-rename');
-	var header = require('gulp-header');
-	var pkg = require('./package.json');
-	var filter = require('gulp-filter');
-
-	var banner = [
-		'/**',
-		' * <%= pkg.name %> - <%= pkg.description %>',
-		' * @version v<%= pkg.version %>',
-		' * @link <%= pkg.homepage %>',
-		' * @license <%= pkg.license %>',
-		' */',
-	''].join('\n');
-
-	// modify some webpack config options
-	var productionConfig = Object.create(webpackConfig);
-	productionConfig.plugins.push(new webpack.DefinePlugin({
-			'process.env': {
-				// This has effect on the react lib size
-				'NODE_ENV': JSON.stringify('production')
-			}
-		}),
-		new webpack.optimize.DedupePlugin()
-	);
-
-	var combined = combiner.obj([
-		gulp.src('src/entry.js'),
-		gulpWebpack(productionConfig),
-		header(banner, { pkg : pkg } ),
-		gulp.dest('build/'),
-		filter('**/*.js'),
-		rename(function (path) {
-			path.basename = path.basename.replace(/(\.dev)?$/, '');
-		}),
-		uglify(),
-		header(banner, { pkg : pkg } ),
-		gulp.dest('build/')
-	]);
-
-	combined.on('error', console.error.bind(console));
-
-	return combined;
+	var compiler = webpack(config.production);
+	compiler.run(function(err, stats) {
+		if(err) throw new gutil.PluginError('webpack:build', err);
+		gutil.log('[webpack:build]', stats.toString({
+			colors: true
+		}));
+		callback();
+	});
 });
 
 // The development server (the recommended option for development)
 gulp.task('server', ['webpack-dev-server']);
 
-// modify some webpack config options
-var myDevConfig = Object.create(webpackConfig);
-myDevConfig.devtool = 'sourcemap';
-myDevConfig.debug = true;
-myDevConfig.output.pathInfo = true;
-myDevConfig.plugins[1].definitions.__DEV__ = 'true';
-
 // create a single instance of the compiler to allow caching
-var devCompiler = webpack(myDevConfig);
-
+var devCompiler = webpack(config.dev);
 gulp.task('webpack:build-dev', function(callback) {
 	// run webpack
 	devCompiler.run(function(err, stats) {
@@ -96,13 +49,8 @@ gulp.task('webpack:build-dev', function(callback) {
 This is broken right now. don't use it
 */
 gulp.task('webpack-dev-server', function(callback) {
-	// modify some webpack config options
-	var myConfig = Object.create(webpackConfig);
-	myConfig.devtool = 'sourcemap';
-	myConfig.debug = true;
-
 	// Start a webpack-dev-server
-	new WebpackDevServer(webpack(myConfig), {
+	new WebpackDevServer(webpack(config.dev), {
 		publicPath: '/' + myConfig.output.publicPath,
 		stats: {
 			colors: true
