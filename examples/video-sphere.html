@@ -3,6 +3,13 @@
         <meta charset="utf-8">
         <title>WebVR Starter Kit - Video Sphere Example</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+        <style type="text/css">
+            #buttons > * {
+                color: black;
+                vertical-align: top;
+                font-weight: bold;
+            }
+        </style>
     </head>
     <body>
         <script type="text/javascript" src="../build/vr.dev.js" charset="utf-8"></script>
@@ -74,7 +81,87 @@
                     box.rotateY(-delta);
                 });
             });
+
+            //make a button to toggle volume
+            var volume = document.createElement('span');
+            volume.id = 'volume';
+            volume.setAttribute('title', 'Toggle Sound');
+            volume.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 8 8"><path d="M5.344 0l-1.344 2h-2v4h2l1.344 2h.656v-8h-.656z"></path></svg>';
+            volume.onclick = function () {
+                video.muted = !video.muted;
+            };
+            document.getElementById('buttons').appendChild(volume);
+
+            //make video element a global variable so the next script can access it
+            window.video = video.element;
         }());
+        </script>
+        <script type="text/javascript" src="http://popcornjs.org/code/dist/popcorn.js"></script>
+        <script type="text/javascript">
+        /*
+        Make 3D subtitles using VR.text with Popcorn.js to manage timing
+        */
+
+        //a quick and dirty Popcorn.js plugin
+        Popcorn.plugin('subtitle', function (options) {
+            var subtitle = VR.text(options),
+                x = options.x || 0,
+                y = options.y || 0,
+                z = options.z || 0;
+
+            subtitle.visible = false;
+            subtitle.moveTo(x, y, z);
+            subtitle.setScale(0.5)
+
+            return {
+                start: function () {
+                    subtitle.visible = true;
+                },
+                end: function () {
+                    subtitle.visible = false;
+                }
+            }
+        });
+
+        var popcorn = Popcorn(window.video, {
+            frameAnimation: true //needed for precise timing.
+        });
+
+        //these properties apply to all subtitle instances
+        popcorn.defaults('subtitle', {
+            font: '60px sans-serif',
+            textAlign: 'center',
+            x: 0.15,
+            y: 0.7,
+            z: 2.5 //move the text a bit so it's clearly in front of our character
+        });
+
+        popcorn.subtitle({
+            text: 'So, I was thinking',
+            start: 0.309,
+            end: 1.119
+        });
+        popcorn.subtitle({
+            text: 'maybe we could catch\na movie some time.',
+            start: 1.119,
+            end: 3.3
+        });
+        popcorn.subtitle({
+            text: 'Nothing scary',
+            start: 3.721,
+            end: 4.922,
+            x: 0.1
+        });
+
+        //make a button to toggle subtitles
+        var button = document.createElement('span');
+        button.id = 'subtitles';
+        button.setAttribute('title', 'Toggle Subtitles');
+        button.innerHTML = 'T';
+        button.onclick = function () {
+            popcorn.toggle('subtitle');
+        };
+        document.getElementById('buttons').appendChild(button);
         </script>
     </body>
 </html>
