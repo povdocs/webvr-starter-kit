@@ -207,8 +207,6 @@ module.exports = (function () {
 		if (x !== undefined && !isNaN(x)) {
 			if (y === undefined && z === undefined) {
 				y = z = x;
-			} else {
-				x = scale.x;
 			}
 		}
 
