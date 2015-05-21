@@ -5,11 +5,11 @@ module.exports = (function () {
 		fontSizeRegex = /(\d+)px/i,
 		newLineRegex = /[\n\r]/,
 		spaceRegex = /[\t ]/,
-		log2 = Math.log(2);
+		log2 = Math.log(2),
+		geometry = new THREE.PlaneBufferGeometry(1, 1);
 
 	return function text(parent, options) {
 		var self = this,
-			geometry,
 			material,
 			canvas,
 			ctx,
@@ -241,8 +241,6 @@ module.exports = (function () {
 			tex.minFilter = THREE.LinearMipMapLinearFilter;
 			tex.generateMipmaps = true;
 		}
-
-		geometry = new THREE.PlaneBufferGeometry(1, 1);
 
 		material = new THREE.MeshBasicMaterial({
 			side: THREE.DoubleSide,

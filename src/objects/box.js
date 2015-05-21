@@ -2,13 +2,12 @@ module.exports = (function () {
 	'use strict';
 
 	var materials = require('../materials'),
-		THREE = require('three');
+		THREE = require('three'),
+		geometry = new THREE.BoxGeometry( 1, 1, 1 );
 
 	return function box(parent, options) {
-		var geometry,
-			mesh;
+		var mesh;
 
-		geometry = new THREE.BoxGeometry( 1, 1, 1 );
 		mesh = new THREE.Mesh(geometry, materials.standard());
 		mesh.name = 'box';
 

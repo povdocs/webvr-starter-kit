@@ -2,11 +2,14 @@ module.exports = (function () {
 	'use strict';
 
 	var materials = require('../materials'),
-		THREE = require('three');
+		THREE = require('three'),
+		geometry = new THREE.SphereGeometry(1000, 60, 60);
+
+	geometry.applyMatrix(new THREE.Matrix4().makeScale(-1, 1, 1));
+	geometry.applyMatrix(new THREE.Matrix4().makeRotationY(- Math.PI / 2));
 
 	return function panorama(parent, options) {
-		var geometry,
-			material,
+		var material,
 			mesh,
 			src,
 			tex;
@@ -21,16 +24,12 @@ module.exports = (function () {
 			tex = materials.imageTexture(src, THREE.UVMapping);
 		}
 
-		geometry = new THREE.SphereGeometry(1000, 60, 60);
-		geometry.applyMatrix(new THREE.Matrix4().makeScale(-1, 1, 1));
-		geometry.applyMatrix(new THREE.Matrix4().makeRotationY(- Math.PI / 2));
-
 		material = new THREE.MeshBasicMaterial({
 			transparent: true,
 			map: tex
 		});
 
-		mesh = new THREE.Mesh( geometry, material );
+		mesh = new THREE.Mesh(geometry, material);
 
 		if (options && options.stereo) {
 			if (options.stereo === 'vertical') {
