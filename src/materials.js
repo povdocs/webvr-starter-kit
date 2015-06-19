@@ -160,6 +160,12 @@ module.exports = (function () {
 			return fn;
 		}
 
+		if (typeof options === 'string') {
+			options = {
+				map: options
+			};
+		}
+
 		opts = assign({}, options);
 		forEach({
 			ambient: options.ambient || options.color,

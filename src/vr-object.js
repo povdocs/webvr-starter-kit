@@ -227,10 +227,13 @@ module.exports = (function () {
 				material = materials[material](options);
 			} else if (material && !(material instanceof THREE.Material) && typeof material !== 'number') {
 				try {
-					material = materials(material);
+					material = materials.material(material);
 				} catch (e) {}
 			}
-			this.object.material = material || this.object.material;
+
+			if (material instanceof THREE.Material) {
+				this.object.material = material;
+			}
 		}
 
 		return this;
