@@ -349,6 +349,7 @@
 			VR.body = bodyWrapper;
 			VR.scene = scene;
 			VR.canvas = renderer.domElement;
+			VR.renderer = renderer;
 			VR.zeroSensor = vrControls.zeroSensor;
 		}
 
@@ -510,6 +511,7 @@
 		camera: cameraWrapper,
 		body: bodyWrapper,
 		scene: scene,
+		renderer: renderer || null,
 		canvas: renderer && renderer.domElement || null
 	};
 
