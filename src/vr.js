@@ -236,7 +236,7 @@
 		}
 
 		//create renderer and place in document
-		renderer = new THREE.WebGLRenderer();
+		renderer = new THREE.WebGLRenderer({ antialias: true });
 		renderer.domElement.addEventListener('webglcontextlost', function contextLost(event) {
 			console.log('lost context', event);
 		});
