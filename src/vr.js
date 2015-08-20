@@ -138,8 +138,14 @@
 			target = object;
 			if (target) {
 				vrObject = VRObject.findObject(target);
-				vrObject.emit('lookat', intersect);
-				VR.emit('lookat', vrObject, intersect);
+				while (!vrObject && target.parent) {
+					target = target.parent;
+					vrObject = VRObject.findObject(target);
+				}
+				if (vrObject) {
+					vrObject.emit('lookat', intersect);
+					VR.emit('lookat', vrObject, intersect);
+				}
 			}
 		}
 	}
