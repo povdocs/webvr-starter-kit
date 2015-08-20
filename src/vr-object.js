@@ -29,7 +29,6 @@ module.exports = (function () {
 			return scratchVector2.distanceTo(scratchVector1);
 		}
 
-		geometry.computeBoundingBox();
 		object.worldToLocal(scratchVector1);
 		return object.geometry.boundingBox.distanceToPoint(scratchVector1);
 	}
@@ -94,6 +93,10 @@ module.exports = (function () {
 			if (options.receiveShadow !== false) {
 				object.receiveShadow = true;
 			}
+
+			if (object.geometry) {
+				object.geometry.computeBoundingBox();
+			}
 		}
 
 		if (options.name !== undefined) {
@@ -103,7 +106,6 @@ module.exports = (function () {
 
 		if (allObjects.set) {
 			allObjects.set(object, this);
-			// allObjects.set(object.id, this);
 		} else {
 			allObjects[object.id] = this;
 		}
