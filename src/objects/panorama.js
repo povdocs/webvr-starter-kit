@@ -44,6 +44,8 @@ module.exports = (function () {
 
 		parent.add(mesh);
 
+		this.raycastable = false;
+
 		return mesh;
 	};
 }());

@@ -63,6 +63,7 @@
 
 		//todo: use a weak map or set instead
 		vrObjects = [],
+		raycastable = [],
 
 		lastTick = 0,
 		animationCallbacks = [];
@@ -81,24 +82,52 @@
 		}
 	}
 
+	function pruneObject(object) {
+		var i = raycastable.indexOf(object);
+		if (i >= 0) {
+			raycastable.splice(i, 1);
+		}
+
+		i = vrObjects.indexOf(VRObject.findObject(object));
+		if (i >= 0) {
+			vrObjects.splice(i, 1);
+		}
+
+		object.children.forEach(pruneObject);
+	}
+
 	function raycast() {
 		var i,
 			intersect,
 			object,
 			intersects,
+			parent,
+			prune = [],
 			vrObject;
 
-		raycaster.ray.origin.copy( camera.position );
-		raycaster.ray.direction.set(0, 0, 0.5).unproject(camera).sub(camera.position).normalize();
+		raycaster.ray.origin.setFromMatrixPosition(camera.matrixWorld); // world position
+		raycaster.ray.direction.set(0, 0, 0.5).unproject(camera).sub(raycaster.ray.origin).normalize();
 
-		intersects = raycaster.intersectObjects( scene.children );
+		intersects = raycaster.intersectObjects(raycastable, true);
 		for (i = 0; i < intersects.length; i++) {
 			intersect = intersects[i];
-			if (intersect.object instanceof THREE.Mesh) {
+
+			// if object has been removed from scene, remove it from raycastable
+			parent = intersect.object;
+			while (parent && parent !== scene) {
+				if (!parent.parent) {
+					prune.push(parent);
+				}
+				parent = parent.parent;
+			}
+
+			if (parent && intersect.object instanceof THREE.Mesh) {
 				object = intersect.object;
 				break;
 			}
 		}
+
+		prune.forEach(pruneObject);
 
 		if (target !== object) {
 			if (target) {
@@ -522,12 +551,18 @@
 		VR[method] = function (options) {
 			var obj = new VRObject(scene, creator, body, options);
 			vrObjects.push(obj);
+			if (obj.raycastable) {
+				raycastable.push(obj.object);
+			}
 			return obj;
 		};
 
 		VRObject.prototype[method] = function (options) {
 			var obj = new VRObject(this.object, creator, body, options);
 			vrObjects.push(obj);
+			if (obj.raycastable) {
+				raycastable.push(obj.object);
+			}
 			return obj;
 		};
 

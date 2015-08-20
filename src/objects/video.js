@@ -253,6 +253,7 @@ module.exports = (function () {
 		document.addEventListener('webkitvisibilitychange', visibilityChange);
 
 		mesh.name = 'video';
+		this.raycastable = !(options && options.sphere);
 		parent.add(mesh);
 
 		return mesh;

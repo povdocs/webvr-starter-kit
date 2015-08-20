@@ -241,6 +241,8 @@ module.exports = (function () {
 
 	VRObject.prototype.update = function () {};
 
+	VRObject.prototype.raycastable = true;
+
 	VRObject.repeat = function (count, options) {
 		var i,
 			change = false,

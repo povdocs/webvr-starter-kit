@@ -134,6 +134,8 @@ module.exports = (function () {
 
 		this.setOptions(options);
 
+		this.raycastable = false;
+
 		return obj.mesh;
 	};
 }());
