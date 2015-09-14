@@ -58,7 +58,8 @@
 			'panorama',
 			'image',
 			'video',
-			'text'
+			'text',
+			'grid'
 		],
 
 		//todo: use a weak map or set instead
