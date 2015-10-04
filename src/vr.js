@@ -351,7 +351,7 @@
 		});
 
 		//mouse control in case got no orientation device
-		mouseControls = new THREE.OrbitControls(camera);
+		mouseControls = new THREE.OrbitControls(camera, renderer.domElement);
 		mouseControls.target0.set(0, 0.0001, 0.000);
 		mouseControls.target.copy(mouseControls.target0);
 		mouseControls.update();
