@@ -111,7 +111,7 @@
 		vrButton.className = 'unsupported';
 		vrButton.addEventListener('click', VR.requestVR, false);
 
-		orientationButton = svgButton(require('raw!open-iconic/svg/compass.svg'), 'orientation');
+		orientationButton = svgButton(require('raw!open-iconic/svg/compass.svg'), 'orientation-button');
 		orientationButton.setAttribute('title', 'Toggle Orientation');
 		orientationButton.className = 'unsupported';
 		orientationButton.addEventListener('click', toggleOrientation, false);
