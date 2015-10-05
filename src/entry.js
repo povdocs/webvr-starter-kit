@@ -3,7 +3,8 @@
 
 	//global-ish declarations
 	var VR,
-		NoSleep = require('nosleep').NoSleep;
+		NoSleep = require('nosleep').NoSleep,
+		isMobile = require('ismobilejs');
 
 	function initRequirements() {
 		//load styles
@@ -148,6 +149,10 @@
 		}
 
 		window.addEventListener('resize', VR.resize, false);
+
+		if (!isMobile.any) {
+			VR.disableOrientation();
+		}
 
 		/*
 		export global things
