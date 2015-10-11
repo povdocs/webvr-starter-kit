@@ -4,15 +4,15 @@ Web VR Starter Kit is a Javascript library for easily creating virtual reality c
 
 ## Examples
 
-- [Panorama](http://povdocs.github.io/webvr-starter-kit/examples/panorama.html) - Loading a spherical panoramic photo
-- [Animation](http://povdocs.github.io/webvr-starter-kit/examples/animation.html) - Simple animation, moving and rotating objects
-- [Sky](http://povdocs.github.io/webvr-starter-kit/examples/sky.html) - A realistic daytime sky with movable sun and lighting
-- [Sound](http://povdocs.github.io/webvr-starter-kit/examples/sound.html) - Audio sources in 3D space, triggered by looking at objects
-- [Video](http://povdocs.github.io/webvr-starter-kit/examples/video.html) - A video playing on a flat surface.
-- [Near and Far](http://povdocs.github.io/webvr-starter-kit/examples/near.html) - Fire events when an object moves close to or far away from the viewer
-- [3D Panorama](http://povdocs.github.io/webvr-starter-kit/examples/panorama3d.html) - Loading a stereoscopic spherical panoramic photo
-- [3D Spherical Video](http://povdocs.github.io/webvr-starter-kit/examples/video-sphere.html) - A stereoscopic spherical video
-- [Text](http://povdocs.github.io/webvr-starter-kit/examples/text.html) - 2D text in 3D space
+- [Panorama](https://povdocs.github.io/webvr-starter-kit/examples/panorama.html) - Loading a spherical panoramic photo
+- [Animation](https://povdocs.github.io/webvr-starter-kit/examples/animation.html) - Simple animation, moving and rotating objects
+- [Sky](https://povdocs.github.io/webvr-starter-kit/examples/sky.html) - A realistic daytime sky with movable sun and lighting
+- [Sound](https://povdocs.github.io/webvr-starter-kit/examples/sound.html) - Audio sources in 3D space, triggered by looking at objects
+- [Video](https://povdocs.github.io/webvr-starter-kit/examples/video.html) - A video playing on a flat surface.
+- [Near and Far](https://povdocs.github.io/webvr-starter-kit/examples/near.html) - Fire events when an object moves close to or far away from the viewer
+- [3D Panorama](https://povdocs.github.io/webvr-starter-kit/examples/panorama3d.html) - Loading a stereoscopic spherical panoramic photo
+- [3D Spherical Video](https://povdocs.github.io/webvr-starter-kit/examples/video-sphere.html) - A stereoscopic spherical video
+- [Text](https://povdocs.github.io/webvr-starter-kit/examples/text.html) - 2D text in 3D space
 
 ## Getting Started
 
@@ -26,7 +26,7 @@ WebVR requires a browser with WebGL support. The following device configurations
 
 ### Set up
 
-The quickest way to get started is to load the [empty JS Bin template](http://jsbin.com/wemipo/1/edit?js,output) and start writing commands in the JavaScript panel. As you type, the output panel will automatically reload every time you make a change. You can pop the output panel out into its own window to view in full screen or on an Oculus Rift (if available), or you can load the output page on a mobile device.
+The quickest way to get started is to load the [empty JS Bin template](https://jsbin.com/wemipo/1/edit?js,output) and start writing commands in the JavaScript panel. As you type, the output panel will automatically reload every time you make a change. You can pop the output panel out into its own window to view in full screen or on an Oculus Rift (if available), or you can load the output page on a mobile device.
 
 Alternatively, you can start with a blank web page hosted on your own server. Include the following script element anywhere in the page.
 
@@ -54,7 +54,7 @@ There are some free services you can use to host your media with the correct ser
 
 #### imgur.com
 
-If you have an image you want to use, you can upload it to [imgur.com](http://imgur.com). Once the image is uploaded, follow the link to share it and look for the "direct" image URL. That will link directly to the png or jpg file, and it's the URL to use in your code.
+If you have an image you want to use, you can upload it to [imgur.com](https://imgur.com). Once the image is uploaded, follow the link to share it and look for the "direct" image URL. That will link directly to the png or jpg file, and it's the URL to use in your code.
 
 You can also use any image that's already hosted on imgur, but check the copyright terms on the site and on the particular image.
 
