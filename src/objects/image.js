@@ -9,7 +9,8 @@ module.exports = (function () {
 			material,
 			mesh,
 			src,
-			tex;
+			tex,
+			self = this;
 
 		if (typeof options === 'string') {
 			src = options;
@@ -25,6 +26,8 @@ module.exports = (function () {
 				material.visible = true;
 				mesh.visible = true;
 				parent.add(mesh);
+
+				self.emit('loaded');
 			});
 		}
 

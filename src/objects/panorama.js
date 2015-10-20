@@ -12,7 +12,8 @@ module.exports = (function () {
 		var material,
 			mesh,
 			src,
-			tex;
+			tex,
+			self = this;
 
 		if (typeof options === 'string') {
 			src = options;
@@ -21,7 +22,9 @@ module.exports = (function () {
 		}
 
 		if (src) {
-			tex = materials.imageTexture(src, THREE.UVMapping);
+			tex = materials.imageTexture(src, THREE.UVMapping, function () {
+				self.emit('loaded');
+			});
 		}
 
 		material = new THREE.MeshBasicMaterial({
