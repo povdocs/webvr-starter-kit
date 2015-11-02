@@ -93,7 +93,6 @@ THREE.VRControls = function ( object, options ) {
 			}
 		} else if (deviceControls && deviceControls.deviceOrientation.gamma !== undefined) {
 			deviceControls.update();
-			object.rotateY(-zeroAngle);
 			object.updateMatrixWorld();
 		}
 	};
