@@ -102,7 +102,7 @@ module.exports = (function () {
 				__DEV__: true,
 				__ASSET_PATH__: JSON.stringify('http://pov-tc.pbs.org/pov/flv/2015/webvr-starter-kit/')
 			})
-		],
+		]
 	});
 
 	exports.production = extend(common, {
