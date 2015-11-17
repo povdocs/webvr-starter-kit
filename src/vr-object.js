@@ -33,20 +33,34 @@ module.exports = (function () {
 		return object.geometry.boundingBox.distanceToPoint(scratchVector1);
 	}
 
-	function VRObject(parent, creator, camera, options) {
+	function VRObject(parent, creator, body, options) {
 		var material,
 			object,
 			self = this,
 
 			isNear = false,
 			isTarget = false,
+
+			camera = body && (function () {
+				var i,
+					c;
+				for (i = 0; i < body.children.length; i++) {
+					c = body.children[i];
+					if (c instanceof THREE.PerspectiveCamera) {
+						return c;
+					}
+				}
+			}()),
+			frustum,
+			cameraViewProjectionMatrix,
+
 			raycaster;
 
 		options = options || {};
 
 		eventEmitter(this);
 
-		if (camera) {
+		if (body) {
 			// raycaster = new THREE.Raycaster();
 
 			this.update = function () {
@@ -141,9 +155,23 @@ module.exports = (function () {
 
 		Object.defineProperty(this, 'distance', {
 			get: function () {
-				return distance(self.object, camera || parent);
+				return distance(self.object, body || parent);
 			}
 		});
+
+		if (camera) {
+			frustum = new THREE.Frustum();
+			cameraViewProjectionMatrix = new THREE.Matrix4();
+			Object.defineProperty(this, 'inView', {
+				get: function () {
+					camera.updateMatrixWorld(); // make sure the camera matrix is updated
+					camera.matrixWorldInverse.getInverse(camera.matrixWorld);
+					cameraViewProjectionMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+					frustum.setFromMatrix(cameraViewProjectionMatrix);
+					return frustum.intersectsObject(self.object);
+				}
+			});
+		}
 	}
 
 	VRObject.prototype.hide = function () {

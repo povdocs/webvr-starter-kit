@@ -38,6 +38,7 @@
             VR.cylinder().moveTo(2, 1, 1);
 
             var torus = VR.torus().moveTo(3, 2, 4);
+            var torusWasInView = false;
 
             var oldColor = new THREE.Color();
             VR.on('lookat', function () {
@@ -57,6 +58,11 @@
                 torus.rotateY(delta / 10);
 
                 soundSource.moveTo(10 * Math.cos(time / 1), 4, 0);
+
+                if (torus.inView && !torusWasInView) {
+                    torus.rotateX(Math.PI / 4);
+                }
+                torusWasInView = torus.inView;
             });
 
             VR.on('shake', function () {
