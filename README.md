@@ -293,6 +293,7 @@ The "empty" object type is useful as an invisible parent object below which othe
 - parent
 - distance
 - visible
+- inView
 - object
 - position
 - scale
