@@ -1,0 +1,254 @@
+<! made by Hurricane0075>
+<! github skompc>
+<! a simple flight game in which u control a plane in first person view>
+<! controls: any key or tap screen to move, mouse or move device to look>
+<! goal: collect as many rings as you can without crashing into falling rocks or the ground>
+<! made using WebVR Starter Kit by povdocs>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>WebVR Starter Kit - Flight Game Example</title>
+	<! just some tags for apple device web app compatibility>
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-title" content="WebVR Test">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black">
+	<meta name="viewport" content="initial-scale=1,minimum-scale=1,maximum-scale=1">
+    </head>
+    <body>
+        <script type="text/javascript" src="../build/vr.dev.js" charset="utf-8"></script>
+        <script type="text/javascript">
+        //Make a floor, with grass texture
+        VR.floor().setMaterial('grass');
+
+	//make variables
+	var score = 0;
+	var RandX;
+	var RandY;
+	var RandZ;
+	var collidableMeshList_hurt = []; //make a list for hurting objects
+	var collidableMeshList_nohurt = [];//make a list for non-hurting objects
+
+	//make random numbers (duh :P)
+	function RandomizeNumbers(){
+		RandX = Math.floor((Math.random() * 30) + 1);
+		RandY = Math.floor((Math.random() * 30) + 3);
+		RandZ = Math.floor((Math.random() * 30) + 1);
+	};
+	//make game over text and move it
+	var texty = VR.text({
+		text: 'GAME OVER!!! YOUR SCORE IS ' + score
+	}).moveTo(40,40,40);
+
+	//move camera so that it can see game over text
+	VR.camera.moveTo(40,40,40);
+
+	//make a box and move it to the cameras location. this will be the collision box for the player
+	var player = VR.box().moveTo(VR.camera.object.position.x, VR.camera.object.position.y+1.5, VR.camera.object.position.z+4);
+
+	RandomizeNumbers();
+        //make a torus, using wood material. Move it to random location. Add it to the list of non-hurting objects.
+        var ring = VR.torus()
+          .setMaterial('wood')
+          .moveTo(RandX, RandY, RandZ);
+	collidableMeshList_nohurt.push(ring.object);
+
+	RandomizeNumbers();
+	//make a sphere, using asphalt material. Move it to random location.
+        var sphere1 = VR.sphere()
+          .setMaterial('asphalt')
+          .setScale(1.4)
+          .moveTo(RandX, RandY, RandZ);
+	collidableMeshList_hurt.push(sphere1.object);
+
+	RandomizeNumbers();
+	//make another sphere, using asphalt material. Move it to random location. Add it to the list of hurting objects.
+        var sphere2 = VR.sphere()
+          .setMaterial('asphalt')
+          .setScale(1.4)
+          .moveTo(RandX, RandY, RandZ);
+	collidableMeshList_hurt.push(sphere2.object);
+
+	RandomizeNumbers();
+	//make yet another sphere, using asphalt material. Move it to random location. Add it to the list of hurting objects.
+        var sphere3 = VR.sphere()
+          .setMaterial('asphalt')
+          .setScale(1.4)
+          .moveTo(RandX, RandY, RandZ);
+	collidableMeshList_hurt.push(sphere3.object);
+
+
+	RandomizeNumbers();
+	//make a sphere, yes another..., using asphalt material. Move it to random location. Add it to the list of hurting objects.
+        var sphere4 = VR.sphere()
+          .setMaterial('asphalt')
+          .setScale(1.4)
+          .moveTo(RandX, RandY, RandZ);
+	collidableMeshList_hurt.push(sphere4.object);
+
+
+	RandomizeNumbers();
+	//make a sphere, last one, promise, using asphalt material. Move it to random location. Add it to the list of hurting objects.
+        var sphere5 = VR.sphere()
+          .setMaterial('asphalt')
+          .setScale(1.4)
+          .moveTo(RandX, RandY, RandZ);
+	collidableMeshList_hurt.push(sphere5.object);
+
+        /*
+        Click on live preview link at the top right to view in full screen. Open the output page on a mobile phone or WebVR browser to view in 3D.
+        */
+
+//add listeners for player controls and assign them
+window.addEventListener('load', function(){
+ 
+    document.addEventListener('touchstart', function(e){
+        var touchobj = e.changedTouches[0] // reference first touch point (ie: first finger)
+	myFunc(e);
+    }, false)
+ 
+    document.addEventListener('touchmove', function(e){
+        var touchobj = e.changedTouches[0] // reference first touch point for this event
+    }, false)
+ 
+    document.addEventListener('touchend', function(e){
+        var touchobj = e.changedTouches[0] // reference first touch point for this event
+	myFuncEnd(e);
+    }, false)
+
+    document.addEventListener('keydown', function(e){
+	myFunc(e);
+	});
+
+    document.addEventListener('keyup', function(e){
+	myFuncEnd();
+	});
+
+
+}, false)
+	
+	function myFunc(){
+	//move camera in the direction it is pointing and bring the box with it
+	VR.animate(function(delta, time) {
+			VR.camera.moveZ(-(Math.PI * delta * 2));
+			player.moveTo(VR.camera.object.position.x, VR.camera.object.position.y+1.5, VR.camera.object.position.z+4);
+       		});
+	};
+
+	//stop camera animation
+	function myFuncEnd(){
+		VR.end();
+		animateRest();
+	};
+
+	//this just does what it says! animates the rest of the scene
+	function animateRest(){
+		sphere1.show();
+		sphere2.show();
+		sphere3.show();
+		sphere4.show();
+		sphere5.show();
+		ring.show();
+		VR.animate(function (delta, time) {
+			sphere1.moveY(-1.5);
+			gravity(sphere1);
+		});
+
+		VR.animate(function (delta, time) {
+			sphere2.moveY(-1.5);
+			gravity(sphere2);
+		});
+
+		VR.animate(function (delta, time) {
+			sphere3.moveY(-1.5);
+			gravity(sphere3);
+		});
+
+		VR.animate(function (delta, time) {
+			sphere4.moveY(-1.5);
+			gravity(sphere4);
+		});
+
+		VR.animate(function (delta, time) {
+			sphere5.moveY(-1.5);
+			gravity(sphere5);
+		});
+
+		VR.animate(function (delta, time) {
+			ring.rotateY(Math.PI * delta * 2);
+		});
+
+		VR.animate(function (delta, time) {
+			playerCollision();
+			playerCollisionFloor();
+		});
+	};
+
+	//handmade function to detect if 'thing' hit the ground or not, then it puts it at a random location
+	function gravity(thing){
+		if (thing.object.position.y <= 1){
+			RandomizeNumbers();
+			thing.moveTo(RandX,RandY,RandZ);
+		};
+	};
+
+	//detects if a player hit the floor, if so then calls 'playerCollision2()' to declare game over
+	function playerCollisionFloor(){
+		if (player.object.position.y <= 1){
+			playerCollision2(true);
+		};
+	};
+	
+	//a funtion made to detect if the player hit an object that hurts, then an object that doesnt, and executes the right action thanks to stemkoski on github for providing this method!
+	function playerCollision(){
+	var originPoint = player.object.position.clone();
+	
+	for (var vertexIndex = 0; vertexIndex < player.object.geometry.vertices.length; vertexIndex++)
+	{		
+		var localVertex = player.object.geometry.vertices[vertexIndex].clone();
+		var globalVertex = localVertex.applyMatrix4( player.object.matrix );
+		var directionVector = globalVertex.sub( player.object.position );
+		
+		var ray = new THREE.Raycaster( originPoint, directionVector.clone().normalize() );
+		var collisionResults = ray.intersectObjects( collidableMeshList_hurt );
+		if ( collisionResults.length > 0 && collisionResults[0].distance < directionVector.length() ) {
+			playerCollision2(true);
+		};
+
+		var collisionResults = ray.intersectObjects( collidableMeshList_nohurt );
+		if ( collisionResults.length > 0 && collisionResults[0].distance < directionVector.length() ) {
+			playerCollision2(false);
+		};
+
+	};
+	};
+
+	//a handmade funtion to declare game over if player collided with an object that hurts, and add score/move ring if they hit the ring (non hurting object)
+	function playerCollision2(hurts){
+			if (hurts == true){
+				ring.hide();
+				sphere1.hide();
+				sphere2.hide();
+				sphere3.hide();
+				sphere4.hide();
+				sphere5.hide();
+				VR.camera.moveTo(40,40,40);
+				texty.hide();
+				texty.text = 'GAME OVER!!! YOUR SCORE IS ' + score
+				texty.show();
+				score = 0;
+			}else if (hurts == false){
+				score = score + 1;
+				RandomizeNumbers();
+				ring.moveTo(RandX,RandY,RandZ);
+			};
+	};
+        </script>
+    </body>
+</html>
+
+
+
+
+
+
