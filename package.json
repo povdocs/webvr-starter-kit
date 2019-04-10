@@ -40,7 +40,7 @@
     "three": "^0.73.0",
     "url-loader": "^0.5.5",
     "webpack": "^1.5.1",
-    "webpack-dev-server": "^1.7.0",
+    "webpack-dev-server": "^3.1.11",
     "xtend": "^4.0.0"
   }
 }
